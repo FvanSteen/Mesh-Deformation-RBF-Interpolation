@@ -1,25 +1,49 @@
-//============================================================================
-// Name        : ClassicalRBF.cpp
-// Author      : F.A. van Steen
-// Version     :
-// Copyright   : Your copyright notice
-// Description : C++ implementation of the standard RBF interpolation as mesh deformation method
-//============================================================================
-
-#include <iostream>
 #include "Mesh.h"
+#include <iostream>
+#include <Eigen/Dense>
 #include <fstream>
-
+#include <string>
+#include <algorithm>
+using Eigen::MatrixXd;
 using namespace std;
 
+int main()
+{
+	double xDomain = 1, yDomain = 1;
+	auto supRad = 2.5*max(xDomain,yDomain);
 
-int main() {
-	int nNodes = 5, mNodes =5;
-//	int mNodes = 5;5
-	double hDomain = 4, wDomain = 4;
-//	double wDomain = 4;
+	Mesh m("TestMesh.su2", supRad);
 
-	Mesh meshObject(nNodes, mNodes, hDomain, wDomain);
-	meshObject.getMeshCoor();
-//	meshObject.writeMeshFile();
+	m.findProblemChars();
+
+	m.obtainCoords();
+
+	Eigen::MatrixXd Phi = m.interpMat(m.bdryNodes,m.bdryNodes); // makes i-matrix for finding coefficients
+	Eigen::VectorXd dVec(m.nBdryNodes); // initialise vector with known displacements
+	dVec.setZero(); // set all displacements to zero
+
+
+	int arrDelta[4]{9,10,13,14}; // hardcoding of indices that belong to inner block
+
+	// setting displacement of inner block to 0.05;
+	for(int i=0;i<4;i++){
+		dVec(arrDelta[i]) = 0.05;
+	}
+
+	// solving for coefficients
+	Eigen::VectorXd alpha = Phi.llt().solve(dVec);
+
+
+	// setting up i-matrix phi_i,b
+	Eigen::MatrixXd Phi_ib = m.interpMat(m.intNodes,m.bdryNodes);
+
+	// finding displacement of internal nodes
+	Eigen::VectorXd disp =  Phi_ib*alpha;
+
+
+	m.updateNodes(dVec,disp);
+
+
+	m.WriteMeshFile("newmesh.su2");
+	cout << "Done" << endl;
 }
