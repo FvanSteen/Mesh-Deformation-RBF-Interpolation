@@ -132,10 +132,12 @@ void Mesh::findProblemChars(vector<std::string> ibTags,vector<std::string> ebTag
 
 	sort(begin(intBdryNodes), end(intBdryNodes));
 	intBdryNodes = UniqueElems(intBdryNodes);
-//	cout << "int \n" <<  intBdryNodes << endl;
+//	cout << intBdryNodes << endl;
 
 	sort(begin(extBdryNodes), end(extBdryNodes));
 	extBdryNodes = UniqueElems(extBdryNodes);
+
+//	cout << extBdryNodes << endl;
 //	cout << "ext \n" << extBdryNodes << endl;
 
 //	cout << coords.size()/nDims << endl;
@@ -215,37 +217,85 @@ void Mesh::obtainCoords(){
 
 Eigen::VectorXi Mesh::UniqueElems(Eigen::ArrayXi arr){
 	Eigen::VectorXi a(2*nBdryNodes);
-
 	int cnt = 0;
-	if(arr(0)==arr(1)){
-		a(cnt) = arr(0);
-		cnt++;
-	}
-	for(int x=1;x<arr.size();x++){
-		if(arr(x)!=arr(x-1)){
+	for(int x=0;x<arr.size()-1;x++){
+		if(arr(x+1)!=arr(x)){
 			a(cnt) = arr(x);
 			cnt++;
 		}
-	}
+		if(x==arr.size()-2 && arr(x+1)==arr(x)){
+			a(cnt) = arr(x);
+		}
+		else if(x==arr.size()-2 && arr(x+1)!=arr(x)){
+			a(cnt) = arr(x+1);
+		}
 
-	return a(Eigen::seq(0,cnt-1));
+	}
+	return a(Eigen::seq(0,cnt));
 }
 
 Eigen::ArrayXi Mesh::obtainIntNodes(){
+	cout << "determining internal nodes " << endl;
 	Eigen::ArrayXi arr(nPnts-intBdryNodes.size()-extBdryNodes.size());
+//	cout << arr.size() << endl;
+
+
 	int cnt = 0;
 	int i=0, j=0;
-	while(i<nPnts && j<(intBdryNodes.size()+extBdryNodes.size())){
-		if(i < bdryNodes(j)){
+	while(i<nPnts){// && j<(intBdryNodes.size()+extBdryNodes.size())){
+
+		if(j<(intBdryNodes.size()+extBdryNodes.size())){
+
+			if(i == bdryNodes(j)){
+
+				i++; j++;
+			}
+			else if(i < bdryNodes(j)){
+				arr(cnt) = i;
+//				cout << arr(cnt) << endl;
+				i++; cnt++;
+
+			}
+			else if(i > bdryNodes(j)){
+				j++;
+
+			}
+		}
+		else{
 			arr(cnt) = i;
+//			cout << arr(cnt) << endl;
 			cnt++;
 			i++;
-		} else if(i > bdryNodes(j)){
-			j++;
-		} else if(i== bdryNodes(j)){
-			i++;
-			j++;
 		}
+
+
+//		else if(bdryNodes(j) != i && j<(intBdryNodes.size()+extBdryNodes.size())){
+//			cout << "hier " << j << endl;
+//			j++;
+//		}
+//		else if(bdryNodes(j) != i){
+//			cout << "of hier " << endl;
+//			arr(cnt) = i;
+//			cnt++; i++;
+//		}
+
+//		else if (bdryNodes(j) == i){
+//			i++;
+//			cout << i << ' ' << j << endl;
+//		}
+
+//		if(i < bdryNodes(j)){
+//			arr(cnt) = i;
+//			cout<<i<<endl;
+//			cnt++;
+//			i++;
+//		} else if(i > bdryNodes(j)){
+//			j++;
+//		} else if(i== bdryNodes(j)){
+//			i++;
+//			j++;
+//		}
+
 	}
 	return arr;
 }
