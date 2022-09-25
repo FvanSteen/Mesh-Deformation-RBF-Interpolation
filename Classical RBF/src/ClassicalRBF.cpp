@@ -15,13 +15,20 @@ int main()
 	double xDomain = 40, yDomain = 40;
 	auto supRad = 2.5*max(xDomain,yDomain);
 
-	vector<string> intBdryTags = {"airfoil"}; //What if there are multiple tags?
-	vector<string> extBdryTags = {"farfield"};
+//	string ifName = "mesh_NACA0012_inv.su2";
+//	string ofName = "naca0012.su2";
+
+
+	string ifName = "TestMesh.su2";
+	string ofName = "newmesh.su2";
+
+//	vector<string> intBdryTags = {"airfoil"}; //What if there are multiple tags?
+//	vector<string> extBdryTags = {"farfield"};
 //
-//	vector<string> intBdryTags = {"block"}; //What if there are multiple tags?
-//	vector<string> extBdryTags = {"lower","right","upper", "left"};
+	vector<string> intBdryTags = {"block"}; //What if there are multiple tags?
+	vector<string> extBdryTags = {"lower","right","upper", "left"};
 
-
+/* Move this part to the mesh object
 	if(debugLvl>2){
 		cout << "Domain length x: " << xDomain << endl;
 		cout << "Domain length y: " << yDomain << endl;
@@ -41,10 +48,11 @@ int main()
 		cout << endl;
 
 	}
+*/
 
-	Mesh m("mesh_NACA0012_inv.su2", supRad);
+	Mesh m(ifName, supRad,debugLvl);
 //	Mesh m("TestMesh.su2", supRad);
-	m.findProblemChars(intBdryTags,extBdryTags);
+	m.readMeshFile(intBdryTags,extBdryTags);
 
 
 
@@ -66,7 +74,7 @@ int main()
 //	cout << m.bdryNodes << endl;
 //
 //
-	double xDef = -1, yDef = -1;
+	double xDef = -0.25, yDef = -0.25;
 //
 	for(int i=0;i<m.intBdryNodes.size();i++){
 		int j=0;
@@ -124,7 +132,7 @@ int main()
 	m.updateNodes(dxVec,dyVec,xDisp,yDisp);
 //
 //
-//	m.WriteMeshFile("newmesh.su2");
-	m.wmf("mesh_NACA0012_inv.su2", "naca0012.su2");
+	m.writeMeshFile(ifName, ofName);
+//	m.writeMeshFile("TestMesh.su2", "newmesh.su2");
 	cout << "Done writing mesh file" << endl;
 }

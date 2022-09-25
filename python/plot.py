@@ -16,6 +16,7 @@ os.chdir('../Classical RBF' )
 x = os.getcwd()
 fileName = '/mesh_NACA0012_inv.su2'
 #fileName = '/TestMesh.su2'
+fileName = '/naca0012.su'
 
 fileObj = open(x+fileName, "r") 
 

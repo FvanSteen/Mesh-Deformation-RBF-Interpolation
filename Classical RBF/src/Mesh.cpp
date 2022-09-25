@@ -10,90 +10,121 @@
 using Eigen::MatrixXd;
 using namespace std;
 
-Mesh::Mesh(std::string fileName, double supportRadius)
-:fName(fileName), pntsIdx(0), nPnts(0), nDims(0),nElem(0),bcNodesIdx(0),nBdryNodes(0),intNodesIdx(0), r(supportRadius)
+Mesh::Mesh(std::string fileName, double supportRadius,int debugLvl)
+:fName(fileName), nPnts(0), nDims(0),nElem(0),nBdryNodes(0),lvl(debugLvl), r(supportRadius)
 {}
 
-void Mesh::findProblemChars(vector<std::string> ibTags,vector<std::string> ebTags){
-	int lineNo =0, bndyPnts=0;
-	string line;
-	ifstream meshFile(fName);
-	int ElemIdx;
-	int nIntBdry = 0,nExtBdry;
-	bool bdry = false, intBound = false, extBound = false;
-	int cntInt = 0,cntExt = 0;
-	int point = 0;
+void Mesh::readMeshFile(vector<std::string> ibTags,vector<std::string> ebTags){
+	if(lvl>=1){
+		cout << "Reading mesh file: " << fName << endl;
+	}
 
-	if (meshFile.is_open()){
-		while (getline(meshFile, line)){
+	int lineNo =0;	// keep track of the line number
+	int nIntBdry = 0, nExtBdry = 0;		// ints for keeping track of number of internal/ external boundary points
+	bool intBound = false, extBound = false;	// booleans to acknowledge if on int/ext boundary
+	int cntInt = 0,cntExt = 0;					// counters for int/ext boundary nodes
+	int point = 0;								// counter for number of points
+	int pntsIdx;								// int that stores the line where "NPOIN= " is
 
+	string line;	// string containing line obtained by getline() function
+	ifstream mFile(fName); 	//opening file name stored in mFile object
+	// Check if file is opened
+	if (mFile.is_open()){
+		//Obtain line
+		while (getline(mFile, line)){
+
+			// Following statements find information on various lines of the input file
 			if (line.rfind("NDIME= ",0)==0){
 				nDims = stoi(line.substr(7));
 			}
-			if (line.rfind("NPOIN= ",0)==0){
+			else if (line.rfind("NPOIN= ",0)==0){
 				nPnts = stoi(line.substr(7));
 				pntsIdx = lineNo;
 				coords.resize(nPnts, nDims);
 			}
-			if (line.rfind("NELEM= ",0)==0){
+			else if (line.rfind("NELEM= ",0)==0){
 				nElem = stoi(line.substr(7));
-				ElemIdx = lineNo;
-			}
-			if (line.rfind("NMARK= ",0)==0){
-				int nTags = stoi(line.substr(7));
-				if(nTags == int(ibTags.size() + ebTags.size())){
-//					bcNodesIdx = lineNo;
-					cout << "Number of tags are matched" << endl;
-					bdry = true;
-				} else cout << "Number of tags provided (" << ibTags.size() + ebTags.size() << ") does not match number of tags found in file (" << stoi(line.substr(7)) << ")." << endl;
 			}
 
-
-			if (bdry==true && isdigit(line[0])){
-
-				bndyPnts++;
-
+			// Checking whether provided boundary tags equals the amount in the mesh file
+			else if (line.rfind("NMARK= ",0)==0 && lvl >= 1){
+				try{
+					if(stoi(line.substr(7)) == int(ibTags.size() + ebTags.size())){
+						cout << "Number of boundary tags are matched" << endl;
+					} else{
+						throw(stoi(line.substr(7)));
+					}
+				}
+				catch(int nTag){
+					cout << "Number of tags provided (" << ibTags.size() + ebTags.size() << ") does not match number of tags found in file (" << nTag << ")." << endl;
+					std::exit(0);
+				}
 			}
 
-			if (line.rfind("MARKER_TAG= ",0)==0){
+			// Finding tags of the boundaries
+			else if (line.rfind("MARKER_TAG= ",0)==0){
 				string tag =  line.substr(12);
 
-				//check if it is an internal boundary
-				if(std::find(std::begin(ibTags), std::end(ibTags), tag) != std::end(ibTags)){
-					cout << "internal: " <<tag << endl;
-					intBound = true;
-					extBound = false;
+				// Check if found tag is among provided internal boundary tags
+				try{
+					if(std::find(std::begin(ibTags), std::end(ibTags), tag) != std::end(ibTags)){
+						if(lvl >=2){
+							cout << "Finding nodes of internal boundary: " << tag << endl;
+						}
+						intBound = true;
+						extBound = false;
+					}
+					// Check if found tag is among provided external boundary tags
+					else if(std::find(std::begin(ebTags), std::end(ebTags), tag) != std::end(ebTags)){
+						if(lvl >= 2){
+							cout << "Finding nodes of external boundary: " << tag << endl;
+						}
+						intBound = false;
+						extBound = true;
+					} else throw(tag);
 				}
-				// check whether its an external boundary
-				else if(std::find(std::begin(ebTags), std::end(ebTags), tag) != std::end(ebTags)){
-					cout << "external: " << tag << endl;
-					intBound = false;
-					extBound = true;
-				}
-				// if not both print out message
-				else cout << "Tag not found in mesh file." << endl;
 
+				catch(string& tag){
+					cout << "None of the provided tags match \"" << tag << "\" as found in mesh file" << endl;
+					std::exit(0);
+				}
 			}
-			if(intBound){
-				istringstream is(line.substr(1));
+
+			/*
+			 * Following piece of code should be adjusted so that all nodes are included in the array
+			 * otherwise this will give problems in the 3d cases where the boundary not only consists of lines
+			 * but also surfaces
+			 */
+
+
+
+
+			// Check whether line corresponds to internal boundary
+			else if(intBound){
+				istringstream is(line.substr(1)); // split line at '\t' and omitting the first number
+
+				// check if line states the number of elements in the boundary
 				if(line.rfind("MARKER_ELEMS= ",0)==0){
-					nIntBdry += stoi(line.substr(13));
-					intBdryNodes.resize(nIntBdry+1);
-					// resize of the matrix containing the internal boundary nodes
+					nIntBdry += stoi(line.substr(13));	// updating number of int. boundary points
+					intBdryNodes.resize(nIntBdry+1);	// resizing the array containing the int. boundary nodes
+
 				}
+				// check if line contains nodes corresponding to the boundary
 				else if(isdigit(line[0])&& cntInt < nIntBdry-1){
-					is >> intBdryNodes[cntInt];
-					cntInt++;
+					is >> intBdryNodes[cntInt];	//assigning first node to int. boundary array
+					cntInt++; // update the int. node counter
 
-
+				// in case the current boundary element is the final element of the boundary.
+				// Then both nodes on that line should be included in the int. boundary array
 				} else if(isdigit(line[0])&& cntInt < nIntBdry){
 					is >> intBdryNodes[cntInt] >> intBdryNodes[cntInt+1];
 					cntInt++;
+					cout << cntInt << endl;
 				}
 
 			}
 
-			if(extBound){
+			else if(extBound){
 				istringstream is(line.substr(1));
 				if(line.rfind("MARKER_ELEMS= ",0)==0){
 					nExtBdry += stoi(line.substr(13));
@@ -124,12 +155,13 @@ void Mesh::findProblemChars(vector<std::string> ibTags,vector<std::string> ebTag
 			lineNo++;
 		}
 
-		nBdryNodes = bndyPnts;
-
-		meshFile.close();
+		mFile.close();
 	}
-	else cout << "Not able to open file";
+	else cout << "Not able to open input mesh file";
 
+	nBdryNodes = nIntBdry+nExtBdry;
+
+	 // temp statement for succeeding functions
 	sort(begin(intBdryNodes), end(intBdryNodes));
 	intBdryNodes = UniqueElems(intBdryNodes);
 //	cout << intBdryNodes << endl;
@@ -156,63 +188,14 @@ void Mesh::findProblemChars(vector<std::string> ibTags,vector<std::string> ebTag
 //	cout << intNodes << endl;
 //	cout << intNodes << endl;
 
-//	cout << nDims << '\t' << nPnts << '\t' << pntsIdx << '\t' << nElem << '\t' << bcNodesIdx << '\t' <<nBdryNodes << '\t' <<intNodesIdx <<endl;
-}
-
-void Mesh::obtainCoords(){
-	int lineNo =0;
-	string line;
-	ifstream meshFile(fName);
-	int point = 0, bdryPnt =0;
-
-	coords.resize(nPnts, nDims);
-	bdryNodes.resize(2*nBdryNodes);
-	intBdryNodes.resize(2*4);
-	if (meshFile.is_open()){
-		while (getline(meshFile, line)){
-			if (lineNo > pntsIdx && point < nPnts){
-				istringstream is(line);
-				switch(nDims){
-					case 2:
-						is >> coords(point,0) >> coords(point,1);
-						break;
-					case 3:
-						is >> coords(point,0) >> coords(point,1) >> coords(point,2);
-						break;
-				}
-				point++;
-			}
-			cout << "coords are assigned" << endl;
-			if (lineNo > bcNodesIdx && isdigit(line[0])){
-				istringstream is( line.substr(1) );
-				int t1, t2;
-				switch(nDims){
-					case 2:
-						is >> t1 >> t2;
-						bdryNodes[2*bdryPnt] = t1;
-						bdryNodes[2*bdryPnt+1] = t2;
-						if (lineNo > intNodesIdx){
-							intBdryNodes[2*(bdryPnt-20)] = t1;
-							intBdryNodes[2*(bdryPnt-20)+1] = t2;
-						}
-				}
-				bdryPnt++;
-			}
-			cout << "boundary points are assigned" << endl;
-
-			lineNo++;
-		}
-		meshFile.close();
-	}
-
-	sort(begin(bdryNodes), end(bdryNodes));
-	bdryNodes = UniqueElems(bdryNodes);
+	cout << nDims << '\t' << nPnts << '\t' << pntsIdx << '\t' << nElem << '\t' <<nBdryNodes << '\t'  <<endl;
 
 
-	sort(begin(intBdryNodes), end(intBdryNodes));
-	intBdryNodes = UniqueElems(intBdryNodes);
+	cout << "Mesh file read succesfully" << endl;
 
-	intNodes = obtainIntNodes();
+
+	cout << "Boundary nodes \n" << bdryNodes << "\nPoints \n" << coords << endl;
+
 }
 
 Eigen::VectorXi Mesh::UniqueElems(Eigen::ArrayXi arr){
@@ -268,40 +251,11 @@ Eigen::ArrayXi Mesh::obtainIntNodes(){
 			i++;
 		}
 
-
-//		else if(bdryNodes(j) != i && j<(intBdryNodes.size()+extBdryNodes.size())){
-//			cout << "hier " << j << endl;
-//			j++;
-//		}
-//		else if(bdryNodes(j) != i){
-//			cout << "of hier " << endl;
-//			arr(cnt) = i;
-//			cnt++; i++;
-//		}
-
-//		else if (bdryNodes(j) == i){
-//			i++;
-//			cout << i << ' ' << j << endl;
-//		}
-
-//		if(i < bdryNodes(j)){
-//			arr(cnt) = i;
-//			cout<<i<<endl;
-//			cnt++;
-//			i++;
-//		} else if(i > bdryNodes(j)){
-//			j++;
-//		} else if(i== bdryNodes(j)){
-//			i++;
-//			j++;
-//		}
-
 	}
 	return arr;
 }
 
 Eigen::MatrixXd Mesh::interpMat(Eigen::ArrayXi idxSet1, Eigen::ArrayXi idxSet2){
-
 	Eigen::MatrixXd Phi(idxSet1.size(), idxSet2.size());
 	for(int i=0; i<idxSet1.size();i++){
 		for(int j=0; j<idxSet2.size();j++){
@@ -313,10 +267,11 @@ Eigen::MatrixXd Mesh::interpMat(Eigen::ArrayXi idxSet1, Eigen::ArrayXi idxSet2){
 	return Phi;
 }
 
+
+
 double Mesh::rbfEval(double distance){
 	double xi = distance/r;	// distance scaled by support radius
 	double f_xi = pow((1-xi),4)*(4*xi+1);
-
 	return f_xi;
 }
 
@@ -331,44 +286,19 @@ void Mesh::updateNodes(Eigen::VectorXd dxVec,Eigen::VectorXd dyVec, Eigen::Vecto
 
 }
 
-void Mesh::WriteMeshFile(std::string fName){
 
-	ofstream meshFile;
-	meshFile.precision(15);		// sets precision of the floats in the file
-	meshFile.open(fName, ios::out); // ios::out allows output to file
-
-	meshFile << "%" << endl;
-	meshFile << "% Problem dimension" << endl;
-	meshFile << "%" << endl;
-	meshFile << "NDIME= " << nDims<< endl;
-	meshFile << "%" << endl;
-	meshFile << "% Node coordinates" << endl;
-	meshFile << "%" << endl;
-	meshFile << "NPOIN= " << nPnts << endl;
-	for(int i=0; i<nPnts; i++){
-		for(int j=0; j<nDims; j++){
-			meshFile << newCoords(i,j) << "\t";
-		}
-		meshFile << i << "\n";
-	}
-	meshFile.close();
-}
-
-
-void Mesh::wmf(std::string ifName,std::string ofName){
+void Mesh::writeMeshFile(std::string ifName,std::string ofName){
 	ofstream outputF;
 	outputF.precision(15);		// sets precision of the floats in the file
 	outputF.open(ofName, ios::out); // ios::out allows output to file
-
 
 	ifstream inputF(ifName);
 	string mystring;
 
 	bool printFlag = false;
 	int cnt = 0;
-//	inputF >> mystring;
-	while (getline(inputF, mystring)){
 
+	while (getline(inputF, mystring)){
 		if(printFlag && cnt < nPnts){
 			outputF << newCoords(cnt,0)<< '\t' << newCoords(cnt,1) << '\t'<< cnt << endl;
 			cnt++;

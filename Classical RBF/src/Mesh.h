@@ -6,9 +6,9 @@
 
 class Mesh{
 public:
-	Mesh(std::string fileName, double supportRadius);
+	Mesh(std::string fileName, double supportRadius,int debugLvl);
 	std::string fName;
-	int pntsIdx, nPnts, nDims,nElem, bcNodesIdx, nBdryNodes, intNodesIdx;
+	int nPnts, nDims,nElem, nBdryNodes,lvl;
 	Eigen::MatrixXd coords;
 	Eigen::ArrayXi extBdryNodes;
 	Eigen::ArrayXi bdryNodes; // Remove this one later
@@ -16,15 +16,15 @@ public:
 	Eigen::ArrayXi intNodes;
 	Eigen::MatrixXd newCoords;
 	double r; // support radius
-	void findProblemChars(std::vector<std::string> ibTags,std::vector<std::string> ebTags);
-	void obtainCoords();
+
+
 	Eigen::MatrixXd interpMat(Eigen::ArrayXi idxSet1, Eigen::ArrayXi idxSet2);
 	double rbfEval(double distance);
 	Eigen::VectorXi UniqueElems(Eigen::ArrayXi arr);
 	Eigen::ArrayXi obtainIntNodes();
+	void readMeshFile(std::vector<std::string> ibTags,std::vector<std::string> ebTags);
 	void updateNodes(Eigen::VectorXd dxVec,Eigen::VectorXd dyVec, Eigen::VectorXd xDisp,Eigen::VectorXd yDisp);
-	void WriteMeshFile(std::string fName);
-	void wmf(std::string ifName,std::string ofName);
+	void writeMeshFile(std::string ifName,std::string ofName);
 
 };
 
