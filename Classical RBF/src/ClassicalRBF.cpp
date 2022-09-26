@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include "rbf.h"
 #include <iostream>
 #include <Eigen/Dense>
 #include <fstream>
@@ -25,39 +26,23 @@ int main()
 
 
 	// initialising object m, reads mesh input file in constructor.
-	Mesh m(ifName,intBdryTags, extBdryTags, rFactor, debugLvl);
+	Mesh meshOb(ifName,ofName, intBdryTags, extBdryTags, rFactor, debugLvl);
+
+	rbf rbf(meshOb);
+	rbf.performRbfInterpolation();
 
 
 
-	Eigen::MatrixXd Phi = m.interpMat(m.bdryNodes,m.bdryNodes); // makes i-matrix for finding coefficients
+
 //	cout << Phi << endl;
-	Eigen::VectorXd dxVec(m.bdryNodes.size()); // initialise vector with known displacements
-	Eigen::VectorXd dyVec(m.bdryNodes.size());
 
-	dxVec.setZero(); // set all displacements to zero
-	dyVec.setZero();
-
-//	cout << m.intBdryNodes << endl;
+//	cout << meshOb.intBdryNodes << endl;
 //	cout << dxVec.size() << endl;
-//	cout << m.intBdryNodes << endl;
-//	cout << m.bdryNodes << endl;
+//	cout << meshOb.intBdryNodes << endl;
+//	cout << meshOb.bdryNodes << endl;
 //
 //
-	double xDef = -0.25, yDef = -0.25;
-//
-	for(int i=0;i<m.intBdryNodes.size();i++){
-		int j=0;
-		while(j<m.bdryNodes.size()){
-			if(m.intBdryNodes(i)==m.bdryNodes(j)){
-//				cout << m.intBdryNodes(i) << '\t' << m.bdryNodes(j) << endl;
 
-				dxVec(j) = xDef;
-				dyVec(j) = yDef;
-				break;
-			}
-			j++;
-		}
-	}
 //	cout << dxVec << endl;
 //	cout << dyVec << endl;
 ////	int arrDelta[4]{9,10,13,14}; // hardcoding of indices that belong to inner block
@@ -69,38 +54,37 @@ int main()
 //
 //	// solving for coefficients
 //	cout << Phi.size() << '\t' << dxVec.size() << endl;
-//	cout << m.bdryNodes << endl;
+//	cout << meshOb.bdryNodes << endl;
 
 
-//	cout << m.extBdryNodes << endl;
+//	cout << meshOb.extBdryNodes << endl;
 //
-//	cout << "size int bndry nodes: " << m.intBdryNodes.size() <<endl;
-//	cout << "size ext bndry nodes: " << m.extBdryNodes.size() <<endl;
-//	cout << m.bdryNodes.size() << endl;
+//	cout << "size int bndry nodes: " << meshOb.intBdryNodes.size() <<endl;
+//	cout << "size ext bndry nodes: " << meshOb.extBdryNodes.size() <<endl;
+//	cout << meshOb.bdryNodes.size() << endl;
 //	cout << Phi.rows() << '\t' << Phi.cols() << endl;
-	Eigen::VectorXd alpha_x = Phi.llt().solve(dxVec);
-	Eigen::VectorXd alpha_y = Phi.llt().solve(dyVec);
+
 
 
 //
 //
 //	// setting up i-matrix phi_i,b
-//	cout << m.nPnts-m.nBdryNodes << endl;
-//	cout << m.intNodes.size() << endl;
+//	cout << meshOb.nPnts-meshOb.nBdryNodes << endl;
+//	cout << meshOb.intNodes.size() << endl;
 
-//	cout << m.intNodes << endl;
-//	cout << m.bdryNodes << endl;
-	Eigen::MatrixXd Phi_ib = m.interpMat(m.intNodes,m.bdryNodes);
+//	cout << meshOb.intNodes << endl;
+//	cout << meshOb.bdryNodes << endl;
+
 
 //
 //	// finding displacement of internal nodes
-	Eigen::VectorXd xDisp =  Phi_ib*alpha_x;
-	Eigen::VectorXd yDisp =  Phi_ib*alpha_y;
+
 //
 //
-	m.updateNodes(dxVec,dyVec,xDisp,yDisp);
+
 //
-	m.writeMeshFile(ifName, ofName);
+
+
 //	m.writeMeshFile("TestMesh.su2", "newmesh.su2");
 	cout << "Done writing mesh file" << endl;
 }

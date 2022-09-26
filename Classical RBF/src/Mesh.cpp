@@ -1,3 +1,4 @@
+#include "rbf.h"
 #include "Mesh.h"
 #include <iostream>
 #include <Eigen/Dense>
@@ -9,14 +10,14 @@
 using Eigen::MatrixXd;
 using namespace std;
 
-Mesh::Mesh(std::string fileName,vector<std::string> ibTags,vector<std::string> ebTags, double rFac,int debugLvl)
-:fName(fileName), nNodes(0), nDims(0),nElem(0),lvl(debugLvl), r(0)
+Mesh::Mesh(std::string inputFileName,std::string outputFileName,vector<std::string> ibTags,vector<std::string> ebTags, double rFac,int debugLvl)
+:ifName(inputFileName), ofName(outputFileName), nNodes(0), nDims(0),nElem(0),lvl(debugLvl), r(0)
 {readMeshFile(ibTags,ebTags,rFac);
 }
 
 void Mesh::readMeshFile(vector<std::string> ibTags,vector<std::string> ebTags, double rFac){
 	if(lvl>=1){
-		cout << "Reading mesh file: " << fName << endl;
+		cout << "Reading mesh file: " << ifName << endl;
 	}
 
 	int lineNo =0;	// keep track of the line number
@@ -27,7 +28,7 @@ void Mesh::readMeshFile(vector<std::string> ibTags,vector<std::string> ebTags, d
 	int pntsIdx;								// int that stores the line where "NPOIN= " is
 
 	string line;	// string containing line obtained by getline() function
-	ifstream mFile(fName); 	//opening file name stored in mFile object
+	ifstream mFile(ifName); 	//opening file name stored in mFile object
 	// Check if file is opened
 	if (mFile.is_open()){
 		//Obtain line
@@ -41,6 +42,7 @@ void Mesh::readMeshFile(vector<std::string> ibTags,vector<std::string> ebTags, d
 				nNodes = stoi(line.substr(7));
 				pntsIdx = lineNo;
 				coords.resize(nNodes, nDims);
+				cout << "Saving node coordinates" << endl;
 			}
 			else if (line.rfind("NELEM= ",0)==0){
 				nElem = stoi(line.substr(7));
@@ -69,7 +71,7 @@ void Mesh::readMeshFile(vector<std::string> ibTags,vector<std::string> ebTags, d
 				try{
 					if(std::find(std::begin(ibTags), std::end(ibTags), tag) != std::end(ibTags)){
 						if(lvl >=2){
-							cout << "Finding nodes of internal boundary: " << tag << endl;
+							cout << "Saving nodes of internal boundary: " << tag << endl;
 						}
 						intBound = true;
 						extBound = false;
@@ -77,7 +79,7 @@ void Mesh::readMeshFile(vector<std::string> ibTags,vector<std::string> ebTags, d
 					// Check if found tag is among provided external boundary tags
 					else if(std::find(std::begin(ebTags), std::end(ebTags), tag) != std::end(ebTags)){
 						if(lvl >= 2){
-							cout << "Finding nodes of external boundary: " << tag << endl;
+							cout << "Saving nodes of external boundary: " << tag << endl;
 						}
 						intBound = false;
 						extBound = true;
@@ -177,8 +179,7 @@ void Mesh::readMeshFile(vector<std::string> ibTags,vector<std::string> ebTags, d
 	bdryNodes << intBdryNodes, extBdryNodes;
 
 	obtainIntNodes();
-
-	cout << "Mesh file read succesfully" << endl;
+	cout << "Mesh file read successfully" << endl;
 }
 
 Eigen::VectorXi Mesh::UniqueElems(Eigen::ArrayXi& arr){
@@ -245,36 +246,13 @@ void Mesh::obtainIntNodes(){
 	}
 }
 
-Eigen::MatrixXd Mesh::interpMat(Eigen::ArrayXi idxSet1, Eigen::ArrayXi idxSet2){
-	Eigen::MatrixXd Phi(idxSet1.size(), idxSet2.size());
-	for(int i=0; i<idxSet1.size();i++){
-		for(int j=0; j<idxSet2.size();j++){
-
-			double dist = sqrt(pow(coords(idxSet1(i),0)-coords(idxSet2(j),0),2) + pow(coords(idxSet1(i),1)-coords(idxSet2(j),1),2));
-			Phi(i,j) = rbfEval(dist);
-		}
-	}
-	return Phi;
-}
 
 
 
-double Mesh::rbfEval(double distance){
-	double xi = distance/r;	// distance scaled by support radius
-	double f_xi = pow((1-xi),4)*(4*xi+1);
-	return f_xi;
-}
 
-void Mesh::updateNodes(Eigen::VectorXd dxVec,Eigen::VectorXd dyVec, Eigen::VectorXd xDisp,Eigen::VectorXd yDisp){
-	newCoords = coords;
 
-	newCoords(bdryNodes,0) = coords(bdryNodes,0) + dxVec;
-	newCoords(bdryNodes,1) = coords(bdryNodes,1) + dyVec;
-	newCoords(intNodes,0) = coords(intNodes,0) + xDisp;
-	newCoords(intNodes,1) = coords(intNodes,1) + yDisp;
-//	return newCoords;
 
-}
+
 
 
 double Mesh::charLength(){
@@ -290,7 +268,7 @@ double Mesh::charLength(){
 	return charLength;
 }
 
-void Mesh::writeMeshFile(std::string ifName,std::string ofName){
+void Mesh::writeMeshFile(Eigen::MatrixXd& newCoords){
 	ofstream outputF;
 	outputF.precision(15);		// sets precision of the floats in the file
 	outputF.open(ofName, ios::out); // ios::out allows output to file
