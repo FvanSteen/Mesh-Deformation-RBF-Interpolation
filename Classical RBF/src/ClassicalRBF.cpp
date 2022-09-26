@@ -11,59 +11,28 @@ using namespace std;
 int main()
 {
 	int debugLvl = 3;
-
-	double xDomain = 40, yDomain = 40;
-	auto supRad = 2.5*max(xDomain,yDomain);
+	double rFactor = 2.5;
 
 //	string ifName = "mesh_NACA0012_inv.su2";
 //	string ofName = "naca0012.su2";
-
+//	vector<string> intBdryTags = {"airfoil"}; //What if there are multiple tags?
+//	vector<string> extBdryTags = {"farfield"};
 
 	string ifName = "TestMesh.su2";
 	string ofName = "newmesh.su2";
-
-//	vector<string> intBdryTags = {"airfoil"}; //What if there are multiple tags?
-//	vector<string> extBdryTags = {"farfield"};
-//
 	vector<string> intBdryTags = {"block"}; //What if there are multiple tags?
 	vector<string> extBdryTags = {"lower","right","upper", "left"};
 
-/* Move this part to the mesh object
-	if(debugLvl>2){
-		cout << "Domain length x: " << xDomain << endl;
-		cout << "Domain length y: " << yDomain << endl;
-		cout << "Support Radius r: " << supRad << endl;
-		cout << "External boundary tags: ";
 
-		for(string i : extBdryTags){
-		  cout << i << " ";
-		}
-
-		cout << endl;
-		cout << "Internal boundary tags: ";
-		for(string i : intBdryTags){
-			cout << i << " " ;
-		}
-
-		cout << endl;
-
-	}
-*/
-
-	Mesh m(ifName, supRad,debugLvl);
-//	Mesh m("TestMesh.su2", supRad);
-	m.readMeshFile(intBdryTags,extBdryTags);
+	// initialising object m, reads mesh input file in constructor.
+	Mesh m(ifName,intBdryTags, extBdryTags, rFactor, debugLvl);
 
 
 
-//
-////	m.obtainCoords();
-//	cout << "done" << endl;
-//	cout << m.bdryNodes << endl;
 	Eigen::MatrixXd Phi = m.interpMat(m.bdryNodes,m.bdryNodes); // makes i-matrix for finding coefficients
 //	cout << Phi << endl;
-	Eigen::VectorXd dxVec(m.nBdryNodes); // initialise vector with known displacements
-	Eigen::VectorXd dyVec(m.nBdryNodes);
+	Eigen::VectorXd dxVec(m.bdryNodes.size()); // initialise vector with known displacements
+	Eigen::VectorXd dyVec(m.bdryNodes.size());
 
 	dxVec.setZero(); // set all displacements to zero
 	dyVec.setZero();
@@ -78,7 +47,7 @@ int main()
 //
 	for(int i=0;i<m.intBdryNodes.size();i++){
 		int j=0;
-		while(j<m.nBdryNodes){
+		while(j<m.bdryNodes.size()){
 			if(m.intBdryNodes(i)==m.bdryNodes(j)){
 //				cout << m.intBdryNodes(i) << '\t' << m.bdryNodes(j) << endl;
 
@@ -105,10 +74,10 @@ int main()
 
 //	cout << m.extBdryNodes << endl;
 //
-	cout << "size int bndry nodes: " << m.intBdryNodes.size() <<endl;
-	cout << "size ext bndry nodes: " << m.extBdryNodes.size() <<endl;
-	cout << m.bdryNodes.size() << endl;
-	cout << Phi.rows() << '\t' << Phi.cols() << endl;
+//	cout << "size int bndry nodes: " << m.intBdryNodes.size() <<endl;
+//	cout << "size ext bndry nodes: " << m.extBdryNodes.size() <<endl;
+//	cout << m.bdryNodes.size() << endl;
+//	cout << Phi.rows() << '\t' << Phi.cols() << endl;
 	Eigen::VectorXd alpha_x = Phi.llt().solve(dxVec);
 	Eigen::VectorXd alpha_y = Phi.llt().solve(dyVec);
 
@@ -116,8 +85,8 @@ int main()
 //
 //
 //	// setting up i-matrix phi_i,b
-	cout << m.nPnts-m.nBdryNodes << endl;
-	cout << m.intNodes.size() << endl;
+//	cout << m.nPnts-m.nBdryNodes << endl;
+//	cout << m.intNodes.size() << endl;
 
 //	cout << m.intNodes << endl;
 //	cout << m.bdryNodes << endl;
@@ -130,7 +99,6 @@ int main()
 //
 //
 	m.updateNodes(dxVec,dyVec,xDisp,yDisp);
-//
 //
 	m.writeMeshFile(ifName, ofName);
 //	m.writeMeshFile("TestMesh.su2", "newmesh.su2");

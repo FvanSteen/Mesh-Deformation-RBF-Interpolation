@@ -6,9 +6,9 @@
 
 class Mesh{
 public:
-	Mesh(std::string fileName, double supportRadius,int debugLvl);
+	Mesh(std::string fileName, std::vector<std::string> ibTags,std::vector<std::string> ebTags, double rFac,int debugLvl);
 	std::string fName;
-	int nPnts, nDims,nElem, nBdryNodes,lvl;
+	int nNodes, nDims,nElem, lvl;
 	Eigen::MatrixXd coords;
 	Eigen::ArrayXi extBdryNodes;
 	Eigen::ArrayXi bdryNodes; // Remove this one later
@@ -20,10 +20,11 @@ public:
 
 	Eigen::MatrixXd interpMat(Eigen::ArrayXi idxSet1, Eigen::ArrayXi idxSet2);
 	double rbfEval(double distance);
-	Eigen::VectorXi UniqueElems(Eigen::ArrayXi arr);
-	Eigen::ArrayXi obtainIntNodes();
-	void readMeshFile(std::vector<std::string> ibTags,std::vector<std::string> ebTags);
+	Eigen::VectorXi UniqueElems(Eigen::ArrayXi& arr);
+	void obtainIntNodes();
+	void readMeshFile(std::vector<std::string> ibTags,std::vector<std::string> ebTags,double rFac);
 	void updateNodes(Eigen::VectorXd dxVec,Eigen::VectorXd dyVec, Eigen::VectorXd xDisp,Eigen::VectorXd yDisp);
+	double charLength();
 	void writeMeshFile(std::string ifName,std::string ofName);
 
 };
