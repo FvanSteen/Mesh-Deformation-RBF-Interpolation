@@ -12,9 +12,10 @@ public:
 	rbf(Mesh meshOb);
 	Eigen::MatrixXd newCoords;
 
-	void performRbfInterpolation();
+	void performRbfInterpolation(const double& xDef, const double& yDef, const double& rotDefDeg);
 	Eigen::MatrixXd getPhi(Eigen::ArrayXi idxSet1, Eigen::ArrayXi idxSet2);
-	Eigen::VectorXd getDefVec(double def);
+	Eigen::MatrixXd getDefVec(double xDef, double yDef, double rotDefDeg);
+	Eigen::MatrixXd getRotDef(double rotDef);
 	double rbfEval(double distance);
 	void updateNodes(Eigen::VectorXd dxVec,Eigen::VectorXd dyVec, Eigen::VectorXd xDisp,Eigen::VectorXd yDisp);
 

@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <iterator>
 #include <string>
+#include <math.h>
 using Eigen::MatrixXd;
 using namespace std;
 
@@ -265,5 +266,5 @@ void Mesh::writeMeshFile(Eigen::MatrixXd& newCoords){
 
 	inputF.close();
 	outputF.close();
-	cout << "Done writing mesh file" << endl;
+	cout << "Done writing mesh file: " << ofName << endl;
 }
