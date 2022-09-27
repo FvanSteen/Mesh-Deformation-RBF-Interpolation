@@ -92,42 +92,23 @@ void Mesh::readMeshFile(vector<std::string> ibTags,vector<std::string> ebTags, d
 				}
 			}
 
-
-
-			/*
-			 * Following piece of code should be adjusted so that all nodes are included in the array
-			 * otherwise this will give problems in the 3d cases where the boundary not only consists of lines
-			 * but also surfaces
-			 */
-
 			// Check whether line corresponds to internal boundary
 			else if(intBound){
 				// check if line states the number of elements in the boundary
 				if(line.rfind("MARKER_ELEMS= ",0)==0){
 					nIntBdry += stoi(line.substr(13));	// updating number of int. boundary elements
-					intBdryNodes.resize(nIntBdry+1);	// resizing the array containing the int. boundary nodes
+					intBdryNodes.resize(4*nIntBdry);	// resizing the array containing the int. boundary nodes
 
 				}
 				// check if line contains nodes corresponding to the boundary
-				else if(isdigit(line[0])&& cntInt < nIntBdry-1){
-					istringstream is(line.substr(1)); // split line at '\t' and omitting the first number
-
-					is >> intBdryNodes[cntInt];	//assigning first node to int. boundary array
-					cntInt++; // update the int. node counter
-
-//					auto n = std::distance( std::istream_iterator< std::string >( is ), std::istream_iterator< std::string >() );
-//					cout << n << endl;
-//					std::exit(1);
-
-
-				// in case the current boundary element is the final element of the boundary.
-				// Then both nodes on that line should be included in the int. boundary array
-				}else if(isdigit(line[0])&& cntInt < nIntBdry){
-					istringstream is(line.substr(1)); // split line at '\t' and omitting the first number
-					is >> intBdryNodes[cntInt] >> intBdryNodes[cntInt+1];
-					cntInt++;
+				else if(isdigit(line[0])){
+					istringstream is(line.substr(1)); 	// split line at '\t' and omitting the first number
+					int node;
+					while(is >> node){					// While the stringstream contains nodes
+						intBdryNodes[cntInt]  = node;	// include node in intBdryNodes
+						cntInt++;						// update counter
+					}
 				}
-
 			}
 
 			// Check whether line corresponds to ext. boundary
@@ -135,17 +116,15 @@ void Mesh::readMeshFile(vector<std::string> ibTags,vector<std::string> ebTags, d
 				// Check if line states number of elements in boundary
 				if(line.rfind("MARKER_ELEMS= ",0)==0){
 					nExtBdry += stoi(line.substr(13));		// updating number of external boundary elements
-					extBdryNodes.resize(nExtBdry+1); 		// resizing the array containing ext. boundary nodes
+					extBdryNodes.resize(4*nExtBdry); 		// resizing the array containing ext. boundary nodes
 				}
-				else if(isdigit(line[0])&& cntExt < nExtBdry-1){
-					istringstream is(line.substr(1)); 		// split line at '\t' and omitting the first number
-					is >> extBdryNodes[cntExt];
-					cntExt++;
-
-				} else if(isdigit(line[0])&& cntExt < nExtBdry){
-					istringstream is(line.substr(1));		// split line at '\t' and omitting the first number
-					is >> extBdryNodes[cntExt] >> extBdryNodes[cntExt+1];
-					cntExt++;
+				else if(isdigit(line[0])){
+					istringstream is(line.substr(1)); 	// split line at '\t' and omitting the first number
+					int node;
+					while(is >> node){					// While the stringstream contains nodes
+						extBdryNodes[cntExt]  = node;	// include node in intBdryNodes
+						cntExt++;						// update counter
+					}
 				}
 			}
 
@@ -164,7 +143,6 @@ void Mesh::readMeshFile(vector<std::string> ibTags,vector<std::string> ebTags, d
 			}
 			lineNo++;
 		}
-
 		mFile.close();
 	}
 	else cout << "Not able to open input mesh file";
@@ -172,7 +150,11 @@ void Mesh::readMeshFile(vector<std::string> ibTags,vector<std::string> ebTags, d
 	r = rFac*charLength();
 
 	// Finding unique elements in boundary node arrays
+
+	intBdryNodes.conservativeResize(cntInt-1);
 	intBdryNodes = UniqueElems(intBdryNodes);
+
+	extBdryNodes.conservativeResize(cntExt-1);
 	extBdryNodes = UniqueElems(extBdryNodes);
 
 	bdryNodes.resize(intBdryNodes.size()+extBdryNodes.size());
@@ -245,15 +227,6 @@ void Mesh::obtainIntNodes(){
 
 	}
 }
-
-
-
-
-
-
-
-
-
 
 double Mesh::charLength(){
 	Eigen::Index row[2],col[2];
