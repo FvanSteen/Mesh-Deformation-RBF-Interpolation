@@ -31,5 +31,7 @@ int main()
 	Mesh meshOb(ifName,ofName, intBdryTags, extBdryTags, rFactor, debugLvl);
 
 	rbf rbf(meshOb);
-//	rbf.performRbfInterpolation();
+
+//	cout << meshOb.extBdryNodes << endl;
+	rbf.performRbfInterpolation();
 }

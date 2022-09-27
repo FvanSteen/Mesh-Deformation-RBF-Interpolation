@@ -97,7 +97,7 @@ void Mesh::readMeshFile(vector<std::string> ibTags,vector<std::string> ebTags, d
 				// check if line states the number of elements in the boundary
 				if(line.rfind("MARKER_ELEMS= ",0)==0){
 					nIntBdry += stoi(line.substr(13));	// updating number of int. boundary elements
-					intBdryNodes.resize(4*nIntBdry);	// resizing the array containing the int. boundary nodes
+					intBdryNodes.conservativeResize(4*nIntBdry);	// resizing the array containing the int. boundary nodes
 
 				}
 				// check if line contains nodes corresponding to the boundary
@@ -116,7 +116,7 @@ void Mesh::readMeshFile(vector<std::string> ibTags,vector<std::string> ebTags, d
 				// Check if line states number of elements in boundary
 				if(line.rfind("MARKER_ELEMS= ",0)==0){
 					nExtBdry += stoi(line.substr(13));		// updating number of external boundary elements
-					extBdryNodes.resize(4*nExtBdry); 		// resizing the array containing ext. boundary nodes
+					extBdryNodes.conservativeResize(4*nExtBdry); 		// resizing the array containing ext. boundary nodes
 				}
 				else if(isdigit(line[0])){
 					istringstream is(line.substr(1)); 	// split line at '\t' and omitting the first number
