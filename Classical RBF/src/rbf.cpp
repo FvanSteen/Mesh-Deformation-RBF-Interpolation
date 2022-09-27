@@ -16,50 +16,27 @@ rbf::rbf(Mesh meshOb)
 	}
 
 void rbf::performRbfInterpolation(){
-
+	cout << "Building matrix Phi_bb" << endl;
 	Eigen::MatrixXd Phi_bb = getPhi(m.bdryNodes,m.bdryNodes); // makes i-matrix for finding coefficients
-
-	Eigen::VectorXd dxVec(m.bdryNodes.size()); // initialise vector with known displacements
-	Eigen::VectorXd dyVec(m.bdryNodes.size());
-
-	dxVec.setZero(); // set all displacements to zero
-	dyVec.setZero();
 
 	double xDef = -0.25, yDef = -0.25;
 
-	for(int i=0;i<m.intBdryNodes.size();i++){
-		int j=0;
-		while(j<m.bdryNodes.size()){
-			if(m.intBdryNodes(i)==m.bdryNodes(j)){
-//				cout << meshOb.intBdryNodes(i) << '\t' << meshOb.bdryNodes(j) << endl;
+	cout << "Building deformation vectors" << endl;
+	Eigen::VectorXd dxVec = getDefVec(xDef);
+	Eigen::VectorXd dyVec = getDefVec(yDef);
 
-				dxVec(j) = xDef;
-				dyVec(j) = yDef;
-				break;
-			}
-			j++;
-		}
-	}
-
-//
-//	Eigen::ArrayXi test = {1,2,3,4,5};
-//	cout << test << endl;
-//
-//	Eigen::Array3i idx = {0,2,4};
-//	cout << idx << endl;
-//
-//	cout << test << endl;
-
-
-
-
+	cout << "Solving for interpolation coefficients" << endl;
 	Eigen::VectorXd alpha_x = Phi_bb.llt().solve(dxVec);
 	Eigen::VectorXd alpha_y = Phi_bb.llt().solve(dyVec);
 
+	cout << "Building matrix Phi_ib" << endl;
 	Eigen::MatrixXd Phi_ib = getPhi(m.intNodes,m.bdryNodes);
+
+	cout << "Finding displacement internal nodes" << endl;
 	Eigen::VectorXd xDisp =  Phi_ib*alpha_x;
 	Eigen::VectorXd yDisp =  Phi_ib*alpha_y;
 
+	cout << "Updating node coordinates" << endl;
 	updateNodes(dxVec,dyVec,xDisp,yDisp);
 	m.writeMeshFile(newCoords);
 }
@@ -74,6 +51,17 @@ Eigen::MatrixXd rbf::getPhi(Eigen::ArrayXi idxSet1, Eigen::ArrayXi idxSet2){
 		}
 	}
 	return Phi;
+}
+
+Eigen::VectorXd rbf::getDefVec(double def){
+	Eigen::VectorXd defVec = Eigen::VectorXd::Zero(m.bdryNodes.size()); 		// initialise zero vector with size of boundary nodes
+
+	int idx = 0;
+	for(int i=0; i<m.intBdryNodes.size(); i++){
+		idx = idx+distance(m.bdryNodes.begin()+idx,find(m.bdryNodes.begin()+idx, m.bdryNodes.end(),m.intBdryNodes(i)));
+		defVec(idx) = def;
+	}
+	return defVec;
 }
 
 double rbf::rbfEval(double distance){

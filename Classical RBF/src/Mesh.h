@@ -15,15 +15,12 @@ public:
 	Eigen::ArrayXi intBdryNodes;
 	Eigen::ArrayXi intNodes;
 	double r; // support radius
+	double charLength();
 
-
-//	Eigen::MatrixXd interpMat(Eigen::ArrayXi idxSet1, Eigen::ArrayXi idxSet2);
-//	double rbfEval(double distance);
 	Eigen::VectorXi UniqueElems(Eigen::ArrayXi& arr);
 	void obtainIntNodes();
 	void readMeshFile(std::vector<std::string> ibTags,std::vector<std::string> ebTags,double rFac);
 	void updateNodes(Eigen::VectorXd dxVec,Eigen::VectorXd dyVec, Eigen::VectorXd xDisp,Eigen::VectorXd yDisp);
-	double charLength();
 	void writeMeshFile(Eigen::MatrixXd& newCoords);
 
 };

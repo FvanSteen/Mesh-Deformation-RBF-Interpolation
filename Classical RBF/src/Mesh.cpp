@@ -292,4 +292,5 @@ void Mesh::writeMeshFile(Eigen::MatrixXd& newCoords){
 
 	inputF.close();
 	outputF.close();
+	cout << "Done writing mesh file" << endl;
 }
