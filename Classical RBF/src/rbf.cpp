@@ -15,33 +15,40 @@ rbf::rbf(Mesh meshOb)
 {
 	}
 
-void rbf::performRbfInterpolation(const double& xDef, const double& yDef, const double& rotDefDeg){
-	cout << "Building matrix Phi_bb" << endl;
-	Eigen::MatrixXd Phi_bb = getPhi(m.bdryNodes,m.bdryNodes); // makes i-matrix for finding coefficients
-//
-//
-//
-////	Eigen::MatrixXd rotVec = getRotDef(rotDefDeg);
-//
-	cout << "Building deformation vectors" << endl;
-	Eigen::MatrixXd defMat = getDefVec(xDef,yDef,rotDefDeg);
+void rbf::performRbfInterpolation(const double& xDef, const double& yDef, const double& rotDefDeg, const int& steps, Eigen::VectorXd rotPnt){
 
-	Eigen::VectorXd dxVec = defMat(Eigen::all,0);
-	Eigen::VectorXd dyVec = defMat(Eigen::all,1);
+	newCoords = m.coords;
+	for(int i=0; i<steps; i++){
+		cout << "Building matrix Phi_bb" << endl;
+		Eigen::MatrixXd Phi_bb = getPhi(m.bdryNodes,m.bdryNodes); // makes i-matrix for finding coefficients
 
-	cout << "Solving for interpolation coefficients" << endl;
-	Eigen::VectorXd alpha_x = Phi_bb.llt().solve(dxVec);
-	Eigen::VectorXd alpha_y = Phi_bb.llt().solve(dyVec);
+		cout << "Building matrix Phi_ib" << endl;
+		Eigen::MatrixXd Phi_ib = getPhi(m.intNodes,m.bdryNodes);
+		cout << "Building deformation vectors" << endl;
 
-	cout << "Building matrix Phi_ib" << endl;
-	Eigen::MatrixXd Phi_ib = getPhi(m.intNodes,m.bdryNodes);
+		cout << "Deformation step: " << i+1 << endl;
+		Eigen::MatrixXd defMat = getDefVec(xDef/steps,yDef/steps,rotDefDeg/steps,rotPnt);
 
-	cout << "Finding displacement internal nodes" << endl;
-	Eigen::VectorXd xDisp =  Phi_ib*alpha_x;
-	Eigen::VectorXd yDisp =  Phi_ib*alpha_y;
+//	cout << defMat << endl;
+//	Eigen::VectorXd dxVec = defMat.col(0);
+//	Eigen::VectorXd dyVec = defMat(Eigen::all,1);
 
-	cout << "Updating node coordinates" << endl;
-	updateNodes(dxVec,dyVec,xDisp,yDisp);
+//	cout << dxVec << "\n\n" << dyVec << "\n\n" << endl;
+		cout << "Solving for interpolation coefficients" << endl;
+		Eigen::VectorXd alpha_x = Phi_bb.llt().solve(defMat.col(0));
+		Eigen::VectorXd alpha_y = Phi_bb.llt().solve(defMat.col(1));
+
+		cout << "Finding displacement internal nodes" << endl;
+		Eigen::VectorXd xDisp =  Phi_ib*alpha_x;
+		Eigen::VectorXd yDisp =  Phi_ib*alpha_y;
+
+		cout << "Updating node coordinates" << endl;
+		updateNodes(defMat.col(0),defMat.col(1),xDisp,yDisp);
+
+		rotPnt(0) = rotPnt(0) + xDef/steps;
+		rotPnt(1) = rotPnt(1) + yDef/steps;
+
+	}
 	m.writeMeshFile(newCoords);
 }
 
@@ -50,17 +57,16 @@ Eigen::MatrixXd rbf::getPhi(Eigen::ArrayXi idxSet1, Eigen::ArrayXi idxSet2){
 	Eigen::MatrixXd Phi(idxSet1.size(), idxSet2.size());
 	for(int i=0; i<idxSet1.size();i++){
 		for(int j=0; j<idxSet2.size();j++){
-			double dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1),2));
+			double dist = sqrt(pow(newCoords(idxSet1(i),0)-newCoords(idxSet2(j),0),2) + pow(newCoords(idxSet1(i),1)-newCoords(idxSet2(j),1),2));
 			Phi(i,j) = rbfEval(dist);
 		}
 	}
 	return Phi;
 }
 
-Eigen::MatrixXd rbf::getDefVec(double xDef, double yDef, double rotDefDeg){
+Eigen::MatrixXd rbf::getDefVec(double xDef, double yDef, double rotDefDeg, Eigen::VectorXd rotPnt){
 	Eigen::MatrixXd defMat = Eigen::MatrixXd::Zero(m.bdryNodes.size(),m.nDims); 		// initialise zero vector with size of boundary nodes
-
-	Eigen::MatrixXd rotDef = getRotDef(rotDefDeg); //look at the passing by reference
+	Eigen::MatrixXd rotDef = getRotDef(rotDefDeg,rotPnt); //look at the passing by reference
 	int idx = 0;
 	for(int i=0; i<m.intBdryNodes.size(); i++){
 		idx = idx+distance(m.bdryNodes.begin()+idx,find(m.bdryNodes.begin()+idx, m.bdryNodes.end(),m.intBdryNodes(i)));
@@ -70,18 +76,18 @@ Eigen::MatrixXd rbf::getDefVec(double xDef, double yDef, double rotDefDeg){
 	return defMat;
 }
 
-Eigen::MatrixXd rbf::getRotDef(double rotDef){
+Eigen::MatrixXd rbf::getRotDef(double rotDef,Eigen::VectorXd rotPnt){
 	double rotRadians = rotDef*M_PI/180;
-	Eigen::Vector2d midPoint = {0.5,0.5};
+//	Eigen::Vector2d rotPoint = {0.5,0.5};
 	Eigen::Matrix2d rotMat;
 	rotMat << cos(rotRadians), -sin(rotRadians),sin(rotRadians), cos(rotRadians);
 	Eigen::Vector2d node;
 	Eigen::MatrixXd rotDefMat(m.intBdryNodes.size(),m.nDims);
 
 	for(int i = 0; i<m.intBdryNodes.size(); i++){
-			node = m.coords(m.intBdryNodes(i),Eigen::all);
-			auto relDist = node-midPoint;
-			rotDefMat(i,Eigen::seqN(0,m.nDims)) = rotMat*(relDist);
+			node = newCoords(m.intBdryNodes(i),Eigen::all);
+			auto relDist = node-rotPnt;
+			rotDefMat(i,Eigen::seqN(0,m.nDims)) = rotMat*(relDist)+rotPnt-node;
 	}
 	return rotDefMat;
 }
@@ -93,11 +99,9 @@ double rbf::rbfEval(double distance){
 }
 
 void rbf::updateNodes(Eigen::VectorXd dxVec,Eigen::VectorXd dyVec, Eigen::VectorXd xDisp,Eigen::VectorXd yDisp){
-	newCoords = m.coords;
-
-	newCoords(m.bdryNodes,0) = m.coords(m.bdryNodes,0) + dxVec;
-	newCoords(m.bdryNodes,1) = m.coords(m.bdryNodes,1) + dyVec;
-	newCoords(m.intNodes,0) = m.coords(m.intNodes,0) + xDisp;
-	newCoords(m.intNodes,1) = m.coords(m.intNodes,1) + yDisp;
+	newCoords(m.bdryNodes,0) = newCoords(m.bdryNodes,0) + dxVec;
+	newCoords(m.bdryNodes,1) = newCoords(m.bdryNodes,1) + dyVec;
+	newCoords(m.intNodes,0) = newCoords(m.intNodes,0) + xDisp;
+	newCoords(m.intNodes,1) = newCoords(m.intNodes,1) + yDisp;
 //	return newCoords;
 }

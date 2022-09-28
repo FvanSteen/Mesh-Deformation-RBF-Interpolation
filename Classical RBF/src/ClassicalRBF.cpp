@@ -20,7 +20,7 @@ int main()
 //	vector<string> extBdryTags = {"farfield"};
 
 //	string ifName = "TestMesh.su2";
-//	string ofName = "newmesh.su2";
+//	string ofName = "TestMesh_def.su2";
 	string ifName = "25x25mesh.su2";
 	string ofName = "25x25mesh_def.su2";
 	vector<string> intBdryTags = {"block"}; //What if there are multiple  tags?
@@ -33,6 +33,8 @@ int main()
 
 	rbf rbf(meshOb);
 
-	const double xDef = 0, yDef = 0, rotDefDeg = 45;
-	rbf.performRbfInterpolation(xDef,yDef,rotDefDeg);
+	const double xDef = -0.2, yDef = -0.2, rotDefDeg = 60;
+	const int steps = 20;
+	Eigen::Vector2d rotationPoint = {0.5,0.5};
+	rbf.performRbfInterpolation(xDef,yDef,rotDefDeg,steps,rotationPoint);
 }
