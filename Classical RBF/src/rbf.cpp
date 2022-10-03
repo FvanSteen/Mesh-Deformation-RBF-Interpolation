@@ -12,8 +12,117 @@ using namespace std;
 
 rbf::rbf(Mesh meshOb)
 :m(meshOb)
-{
+{}
+
+void rbf::performRbfDS(const double& xDef, const double& yDef, const double& rotDefDeg, const int& steps, Eigen::VectorXd rotPnt){
+	cout << "Performing RBF DS " << endl;
+	newCoords = m.coords;
+	Eigen::ArrayXXd n(m.slidingNodes.size(),2);		// all the vectors midPnts etc should be updated after each step
+	Eigen::ArrayXXd t(m.slidingNodes.size(),2);
+	m.getNodeVecs(m.slidingNodes, n, t);
+//
+//	cout << "\n Sliding Nodes:\n" << m.slidingNodes << endl;
+//	cout << "\n Moving Nodes: \n" << m.movingNodes << endl;
+//	cout << "\n Internal boundary nodes: \n" << m.intBdryNodes << endl;
+//	cout << "\n Internal Nodes: \n" << m.intNodes << endl;
+
+	Eigen::ArrayXi dispNodes(m.intBdryNodes.size()+m.movingNodes.size());
+	dispNodes << m.intBdryNodes, m.movingNodes;
+
+//	cout << dispNodes << endl;
+	for(int i=0; i<steps; i++){
+
+		cout << "step: " << i << endl;
+		Eigen::MatrixXd defMat = getDefVecDS(xDef/steps,yDef/steps,rotDefDeg/steps,rotPnt,m.intBdryNodes);
+
+		Eigen::MatrixXd Phi_mm = getPhi(dispNodes,dispNodes); // makes i-matrix for finding coefficients
+		Eigen::MatrixXd Phi_ms = getPhi(dispNodes,m.slidingNodes);
+		Eigen::MatrixXd Phi_sm = getPhi(m.slidingNodes,dispNodes);
+		Eigen::MatrixXd Phi_ss = getPhi(m.slidingNodes,m.slidingNodes);
+
+//		cout << Phi_mm.rows() << '\t' << Phi_mm.cols() << endl;
+//		cout << Phi_ms.rows() << '\t' << Phi_ms.cols() << endl;
+//		cout << Phi_sm.rows() << '\t' << Phi_sm.cols() << endl;
+//		cout << Phi_ss.rows() << '\t' << Phi_ss.cols() << endl;
+
+		Eigen::VectorXd defVec = Eigen::VectorXd::Zero(2*(dispNodes.size()+m.slidingNodes.size()));
+		defVec(Eigen::seq(0,m.intBdryNodes.size()-1)) = defMat.col(0);
+		defVec(Eigen::seq(dispNodes.size(),dispNodes.size()+m.intBdryNodes.size()-1)) = defMat.col(1);
+
+		Eigen::MatrixXd Phi = Eigen::MatrixXd::Zero(2*(dispNodes.size()+m.slidingNodes.size()),2*(dispNodes.size()+m.slidingNodes.size()));
+//		cout << "here" << endl;
+	//	cout << Phi_ss << endl;
+		const int a = 16; // find some way to produce const int of the various dimensions within the mesh class
+		const int b = 96;
+
+//		const int a = 200; // find some way to produce const int of the various dimensions within the mesh class
+//		const int b = 50;
+
+		Phi.block<a,a>(0,0) = Phi_mm;
+		Phi.block<a,a>(a,a) = Phi_mm;
+		Phi.block<a,b>(0,2*a) = Phi_ms;
+		Phi.block<a,b>(a,2*a+b) = Phi_ms;
+	//	cout << Phi << endl;
+
+	//	cout << Phi_sm << endl;
+	//	cout << n.col(0) << endl;
+	//	cout << Phi_sm.array().colwise() * n.col(0) << endl;
+
+		Phi.block<b,a>(2*a,0) = Phi_sm.array().colwise() * n.col(0);
+		Phi.block<b,a>(2*a,a) = Phi_sm.array().colwise() * n.col(1);
+		Phi.block<b,b>(2*a,2*a) = Phi_ss.array().colwise() * n.col(0);
+		Phi.block<b,b>(2*a,2*a+b) = Phi_ss.array().colwise() * n.col(1);
+		Eigen::VectorXd t_x = t.col(0);
+		Eigen::VectorXd t_y = t.col(1);
+		Phi.block<b,b>(2*a+b,2*a) = MatrixXd(t_x.asDiagonal());
+		Phi.block<b,b>(2*a+b,2*a+b) = MatrixXd(t_y.asDiagonal());
+	//	cout << Phi << endl;
+	//	cout << Phi << endl;
+	//	Eigen::VectorXd alpha = Phi.ldlt().solve(defVec);
+		Eigen::VectorXd alpha = Phi.partialPivLu().solve(defVec);
+//		cout << m.intNodes << endl;
+		Eigen::MatrixXd Phi_im = getPhi(m.intNodes,dispNodes);
+		Eigen::MatrixXd Phi_is = getPhi(m.intNodes,m.slidingNodes);
+
+		auto dx_int = Phi_im*alpha(Eigen::seq(0,dispNodes.size()-1)) + Phi_is*alpha(Eigen::seq(2*dispNodes.size(), 2*dispNodes.size()+m.slidingNodes.size()-1));
+		auto dx_slide = Phi_sm*alpha(Eigen::seq(0,dispNodes.size()-1)) + Phi_ss*alpha(Eigen::seq(2*dispNodes.size(), 2*dispNodes.size()+m.slidingNodes.size()-1));
+		auto dy_int = Phi_im*alpha(Eigen::seq(dispNodes.size(),2*dispNodes.size()-1)) + Phi_is*alpha(Eigen::seq(2*dispNodes.size()+m.slidingNodes.size(), 2*(dispNodes.size()+m.slidingNodes.size())-1));
+		auto dy_slide = Phi_sm*alpha(Eigen::seq(dispNodes.size(),2*dispNodes.size()-1)) + Phi_ss*alpha(Eigen::seq(2*dispNodes.size()+m.slidingNodes.size(), 2*(dispNodes.size()+m.slidingNodes.size())-1));
+
+		newCoords(m.slidingNodes,0)+=dx_slide;
+		newCoords(m.slidingNodes,1)+=dy_slide;
+		newCoords(m.intNodes,0)+=dx_int;
+		newCoords(m.intNodes,1)+=dy_int;
+		newCoords(m.intBdryNodes,0)+=defMat.col(0);
+		newCoords(m.intBdryNodes,1)+=defMat.col(1);
+
+		rotPnt(0) = rotPnt(0) + xDef/steps;
+		rotPnt(1) = rotPnt(1) + yDef/steps;
 	}
+	m.writeMeshFile(newCoords);
+
+}
+
+Eigen::MatrixXd rbf::getDefVecDS(double xDef, double yDef, double rotDefDeg, Eigen::VectorXd rotPnt,Eigen::ArrayXi intN){
+	Eigen::MatrixXd defMat = Eigen::MatrixXd::Zero(intN.size(),m.nDims); 		// initialise zero vector with size of boundary nodes
+	Eigen::MatrixXd rotDef = getRotDef(rotDefDeg,rotPnt); //look at the passing by reference
+
+
+	defMat.array().col(0) = defMat.array().col(0) + xDef;
+	defMat.array().col(1) = defMat.array().col(1) + yDef;
+
+	defMat.array() = defMat.array() + rotDef.array();
+
+//	std::exit(0);
+//	int idx = 0;
+//	for(int i=0; i<m.intBdryNodes.size(); i++){
+//		idx = idx+distance(m.bdryNodes.begin()+idx,find(m.bdryNodes.begin()+idx, m.bdryNodes.end(),m.intBdryNodes(i)));
+//		defMat(idx,0) = xDef + rotDef(i,0);
+//		defMat(idx,1) = yDef + rotDef(i,1);
+//	}
+	return defMat;
+}
+
 
 void rbf::performRbfInterpolation(const double& xDef, const double& yDef, const double& rotDefDeg, const int& steps, Eigen::VectorXd rotPnt){
 

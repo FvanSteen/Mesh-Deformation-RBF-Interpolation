@@ -30,11 +30,24 @@ int main()
 	// initialising object m, reads mesh input file in constructor.
 	Mesh meshOb(ifName,ofName, intBdryTags, extBdryTags, rFactor, debugLvl);
 
+//	cout << "Moving nodes are: \n"<< meshOb.movingNodes << "\nSliding nodes are: \n" << meshOb.slidingNodes << endl;
+//	cout << meshOb.extBdryNodes << endl;
+//	cout << meshOb.intBdryNodes << endl;
+	// moving nodes
+	// sliding nodes
+	// internal nodes
 
 	rbf rbf(meshOb);
 
 	const double xDef = -0.2, yDef = -0.2, rotDefDeg = 60;
 	const int steps = 20;
 	Eigen::Vector2d rotationPoint = {0.5,0.5};
-	rbf.performRbfInterpolation(xDef,yDef,rotDefDeg,steps,rotationPoint);
+//	rbf.performRbfInterpolation(xDef,yDef,rotDefDeg,steps,rotationPoint);
+	rbf.performRbfDS(xDef, yDef, rotDefDeg, steps, rotationPoint);
+
+//	const double xDef = -0, yDef = -0, rotDefDeg = 360;
+//	const int steps = 20;
+//	Eigen::Vector2d rotationPoint = {0.25,0.0};
+//	rbf.performRbfDS(xDef, yDef, rotDefDeg, steps, rotationPoint);
+
 }
