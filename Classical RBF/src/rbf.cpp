@@ -52,8 +52,10 @@ void rbf::performRbfDS(const double& xDef, const double& yDef, const double& rot
 		Eigen::MatrixXd Phi = Eigen::MatrixXd::Zero(2*(dispNodes.size()+m.slidingNodes.size()),2*(dispNodes.size()+m.slidingNodes.size()));
 //		cout << "here" << endl;
 	//	cout << Phi_ss << endl;
-		const int a = 16; // find some way to produce const int of the various dimensions within the mesh class
-		const int b = 96;
+		const int a = 8; // find some way to produce const int of the various dimensions within the mesh class
+		const int b = 16;
+//		const int a = 16; // find some way to produce const int of the various dimensions within the mesh class
+//		const int b = 96;
 
 //		const int a = 200; // find some way to produce const int of the various dimensions within the mesh class
 //		const int b = 50;

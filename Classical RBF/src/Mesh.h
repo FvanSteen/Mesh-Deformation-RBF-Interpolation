@@ -16,7 +16,10 @@ public:
 	Eigen::ArrayXi intNodes;
 	Eigen::ArrayXXd nVecs;
 	Eigen::ArrayXXd tVecs;
+	Eigen::ArrayXXd nVecsT;
+	Eigen::ArrayXXd tVecsT;
 	Eigen::ArrayXXd midPnts;
+	Eigen::ArrayXXd midPntsT;
 	Eigen::ArrayXi movingNodes, slidingNodes;
 	double r; // support radius
 	double charLength();
@@ -27,9 +30,10 @@ public:
 	void updateNodes(Eigen::VectorXd dxVec,Eigen::VectorXd dyVec, Eigen::VectorXd xDisp,Eigen::VectorXd yDisp);
 	void writeMeshFile(Eigen::MatrixXd& newCoords);
 	void getNormals(Eigen::VectorXi nodes, int& cntExtElems);
-	void getExtBdryData(std::string& line, int& cntExtElems, int& cntExtNodes, int nBdry, int bdryElems);
+	void getExtBdryData(std::string& line, int& cntExtElems, int& cntExtNodes, int nBdry, int bdryElems, Eigen::ArrayXXi& nodeData);
 	void getNodeVecs(Eigen::ArrayXi& idxs, Eigen::ArrayXXd& n, Eigen::ArrayXXd& t);
 	Eigen::ArrayXi uniqueElems(Eigen::ArrayXi& arr1, Eigen::ArrayXi& arr2);
+	void getNormalsTest(Eigen::ArrayXXi nodes);
 
 };
 
