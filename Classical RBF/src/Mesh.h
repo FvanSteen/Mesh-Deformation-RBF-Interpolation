@@ -6,35 +6,34 @@
 
 class Mesh{
 public:
-	Mesh(std::string inputFileName, std::string outputFileName, std::vector<std::string> ibTags,std::vector<std::string> ebTags, double rFac,int debugLvl);
-	std::string ifName, ofName;
+	Mesh(const std::string& inputFileName,const std::string& outputFileName, const std::vector<std::string>& ibTags,const std::vector<std::string>& ebTags,const double& rFac,const int& debugLvl);
+	const std::string ifName, ofName;
 	int nNodes, nDims,nElem, lvl;
 	Eigen::ArrayXXd coords;
 	Eigen::ArrayXi extBdryNodes;
+	Eigen::ArrayXXi extBdryNodesMat;
 	Eigen::ArrayXi bdryNodes; // Remove this one later
 	Eigen::ArrayXi intBdryNodes;
+	Eigen::ArrayXXi intBdryNodesMat;
 	Eigen::ArrayXi intNodes;
 	Eigen::ArrayXXd nVecs;
 	Eigen::ArrayXXd tVecs;
-	Eigen::ArrayXXd nVecsT;
-	Eigen::ArrayXXd tVecsT;
 	Eigen::ArrayXXd midPnts;
-	Eigen::ArrayXXd midPntsT;
 	Eigen::ArrayXi movingNodes, slidingNodes;
 	double r; // support radius
-	double charLength();
 
-	Eigen::ArrayXi removeDuplicates(Eigen::ArrayXi& arr);
+
+	double charLength();
+	void removeDuplicates(Eigen::ArrayXi& arr);
 	void getIntNodes();
-	void readMeshFile(std::vector<std::string> ibTags,std::vector<std::string> ebTags,double rFac);
+	void readMeshFile(const std::vector<std::string>& ibTags,const std::vector<std::string>& ebTags,const double& rFac);
 //	void updateNodes(Eigen::VectorXd dxVec,Eigen::VectorXd dyVec, Eigen::VectorXd xDisp,Eigen::VectorXd yDisp);
-	void writeMeshFile(Eigen::MatrixXd& newCoords);
-	void getNormals(Eigen::VectorXi nodes, int& cntExtElems);
-	void getNodeVecs(Eigen::ArrayXi& idxs, Eigen::ArrayXXd& n, Eigen::ArrayXXd& t);
+	void writeMeshFile();
 	void getSlidingNodes();
-	void getNormalsTest(Eigen::ArrayXXi nodes);
-	void getMovingNodes(std::vector<std::string> ebTags, Eigen::ArrayXXi extBdryNodesMat, Eigen::ArrayXi extBdryEndsIdx);
-	void getBdryNodes(Eigen::ArrayXXi bdryNodesMat, Eigen::ArrayXi& bdryNodesArr, int nBdryNodes, int nBdryElems);
+	void getExtBdryData();
+	void getMovingNodes(const std::vector<std::string>& ebTags, Eigen::ArrayXi& extBdryEndsIdx);
+	void getBdryNodes(Eigen::ArrayXXi& bdryNodesMat, Eigen::ArrayXi& bdryNodesArr, int& nBdryNodes, int& nBdryElems);
+	void getNodeVecs(Eigen::ArrayXi& idxs, Eigen::ArrayXXd& n, Eigen::ArrayXXd& t);
 };
 
 #endif /* MESH_H_ */

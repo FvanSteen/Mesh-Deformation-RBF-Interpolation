@@ -9,17 +9,25 @@
 class rbf {
 public:
 	Mesh m;
-	rbf(Mesh meshOb);
-	Eigen::MatrixXd newCoords;
+	const double dx, dy;
+	Eigen::RowVectorXd rotPnt;
+	const int steps;
+	Eigen::Matrix2d rotMat;
+	Eigen::ArrayXi mNodes;
 
-	void performRbfDS(const double& xDef, const double& yDef, const double& rotDefDeg, const int& steps, Eigen::VectorXd rotPnt);
-	void performRbfInterpolation(const double& xDef, const double& yDef, const double& rotDefDeg,const int& steps, Eigen::VectorXd rotPnt);
-	Eigen::MatrixXd getPhi(Eigen::ArrayXi idxSet1, Eigen::ArrayXi idxSet2);
+	rbf(Mesh& meshOb,const double xDef, const double yDef, const double rotDefDeg, const int steps, Eigen::RowVectorXd rotationPnt);
+//	Eigen::MatrixXd newCoords;
+
+	void performRbfDS();
+
 	Eigen::MatrixXd getDefVecDS(double xDef, double yDef, double rotDefDeg, Eigen::VectorXd rotPnt,Eigen::ArrayXi intN);
-	Eigen::MatrixXd getDefVec(double xDef, double yDef, double rotDefDeg, Eigen::VectorXd rotPnt);
-	Eigen::MatrixXd getRotDef(double rotDef, Eigen::VectorXd rotPnt);
+	void performRbfInterpolation();
+	void getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::ArrayXi& idxSet2);
+
+	void getDefVec(Eigen::VectorXd& defVec);
+	void getRotDef();
 	double rbfEval(double distance);
-	void updateNodes(Eigen::VectorXd dxVec,Eigen::VectorXd dyVec, Eigen::VectorXd xDisp,Eigen::VectorXd yDisp);
+	void getDisplacement(Eigen::MatrixXd& Phi, Eigen::VectorXd& a_x, Eigen::VectorXd& a_y, Eigen::VectorXd& defVec);
 
 private:
 

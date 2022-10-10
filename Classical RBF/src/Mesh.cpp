@@ -10,13 +10,13 @@
 #include <math.h>
 using Eigen::MatrixXd;
 
-Mesh::Mesh(std::string inputFileName,std::string outputFileName,std::vector<std::string> ibTags,std::vector<std::string> ebTags, double rFac,int debugLvl)
+Mesh::Mesh(const std::string& inputFileName,const std::string& outputFileName,const std::vector<std::string>& ibTags,const std::vector<std::string>& ebTags,const double& rFac,const int& debugLvl)
 :ifName(inputFileName), ofName(outputFileName), nNodes(0), nDims(0),nElem(0),lvl(debugLvl), r(0)
 {readMeshFile(ibTags,ebTags,rFac);
 r = rFac*charLength();
 }
 
-void Mesh::readMeshFile(std::vector<std::string> ibTags,std::vector<std::string> ebTags, double rFac){
+void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector<std::string>& ebTags,const double& rFac){
 	if(lvl>=1){
 		std::cout << "Reading mesh file: " << ifName << std::endl;
 	}
@@ -27,9 +27,10 @@ void Mesh::readMeshFile(std::vector<std::string> ibTags,std::vector<std::string>
 	int nIntBdryNodes = 0, nExtBdryNodes = 0;	// counters for int/ext boundary nodes
 	int nPnts = 0;								// counter for number of points
 	int pntsIdx;								// int that stores the line where "NPOIN= " is
-	Eigen::ArrayXXi extBdryNodesMat(0,3);
-	Eigen::ArrayXXi intBdryNodesMat(0,3);
-
+//	Eigen::ArrayXXi extBdryNodesMat(0,3);
+//	Eigen::ArrayXXi intBdryNodesMat(0,3);
+	extBdryNodesMat.resize(0,3);
+	intBdryNodesMat.resize(0,3);
 	int extBdryElemCnt = 0;
 	int intBdryElemCnt = 0;// counting the elements of the external boundary
 	Eigen::ArrayXi extBdryEndsIdx(2*ebTags.size());
@@ -185,33 +186,25 @@ void Mesh::readMeshFile(std::vector<std::string> ibTags,std::vector<std::string>
 	getBdryNodes(intBdryNodesMat, intBdryNodes, nIntBdryNodes, nIntBdryElems);
 	getBdryNodes(extBdryNodesMat, extBdryNodes, nExtBdryNodes, nExtBdryElems);
 
-	getMovingNodes(ebTags,extBdryNodesMat,extBdryEndsIdx);
-
+	getMovingNodes(ebTags, extBdryEndsIdx);
 	getSlidingNodes();
-	std::cout << "Internal boundary nodes: \n" << intBdryNodes <<std::endl;
-	std::cout << "External boundary nodes: \n" << extBdryNodes <<std::endl;
-	std::cout << "Moving boundary nodes: \n" << movingNodes <<std::endl;
-	std::cout << "Sliding boundary nodes: \n" << slidingNodes << std::endl;
+//	std::cout << "Internal boundary nodes: \n" << intBdryNodes <<std::endl;
+//	std::cout << "External boundary nodes: \n" << extBdryNodes <<std::endl;
+//	std::cout << "Moving boundary nodes: \n" << movingNodes <<std::endl;
+//	std::cout << "Sliding boundary nodes: \n" << slidingNodes << std::endl;
 
 
-
-
-//
-//	midPntsT.resize(nExtBdryElems,nDims);
-//	nVecsT.resize(nExtBdryElems,nDims);
-//	tVecsT.resize(nExtBdryElems,nDims);
-//	getNormalsTest(nodeData);
+	midPnts.resize(nExtBdryElems,nDims);
+	nVecs.resize(nExtBdryElems,nDims);
+	tVecs.resize(nExtBdryElems,nDims);
 
 	getIntNodes();
 
-	std::cout <<"Internal nodes: \n"<< intNodes << std::endl;
-	//TODO if there is only a single element then movingNodes does not exist
-
-//	slidingNodes = extBdryNodes;
 	std::cout << "Mesh file read successfully" << std::endl;
+
 }
 
-void Mesh::getBdryNodes(Eigen::ArrayXXi bdryNodesMat, Eigen::ArrayXi& bdryNodesArr, int nBdryNodes, int nBdryElems){
+void Mesh::getBdryNodes(Eigen::ArrayXXi& bdryNodesMat, Eigen::ArrayXi& bdryNodesArr, int& nBdryNodes, int& nBdryElems){
 	bdryNodesArr.resize(nBdryNodes);
 	int count = 0;
 	for(int i = 0; i < nBdryElems; i++){
@@ -230,10 +223,10 @@ void Mesh::getBdryNodes(Eigen::ArrayXXi bdryNodesMat, Eigen::ArrayXi& bdryNodesA
 			j++;count++;
 		}
 	}
-	bdryNodesArr = removeDuplicates(bdryNodesArr);
+	removeDuplicates(bdryNodesArr);
 }
 
-void Mesh::getMovingNodes(std::vector<std::string> ebTags, Eigen::ArrayXXi extBdryNodesMat, Eigen::ArrayXi extBdryEndsIdx){
+void Mesh::getMovingNodes(const std::vector<std::string>& ebTags, Eigen::ArrayXi& extBdryEndsIdx){
 
 	// Adding first element indices
 	for(int i = 0; i < int(ebTags.size())-1; i ++){
@@ -270,11 +263,10 @@ void Mesh::getMovingNodes(std::vector<std::string> ebTags, Eigen::ArrayXXi extBd
 			movingNodeIdx++;
 		}
 	}
-
 	movingNodes.conservativeResize(movingNodeIdx);
 }
 
-Eigen::ArrayXi Mesh::removeDuplicates(Eigen::ArrayXi& arr){
+void Mesh::removeDuplicates(Eigen::ArrayXi& arr){
 	/* This function determines the unique elements in the array provided as argument
 	 * This is done by initialising a temporary array that will save the unique elements
 	 * The provided array is sorted and subsequent values are compared
@@ -284,21 +276,21 @@ Eigen::ArrayXi Mesh::removeDuplicates(Eigen::ArrayXi& arr){
 	std::sort(std::begin(arr), std::end(arr));
 
 	// Initialise array for the unique elements, could at most contain arr.size() unique elements
-	Eigen::ArrayXi uniqueElmnts(arr.size());
+	Eigen::ArrayXi uniqueElems(arr.size());
 
 	int cnt = 0;											// counter for the amount of unique elements
 	for(int x = 0; x < arr.size()-1; x++){					// for loop over all but last element
 		if(arr(x+1)!=arr(x)){								// if x+1-th is not equal to x-th element
-			uniqueElmnts(cnt) = arr(x);						// include x-th element
+			uniqueElems(cnt) = arr(x);						// include x-th element
 			cnt++;											// update count of unique elements
 		}
 	}
 
-	if(arr(arr.size()-1) != uniqueElmnts(cnt-1)){			// check if last element is already included
-		uniqueElmnts(cnt) = arr(arr.size()-1);				// if not then include that element
+	if(arr(arr.size()-1) != uniqueElems(cnt-1)){			// check if last element is already included
+		uniqueElems(cnt) = arr(arr.size()-1);				// if not then include that element
 	}
 
-	return uniqueElmnts(Eigen::seq(0,cnt));
+	arr = uniqueElems(Eigen::seq(0,cnt));
 }
 
 void Mesh::getSlidingNodes(){
@@ -365,6 +357,7 @@ void Mesh::getIntNodes(){
 		}
 
 	}
+	bdryNodes << intBdryNodes, extBdryNodes;
 }
 
 double Mesh::charLength(){
@@ -379,7 +372,9 @@ double Mesh::charLength(){
 	return charLength;
 }
 
-void Mesh::writeMeshFile(Eigen::MatrixXd& newCoords){
+void Mesh::writeMeshFile(){
+	std::cout << "Writing output file " << std::endl;
+//	std::cout << coords << std::endl;
 	std::ofstream outputF;
 	outputF.precision(15);		// sets precision of the floats in the file
 	outputF.open(ofName, std::ios::out); // ios::out allows output to file
@@ -392,7 +387,7 @@ void Mesh::writeMeshFile(Eigen::MatrixXd& newCoords){
 
 	while (getline(inputF, mystring)){
 		if(printFlag && cnt < nNodes){
-			outputF << newCoords(cnt,0)<< '\t' << newCoords(cnt,1) << '\t'<< cnt << std::endl;
+			outputF << coords(cnt,0)<< '\t' << coords(cnt,1) << '\t'<< cnt << std::endl;
 			cnt++;
 
 		} else outputF << mystring << std::endl;
@@ -406,74 +401,78 @@ void Mesh::writeMeshFile(Eigen::MatrixXd& newCoords){
 	std::cout << "Done writing mesh file: " << ofName << std::endl;
 }
 
-void Mesh::getNormals(Eigen::VectorXi nodes, int& cntExtElems){
-	Eigen::Vector2d n;
-	Eigen::Vector2d t;
-	Eigen::Vector2d midPnt;
-	double length;
-	if(nodes.size()<3){
-		double dx = coords(nodes(1),0) - coords(nodes(0),0);
-		double dy = coords(nodes(1),1) - coords(nodes(0),1);
-		t = {dx,dy};
-		n = {dy,-dx};
-		length = sqrt(pow(dx,2)+pow(dy,2));
-		midPnt = {coords(nodes(0),0)+ 0.5*dx, coords(nodes(0),1) +0.5*dy};
-	}
-	midPnts.row(cntExtElems) = midPnt;
-	nVecs.row(cntExtElems) = n/length;
-	tVecs.row(cntExtElems) = t/length;
 
-
-}
-
-void Mesh::getNormalsTest(Eigen::ArrayXXi nodes){
+void Mesh::getExtBdryData(){
 	double length,dx,dy;
 	Eigen::Array2d n,t;
-	for(int i=0; i < nodes.rows(); i++){
-		dx = coords(nodes(i,1),0) - coords(nodes(i,0),0);
-		dy = coords(nodes(i,1),1) - coords(nodes(i,0),1);
-		midPntsT(i,0) = coords(nodes(i,0),0)+ 0.5*dx;
-		midPntsT(i,1) = coords(nodes(i,0),1) +0.5*dy;
+	for(int i=0; i < extBdryNodesMat.rows(); i++){
+		dx = coords(extBdryNodesMat(i,2),0) - coords(extBdryNodesMat(i,1),0);
+		dy = coords(extBdryNodesMat(i,2),1) - coords(extBdryNodesMat(i,1),1);
+		midPnts(i,0) = coords(extBdryNodesMat(i,1),0)+ 0.5*dx;
+		midPnts(i,1) = coords(extBdryNodesMat(i,1),1) +0.5*dy;
 		t = {dx,dy};
 		n = {dy,-dx};
 		length = sqrt(pow(dx,2)+pow(dy,2));
-		nVecsT.row(i) = n/length;
-		tVecsT.row(i) = t/length;
+		nVecs.row(i) = n/length;
+		tVecs.row(i) = t/length;
 	}
 }
+
 
 
 void Mesh::getNodeVecs(Eigen::ArrayXi& idxs, Eigen::ArrayXXd& n, Eigen::ArrayXXd& t){
-	int idx, idx2;
-//	struct vecs{
-//		Eigen::ArrayXXd n;
-//		Eigen::ArrayXXd t;
-//	};
-//
-//	vecs v;
-//	v.n.resize(idxs.size(),2);
-//	v.t.resize(idxs.size(),2);
+//	int idx, idx2;
 	Eigen::ArrayXd dist;
 	Eigen::ArrayXd distSort;
+
+	Eigen::ArrayXi index = Eigen::ArrayXi::LinSpaced(midPnts.rows(),0,midPnts.rows()-1);
+	std::cout << index << std::endl;
+
 	for(int i = 0; i < int(idxs.size()); i++){
-		auto d = midPnts.rowwise()-coords.row(idxs(i));
-		dist = sqrt(pow(d.col(0),2)+pow(d.col(1),2));
-		distSort = dist;
-		std::sort(std::begin(distSort),std::end(distSort));
+		dist = (midPnts.rowwise()-coords.row(idxs(i))).rowwise().norm();
 
-		if(distSort(0)==distSort(1)){
-			idx = std::distance(dist.begin(),std::find(dist.begin(), dist.end(),distSort(0)));
-			idx2 = std::distance(dist.begin()+idx,std::find(dist.begin()+idx+1, dist.end(),distSort(1)));
-			idx2 += idx;
-		}
-		else{
-		idx = std::distance(dist.begin(),std::find(dist.begin(), dist.end(),distSort(0)));
+		std::sort(index.begin(), index.end(),[&](const int& a, const int& b) {
+		        return (dist[a] < dist[b]);
+		    }
+		);
+//		for (int i = 0 ; i != index.size() ; i++) {
+//		    std::cout << index[i] << std::endl;
+//		}
 
-		idx2 = std::distance(dist.begin(),std::find(dist.begin(), dist.end(),distSort(1)));
-		}
-		n.row(i) = (nVecs.row(idx)+nVecs.row(idx2))/2;
-		t.row(i) = (tVecs.row(idx)+tVecs.row(idx2))/2;
+//		std::cout << "sorted vals: \n" << std::endl;
+//		for (int i = 0 ; i != index.size() ; i++) {
+//		    std::cout << dist[index[i]] << std::endl;
+//		}
+
+
+
+//		std::cout << std::endl;
+//		std::cout << coords.row(idxs(i)) << std::endl;
+//		std::cout << "Nearest midpoints: \n" << midPnts.row(index(0)) << '\n' << midPnts.row(index(1)) << std::endl;
+//		std::cout << "distance: " << dist(index(0)) << '\t' << dist(index(1)) << std::endl;
+//		std::cout << std::endl;
+//		distSort = dist;
+//		std::sort(std::begin(distSort),std::end(distSort));
+//
+//		if(distSort(0)==distSort(1)){
+//			idx = std::distance(dist.begin(),std::find(dist.begin(), dist.end(),distSort(0)));
+//			idx2 = std::distance(dist.begin()+idx,std::find(dist.begin()+idx+1, dist.end(),distSort(1)));
+//			idx2 += idx;
+//		}
+//		else{
+//		idx = std::distance(dist.begin(),std::find(dist.begin(), dist.end(),distSort(0)));
+//
+//		idx2 = std::distance(dist.begin(),std::find(dist.begin(), dist.end(),distSort(1)));
+//		}
+		//TODO MAKE THIS A WEIGHTED AVERAGE
+		n.row(i) = (nVecs.row(index(0))+nVecs.row(index(1)))/2;
+		t.row(i) = (tVecs.row(index(0))+tVecs.row(index(1)))/2;
+
+
 	}
+	std::cout << n << std::endl;
+	std::cout << t << std::endl;
+	std::exit(0);
 }
 
 
