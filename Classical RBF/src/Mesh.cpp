@@ -420,59 +420,27 @@ void Mesh::getExtBdryData(){
 
 
 
-void Mesh::getNodeVecs(Eigen::ArrayXi& idxs, Eigen::ArrayXXd& n, Eigen::ArrayXXd& t){
-//	int idx, idx2;
+void Mesh::getNodeVecs( Eigen::ArrayXXd& n, Eigen::ArrayXXd& t){
+
 	Eigen::ArrayXd dist;
-	Eigen::ArrayXd distSort;
 
+	// Array with unsorted indices ranging from 0,1...N_midPnts
 	Eigen::ArrayXi index = Eigen::ArrayXi::LinSpaced(midPnts.rows(),0,midPnts.rows()-1);
-	std::cout << index << std::endl;
 
-	for(int i = 0; i < int(idxs.size()); i++){
-		dist = (midPnts.rowwise()-coords.row(idxs(i))).rowwise().norm();
-
+	// Find for each sliding node the nearest midPnts
+	for(int i = 0; i < int(slidingNodes.size()); i++){
+		// Distance from sliding node to all mid-points
+		dist = (midPnts.rowwise()-coords.row(slidingNodes(i))).rowwise().norm();
+		// Sorting the indices with a custom comparator based on dist
 		std::sort(index.begin(), index.end(),[&](const int& a, const int& b) {
 		        return (dist[a] < dist[b]);
 		    }
 		);
-//		for (int i = 0 ; i != index.size() ; i++) {
-//		    std::cout << index[i] << std::endl;
-//		}
 
-//		std::cout << "sorted vals: \n" << std::endl;
-//		for (int i = 0 ; i != index.size() ; i++) {
-//		    std::cout << dist[index[i]] << std::endl;
-//		}
-
-
-
-//		std::cout << std::endl;
-//		std::cout << coords.row(idxs(i)) << std::endl;
-//		std::cout << "Nearest midpoints: \n" << midPnts.row(index(0)) << '\n' << midPnts.row(index(1)) << std::endl;
-//		std::cout << "distance: " << dist(index(0)) << '\t' << dist(index(1)) << std::endl;
-//		std::cout << std::endl;
-//		distSort = dist;
-//		std::sort(std::begin(distSort),std::end(distSort));
-//
-//		if(distSort(0)==distSort(1)){
-//			idx = std::distance(dist.begin(),std::find(dist.begin(), dist.end(),distSort(0)));
-//			idx2 = std::distance(dist.begin()+idx,std::find(dist.begin()+idx+1, dist.end(),distSort(1)));
-//			idx2 += idx;
-//		}
-//		else{
-//		idx = std::distance(dist.begin(),std::find(dist.begin(), dist.end(),distSort(0)));
-//
-//		idx2 = std::distance(dist.begin(),std::find(dist.begin(), dist.end(),distSort(1)));
-//		}
-		//TODO MAKE THIS A WEIGHTED AVERAGE
-		n.row(i) = (nVecs.row(index(0))+nVecs.row(index(1)))/2;
-		t.row(i) = (tVecs.row(index(0))+tVecs.row(index(1)))/2;
-
-
+		// weighted average of 2 nearest midpoints
+		n.row(i) = ( 1/dist(index(0))*nVecs.row(index(0)) + 1/dist(index(1))*nVecs.row(index(1)))/(1/dist(index(0)) + 1/dist(index(1)));
+		t.row(i) = ( 1/dist(index(0))*tVecs.row(index(0)) + 1/dist(index(1))*tVecs.row(index(1)))/(1/dist(index(0)) + 1/dist(index(1)));
 	}
-	std::cout << n << std::endl;
-	std::cout << t << std::endl;
-	std::exit(0);
 }
 
 

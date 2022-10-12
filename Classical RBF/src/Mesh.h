@@ -33,7 +33,7 @@ public:
 	void getExtBdryData();
 	void getMovingNodes(const std::vector<std::string>& ebTags, Eigen::ArrayXi& extBdryEndsIdx);
 	void getBdryNodes(Eigen::ArrayXXi& bdryNodesMat, Eigen::ArrayXi& bdryNodesArr, int& nBdryNodes, int& nBdryElems);
-	void getNodeVecs(Eigen::ArrayXi& idxs, Eigen::ArrayXXd& n, Eigen::ArrayXXd& t);
+	void getNodeVecs(Eigen::ArrayXXd& n, Eigen::ArrayXXd& t);
 };
 
 #endif /* MESH_H_ */

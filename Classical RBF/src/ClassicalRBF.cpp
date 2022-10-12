@@ -18,7 +18,7 @@ int main()
 //	string ofName = "mesh_NACA0012_inv_def.su2";
 //	vector<string> intBdryTags = {"airfoil"}; //What if there are multiple tags?
 //	vector<string> extBdryTags = {"farfield"};
-
+//
 	const string ifName = "TestMesh.su2";
 	const string ofName = "TestMesh_def.su2";
 //	string ifName = "25x25mesh.su2";
@@ -45,8 +45,8 @@ int main()
 	rotationPnt << 0.5,0.5;
 	rbf rbf(meshOb, xDef, yDef, rotDefDeg, steps, rotationPnt);
 //	rbf.performRbfInterpolation();
-	rbf.performRbfDS();
-
+//	rbf.performRbfDS();
+	rbf.performRbfPS();
 //	const double xDef = -10, yDef = -10, rotDefDeg = -30;
 //	const int steps = 20;
 //	Eigen::Vector2d rotationPoint = {0.25,0.0};

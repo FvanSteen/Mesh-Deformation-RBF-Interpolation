@@ -13,9 +13,48 @@ rbf::rbf(Mesh& meshOb, const double xDef, const double yDef, const double rotDef
 {
 const double dthetaRad = rotDefDeg/steps*M_PI/180;
 rotMat << cos(dthetaRad), -sin(dthetaRad),sin(dthetaRad), cos(dthetaRad);
+// TODO suggestion: modify the assignment of mNodes to allow either DS or classic by means of an if statement
+// and perhaps introduce N_in and N_ib and N_eb
 mNodes.resize(m.intBdryNodes.size() + m.movingNodes.size());
 mNodes <<  m.intBdryNodes,m.movingNodes; // idealy these are only defined in case of DS
+N_m = mNodes.size();
+N_se = m.slidingNodes.size();
+}
 
+void rbf::performRbfPS(){
+	std::cout<< "Performing RBF PS" << std::endl;
+	Eigen::ArrayXXd initCoords;
+	initCoords = m.coords;
+	Eigen::MatrixXd Phi_mm; //In this case only the internal boundary
+	Eigen::VectorXd a_x(N_m);
+	Eigen::VectorXd a_y(N_m);
+	getPhi(Phi_mm, mNodes, mNodes);
+
+	Eigen::VectorXd defVec = Eigen::VectorXd::Zero(N_m*m.nDims);
+	getDefVec(defVec);
+
+	a_x = Phi_mm.partialPivLu().solve(defVec(Eigen::seqN(0,N_m)));
+	a_y = Phi_mm.partialPivLu().solve(defVec(Eigen::seqN(N_m, N_m)));
+
+
+	Eigen::MatrixXd Phi_im;
+	Eigen::ArrayXi freeNodes(m.slidingNodes.size()+m.intNodes.size());
+	freeNodes << m.slidingNodes, m.intNodes;
+	getPhi(Phi_im, freeNodes, mNodes);
+
+	std::cout << Phi_im.rows() << '\t' << Phi_im.cols() << std::endl;
+
+	m.coords(freeNodes,0) += (Phi_im*a_x).array();
+	m.coords(freeNodes,1) += (Phi_im*a_y).array();
+
+
+	m.coords(mNodes,0) += (defVec(Eigen::seqN(0,N_m))).array();
+	m.coords(mNodes,1) += (defVec(Eigen::seqN(N_m,N_m))).array();
+//	std::cout << m.coords << std::endl;
+
+	m.writeMeshFile();
+
+	std::cout << "Done" << std::endl;
 }
 
 void rbf::performRbfDS(){
@@ -25,127 +64,78 @@ void rbf::performRbfDS(){
 	Eigen::MatrixXd Phi_ms;
 	Eigen::MatrixXd Phi_sm;
 	Eigen::MatrixXd Phi_ss;
+	Eigen::MatrixXd Phi_im;
+	Eigen::MatrixXd Phi_is;
 
 
-	Eigen::ArrayXXd n;		// two column array containing normal vector components
-	Eigen::ArrayXXd t;		// two column array containing tangential vector components
+	Eigen::ArrayXXd n(N_se, m.nDims);		// two column array containing normal vector components
+	Eigen::ArrayXXd t(N_se, m.nDims);		// two column array containing tangential vector components
+
+	Eigen::MatrixXd Phi(2*(N_m+N_se),2*(N_m+N_se));
+
+	Eigen::VectorXd alpha(2*(N_m+N_se));
 
 
 	for (int i = 0; i < steps; i++){
+		std::cout << "Deformation step: " << i+1 << std::endl;
 		getPhi(Phi_mm, mNodes,mNodes);
 		getPhi(Phi_ms, mNodes, m.slidingNodes);
 		getPhi(Phi_sm, m.slidingNodes, mNodes);
 		getPhi(Phi_ss, m.slidingNodes, m.slidingNodes);
 
+		// obtaining midpoints and corresponding normals and tangentials
 		m.getExtBdryData();
 
-		m.getNodeVecs(m.slidingNodes, n, t);
+		// obtaining normals and tangentials at the sliding nodes as a weighted average of the midpoints
+		m.getNodeVecs(n,t);
+		Eigen::VectorXd defVec = Eigen::VectorXd::Zero((N_m+N_se)*m.nDims);
+		getDefVec(defVec);
+
+		getPhiDS(Phi,Phi_mm,Phi_ms, Phi_sm, Phi_ss, n, t);
+
+		alpha = Phi.partialPivLu().solve(defVec);
+		getPhi(Phi_im, m.intNodes, mNodes); // reduced matrix since a part has a zero deformation
+		getPhi(Phi_is, m.intNodes, m.slidingNodes);
+
+		getDisplacementDS(Phi_im, Phi_is, Phi_sm, Phi_ss, alpha, defVec);
 	}
 
-//	Eigen::ArrayXXd n(m.slidingNodes.size(),2);		// all the vectors midPnts etc should be updated after each step
-//	Eigen::ArrayXXd t(m.slidingNodes.size(),2);
-//	m.getExtBdryData();
-//
-//	m.getNodeVecs(m.slidingNodes, n, t);
-//
-//	exit(0);
-////
-////	cout << "\n Sliding Nodes:\n" << m.slidingNodes << endl;
-////	cout << "\n Moving Nodes: \n" << m.movingNodes << endl;
-////	cout << "\n Internal boundary nodes: \n" << m.intBdryNodes << endl;
-////	cout << "\n Internal Nodes: \n" << m.intNodes << endl;
-//
-//	Eigen::ArrayXi dispNodes(m.intBdryNodes.size()+m.movingNodes.size());
-//	dispNodes << m.intBdryNodes, m.movingNodes;
-//
-////	cout << dispNodes << endl;
-//	for(int i=0; i<steps; i++){
-//
-//		cout << "step: " << i << endl;
-//		Eigen::MatrixXd defMat = getDefVecDS(xDef/steps,yDef/steps,rotDefDeg/steps,rotPnt,m.intBdryNodes);
-//
-//		Eigen::MatrixXd Phi_mm = getPhi(dispNodes,dispNodes); // makes i-matrix for finding coefficients
-//		Eigen::MatrixXd Phi_ms = getPhi(dispNodes,m.slidingNodes);
-//		Eigen::MatrixXd Phi_sm = getPhi(m.slidingNodes,dispNodes);
-//		Eigen::MatrixXd Phi_ss = getPhi(m.slidingNodes,m.slidingNodes);
-//
-////		cout << Phi_mm.rows() << '\t' << Phi_mm.cols() << endl;
-////		cout << Phi_ms.rows() << '\t' << Phi_ms.cols() << endl;
-////		cout << Phi_sm.rows() << '\t' << Phi_sm.cols() << endl;
-////		cout << Phi_ss.rows() << '\t' << Phi_ss.cols() << endl;
-//
-//		Eigen::VectorXd defVec = Eigen::VectorXd::Zero(2*(dispNodes.size()+m.slidingNodes.size()));
-//		defVec(Eigen::seq(0,m.intBdryNodes.size()-1)) = defMat.col(0);
-//		defVec(Eigen::seq(dispNodes.size(),dispNodes.size()+m.intBdryNodes.size()-1)) = defMat.col(1);
-//
-//		Eigen::MatrixXd Phi = Eigen::MatrixXd::Zero(2*(dispNodes.size()+m.slidingNodes.size()),2*(dispNodes.size()+m.slidingNodes.size()));
-////		cout << "here" << endl;
-//	//	cout << Phi_ss << endl;
-//		const int a = 8; // find some way to produce const int of the various dimensions within the mesh class
-//		const int b = 16;
-////		const int a = 16; // find some way to produce const int of the various dimensions within the mesh class
-////		const int b = 96;
-//
-////		const int a = 200; // find some way to produce const int of the various dimensions within the mesh class
-////		const int b = 50;
-//
-//		Phi.block<a,a>(0,0) = Phi_mm;
-//		Phi.block<a,a>(a,a) = Phi_mm;
-//		Phi.block<a,b>(0,2*a) = Phi_ms;
-//		Phi.block<a,b>(a,2*a+b) = Phi_ms;
-//	//	cout << Phi << endl;
-//
-//	//	cout << Phi_sm << endl;
-//	//	cout << n.col(0) << endl;
-//	//	cout << Phi_sm.array().colwise() * n.col(0) << endl;
-//
-//		Phi.block<b,a>(2*a,0) = Phi_sm.array().colwise() * n.col(0);
-//		Phi.block<b,a>(2*a,a) = Phi_sm.array().colwise() * n.col(1);
-//		Phi.block<b,b>(2*a,2*a) = Phi_ss.array().colwise() * n.col(0);
-//		Phi.block<b,b>(2*a,2*a+b) = Phi_ss.array().colwise() * n.col(1);
-//		Eigen::VectorXd t_x = t.col(0);
-//		Eigen::VectorXd t_y = t.col(1);
-//		Phi.block<b,b>(2*a+b,2*a) = MatrixXd(t_x.asDiagonal());
-//		Phi.block<b,b>(2*a+b,2*a+b) = MatrixXd(t_y.asDiagonal());
-//	//	cout << Phi << endl;
-//	//	cout << Phi << endl;
-//	//	Eigen::VectorXd alpha = Phi.ldlt().solve(defVec);
-//		Eigen::VectorXd alpha = Phi.partialPivLu().solve(defVec);
-////		cout << m.intNodes << endl;
-//		Eigen::MatrixXd Phi_im = getPhi(m.intNodes,dispNodes);
-//		Eigen::MatrixXd Phi_is = getPhi(m.intNodes,m.slidingNodes);
-//
-//		auto dx_int = Phi_im*alpha(Eigen::seq(0,dispNodes.size()-1)) + Phi_is*alpha(Eigen::seq(2*dispNodes.size(), 2*dispNodes.size()+m.slidingNodes.size()-1));
-//		auto dx_slide = Phi_sm*alpha(Eigen::seq(0,dispNodes.size()-1)) + Phi_ss*alpha(Eigen::seq(2*dispNodes.size(), 2*dispNodes.size()+m.slidingNodes.size()-1));
-//		auto dy_int = Phi_im*alpha(Eigen::seq(dispNodes.size(),2*dispNodes.size()-1)) + Phi_is*alpha(Eigen::seq(2*dispNodes.size()+m.slidingNodes.size(), 2*(dispNodes.size()+m.slidingNodes.size())-1));
-//		auto dy_slide = Phi_sm*alpha(Eigen::seq(dispNodes.size(),2*dispNodes.size()-1)) + Phi_ss*alpha(Eigen::seq(2*dispNodes.size()+m.slidingNodes.size(), 2*(dispNodes.size()+m.slidingNodes.size())-1));
-//
-//		newCoords(m.slidingNodes,0)+=dx_slide;
-//		newCoords(m.slidingNodes,1)+=dy_slide;
-//		newCoords(m.intNodes,0)+=dx_int;
-//		newCoords(m.intNodes,1)+=dy_int;
-//		newCoords(m.intBdryNodes,0)+=defMat.col(0);
-//		newCoords(m.intBdryNodes,1)+=defMat.col(1);
-//
-//		rotPnt(0) = rotPnt(0) + xDef/steps;
-//		rotPnt(1) = rotPnt(1) + yDef/steps;
-//	}
-//	m.writeMeshFile(newCoords);
-
+	m.writeMeshFile();
 }
 
-Eigen::MatrixXd rbf::getDefVecDS(double xDef, double yDef, double rotDefDeg, Eigen::VectorXd rotPnt,Eigen::ArrayXi intN){
-	Eigen::MatrixXd defMat = Eigen::MatrixXd::Zero(intN.size(),m.nDims); 		// initialise zero vector with size of boundary nodes
-	getRotDef(); //look at the passing by reference
 
+void rbf::getPhiDS(Eigen::MatrixXd& Phi,Eigen::MatrixXd& Phi_mm,Eigen::MatrixXd& Phi_ms, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_ss, Eigen::ArrayXXd& n, Eigen::ArrayXXd& t){
+	// blocks related to the known displacements
+	Phi.block(0, 0, N_m, N_m) = Phi_mm;
+	Phi.block(N_m, N_m, N_m, N_m) = Phi_mm;
+	Phi.block(0, 2*N_m, N_m, N_se) = Phi_ms;
+	Phi.block(N_m, 2*N_m + N_se, N_m, N_se) = Phi_ms;
 
-	defMat.array().col(0) = defMat.array().col(0) + xDef;
-	defMat.array().col(1) = defMat.array().col(1) + yDef;
-	//rotDef is not a variable anymore since the function getrotDef was altered
-//	defMat.array() = defMat.array() + rotDef.array();
-	return defMat;
+	// blocks related to the zero normal displacement condition
+	Phi.block(2*N_m, 0, N_se, N_m) = Phi_sm.array().colwise() * n.col(0);
+	Phi.block(2*N_m, N_m, N_se, N_m) = Phi_sm.array().colwise() * n.col(1);
+	Phi.block(2*N_m, 2*N_m, N_se, N_se) = Phi_ss.array().colwise() * n.col(0);
+	Phi.block(2*N_m, 2*N_m + N_se, N_se, N_se) = Phi_ss.array().colwise() * n.col(1);
+
+	//blocks related to the zero tangential contribution condition
+	Phi.block(2*N_m + N_se, 2*N_m, N_se, N_se) = Eigen::MatrixXd(t.col(0).matrix().asDiagonal());
+	Phi.block(2*N_m + N_se, 2*N_m + N_se, N_se, N_se) = Eigen::MatrixXd(t.col(1).matrix().asDiagonal());
 }
 
+void rbf::getDisplacementDS(Eigen::MatrixXd& Phi_im, Eigen::MatrixXd& Phi_is,Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_ss, Eigen::VectorXd& alpha, Eigen::VectorXd& defVec){
+
+	m.coords(m.intNodes, 0) += (Phi_im*alpha(Eigen::seqN(0,N_m)) + Phi_is*alpha(Eigen::seqN(2*N_m, N_se))).array();
+	m.coords(m.intNodes, 1) += (Phi_im*alpha(Eigen::seqN(N_m,N_m)) + Phi_is*alpha(Eigen::seqN(2*N_m+N_se, N_se))).array();
+
+	m.coords(m.slidingNodes, 0) += (Phi_sm*alpha(Eigen::seqN(0,N_m)) + Phi_ss*alpha(Eigen::seqN(2*N_m, N_se))).array();
+	m.coords(m.slidingNodes, 1) += (Phi_sm*alpha(Eigen::seqN(N_m,N_m)) + Phi_ss*alpha(Eigen::seqN(2*N_m+N_se, N_se))).array();
+
+	m.coords(m.intBdryNodes, 0) += (defVec(Eigen::seqN(0,m.intBdryNodes.size()))).array();
+	m.coords(m.intBdryNodes, 1) += (defVec(Eigen::seqN(N_m,m.intBdryNodes.size()))).array();
+
+	rotPnt(0) += dx;
+	rotPnt(1) += dy;
+}
 
 void rbf::performRbfInterpolation(){
 
@@ -169,7 +159,7 @@ void rbf::performRbfInterpolation(){
 		getDefVec(defVec);
 
 		std::cout << "Solving for interpolation coefficients" << std::endl;
-
+		// todo these should be initialized outside the for loop
 		Eigen::VectorXd alpha_x = Phi_bb.llt().solve(defVec(Eigen::seqN(0,m.bdryNodes.size())));
 		Eigen::VectorXd alpha_y = Phi_bb.llt().solve(defVec(Eigen::seqN(m.bdryNodes.size(),m.bdryNodes.size())));
 		getDisplacement(Phi_ib, alpha_x, alpha_y, defVec);
@@ -192,7 +182,6 @@ void rbf::getDisplacement(Eigen::MatrixXd& Phi, Eigen::VectorXd& a_x, Eigen::Vec
 
 void rbf::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::ArrayXi& idxSet2){
 	Phi.resize(idxSet1.size(), idxSet2.size());
-//	Eigen::MatrixXd Phi(idxSet1.size(), idxSet2.size());
 	for(int i=0; i<idxSet1.size();i++){
 		for(int j=0; j<idxSet2.size();j++){
 			double dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1),2));
@@ -211,8 +200,22 @@ void rbf::getDefVec(Eigen::VectorXd& defVec){
 
 	defVec(Eigen::seqN(0,m.intBdryNodes.size())).array() += dx;
 	defVec(Eigen::seqN(0,m.intBdryNodes.size())) += rotDef.col(0);
-	defVec(Eigen::seqN(m.bdryNodes.size(),m.intBdryNodes.size())).array() += dy;
-	defVec(Eigen::seqN(m.bdryNodes.size(),m.intBdryNodes.size())) += rotDef.col(1);
+
+	// todo change expression in the classic rbf so that these statements work
+	// in case of the classical RBF the defVec is constructed such that it first contains the xdef of the int bdry then
+	// zero xdef of the ext bdry. Followed by the ydef of the int and ext bdries.
+//	defVec(Eigen::seqN(defVec.size()/m.nDims,m.intBdryNodes.size())).array() += dy;
+//	defVec(Eigen::seqN(defVec.size()/m.nDims,m.intBdryNodes.size())) += rotDef.col(1);
+
+	// for the DS RBF the vector has length nDim*N_m. First it contains the int bdry xdef, static zero xdef of the ext bdry,
+	// int bdry ydef and static ydef of the ext bdry.
+	defVec(Eigen::seqN(N_m,m.intBdryNodes.size())).array() += dy;
+	defVec(Eigen::seqN(N_m,m.intBdryNodes.size())) += rotDef.col(1);
+
+	// for the pseudo only the xdef and ydef of the int bdry nodes are relevant for the first deformation step
+	// This was without the zero displacement on the corners
+//	defVec(Eigen::seqN(m.intBdryNodes.size(),m.intBdryNodes.size())).array() += dy;
+//	defVec(Eigen::seqN(m.intBdryNodes.size(),m.intBdryNodes.size())) += rotDef.col(1);
  }
 
 
