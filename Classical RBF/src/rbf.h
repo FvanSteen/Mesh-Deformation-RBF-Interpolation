@@ -15,8 +15,9 @@ public:
 	int N_m, N_se;
 	Eigen::Matrix2d rotMat;
 	Eigen::ArrayXi mNodes;
-
-	rbf(Mesh& meshOb,const double xDef, const double yDef, const double rotDefDeg, const int steps, Eigen::RowVectorXd rotationPnt);
+	const std::string mode;
+	// todo can rotationPnt be passed by reference?
+	rbf(Mesh& meshOb,const double xDef, const double yDef, const double rotDefDeg, const int steps, Eigen::RowVectorXd rotationPnt, const std::string& mode);
 //	Eigen::MatrixXd newCoords;
 
 	void performRbfDS();

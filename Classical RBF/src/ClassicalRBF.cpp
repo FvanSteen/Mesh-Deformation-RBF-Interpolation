@@ -40,13 +40,16 @@ int main()
 
 
 	const double xDef = -0.2, yDef = -0.2, rotDefDeg = 60;
-	const int steps = 1;
+	const int steps = 20;
 	Eigen::RowVectorXd rotationPnt(2) ;
 	rotationPnt << 0.5,0.5;
-	rbf rbf(meshOb, xDef, yDef, rotDefDeg, steps, rotationPnt);
-//	rbf.performRbfInterpolation();
+	const string mode = "none";
+	rbf rbf(meshOb, xDef, yDef, rotDefDeg, steps, rotationPnt, mode);
+
+	rbf.performRbfInterpolation();
+
 //	rbf.performRbfDS();
-	rbf.performRbfPS();
+//	rbf.performRbfPS();
 //	const double xDef = -10, yDef = -10, rotDefDeg = -30;
 //	const int steps = 20;
 //	Eigen::Vector2d rotationPoint = {0.25,0.0};

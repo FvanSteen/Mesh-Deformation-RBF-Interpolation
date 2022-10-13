@@ -7,9 +7,9 @@
 #include <algorithm>
 #include <iterator>
 #include <string>
-
-rbf::rbf(Mesh& meshOb, const double xDef, const double yDef, const double rotDefDeg, const int steps, Eigen::RowVectorXd rotationPnt)
-:m(meshOb), dx(xDef/steps), dy(yDef/steps), rotPnt(rotationPnt), steps(steps)
+//todo check all instances of transpose() to check for aliasing effect
+rbf::rbf(Mesh& meshOb, const double xDef, const double yDef, const double rotDefDeg, const int steps, Eigen::RowVectorXd rotationPnt, const std::string& mode)
+:m(meshOb), dx(xDef/steps), dy(yDef/steps), rotPnt(rotationPnt), steps(steps), mode(mode)
 {
 const double dthetaRad = rotDefDeg/steps*M_PI/180;
 rotMat << cos(dthetaRad), -sin(dthetaRad),sin(dthetaRad), cos(dthetaRad);
@@ -19,15 +19,24 @@ mNodes.resize(m.intBdryNodes.size() + m.movingNodes.size());
 mNodes <<  m.intBdryNodes,m.movingNodes; // idealy these are only defined in case of DS
 N_m = mNodes.size();
 N_se = m.slidingNodes.size();
+std::cout << mode << std::endl;
 }
+
+
 
 void rbf::performRbfPS(){
 	std::cout<< "Performing RBF PS" << std::endl;
-	Eigen::ArrayXXd initCoords;
-	initCoords = m.coords;
+	Eigen::ArrayXXd slidingCoords;
+	slidingCoords = m.coords(m.slidingNodes, Eigen::all);
+
 	Eigen::MatrixXd Phi_mm; //In this case only the internal boundary
 	Eigen::VectorXd a_x(N_m);
 	Eigen::VectorXd a_y(N_m);
+
+	Eigen::ArrayXXd n(N_se, m.nDims);		// two column array containing normal vector components
+	Eigen::ArrayXXd t(N_se, m.nDims);		// two column array containing tangential vector components
+	m.getExtBdryData();
+	m.getNodeVecs(n,t);
 	getPhi(Phi_mm, mNodes, mNodes);
 
 	Eigen::VectorXd defVec = Eigen::VectorXd::Zero(N_m*m.nDims);
@@ -38,19 +47,31 @@ void rbf::performRbfPS(){
 
 
 	Eigen::MatrixXd Phi_im;
-	Eigen::ArrayXi freeNodes(m.slidingNodes.size()+m.intNodes.size());
-	freeNodes << m.slidingNodes, m.intNodes;
-	getPhi(Phi_im, freeNodes, mNodes);
+//	Eigen::ArrayXi freeNodes(m.slidingNodes.size()+m.intNodes.size());
+//	freeNodes << m.slidingNodes, m.intNodes;
+//	Eigen::ArrayXi freeNodes(m.slidingNodes.size());
+//	freeNodes << m.slidingNodes;
 
-	std::cout << Phi_im.rows() << '\t' << Phi_im.cols() << std::endl;
-
-	m.coords(freeNodes,0) += (Phi_im*a_x).array();
-	m.coords(freeNodes,1) += (Phi_im*a_y).array();
+	getPhi(Phi_im, m.slidingNodes, mNodes);
 
 
-	m.coords(mNodes,0) += (defVec(Eigen::seqN(0,N_m))).array();
-	m.coords(mNodes,1) += (defVec(Eigen::seqN(N_m,N_m))).array();
+	slidingCoords.col(0) += (Phi_im*a_x).array();
+	slidingCoords.col(1) += (Phi_im*a_y).array();
+
+
+//	m.coords(mNodes,0) += (defVec(Eigen::seqN(0,N_m))).array();
+//	m.coords(mNodes,1) += (defVec(Eigen::seqN(N_m,N_m))).array();
 //	std::cout << m.coords << std::endl;
+	Eigen::ArrayXXd finalDef(m.slidingNodes.size(),m.nDims);
+	for(int i=0; i<m.slidingNodes.size(); i++){
+//		Eigen::VectorXd dx = m.coords.row(m.slidingNodes(i)) - initCoords.row(m.slidingNodes(i));
+		Eigen::VectorXd dx = slidingCoords.row(i) - m.coords.row(m.slidingNodes(i));
+		Eigen::VectorXd n_local = n.row(i);
+		finalDef.row(i) = dx-dx.dot(n_local)*n_local;
+	}
+	std::cout << finalDef <<std::endl;
+	m.coords(m.slidingNodes,Eigen::all) += finalDef;
+//	m.coords(m.slidingNodes,Eigen::all) = slidingCoords;
 
 	m.writeMeshFile();
 
@@ -204,13 +225,13 @@ void rbf::getDefVec(Eigen::VectorXd& defVec){
 	// todo change expression in the classic rbf so that these statements work
 	// in case of the classical RBF the defVec is constructed such that it first contains the xdef of the int bdry then
 	// zero xdef of the ext bdry. Followed by the ydef of the int and ext bdries.
-//	defVec(Eigen::seqN(defVec.size()/m.nDims,m.intBdryNodes.size())).array() += dy;
-//	defVec(Eigen::seqN(defVec.size()/m.nDims,m.intBdryNodes.size())) += rotDef.col(1);
+	defVec(Eigen::seqN(defVec.size()/m.nDims,m.intBdryNodes.size())).array() += dy;
+	defVec(Eigen::seqN(defVec.size()/m.nDims,m.intBdryNodes.size())) += rotDef.col(1);
 
 	// for the DS RBF the vector has length nDim*N_m. First it contains the int bdry xdef, static zero xdef of the ext bdry,
 	// int bdry ydef and static ydef of the ext bdry.
-	defVec(Eigen::seqN(N_m,m.intBdryNodes.size())).array() += dy;
-	defVec(Eigen::seqN(N_m,m.intBdryNodes.size())) += rotDef.col(1);
+//	defVec(Eigen::seqN(N_m,m.intBdryNodes.size())).array() += dy;
+//	defVec(Eigen::seqN(N_m,m.intBdryNodes.size())) += rotDef.col(1);
 
 	// for the pseudo only the xdef and ydef of the int bdry nodes are relevant for the first deformation step
 	// This was without the zero displacement on the corners

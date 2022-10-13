@@ -430,6 +430,7 @@ void Mesh::getNodeVecs( Eigen::ArrayXXd& n, Eigen::ArrayXXd& t){
 	// Find for each sliding node the nearest midPnts
 	for(int i = 0; i < int(slidingNodes.size()); i++){
 		// Distance from sliding node to all mid-points
+
 		dist = (midPnts.rowwise()-coords.row(slidingNodes(i))).rowwise().norm();
 		// Sorting the indices with a custom comparator based on dist
 		std::sort(index.begin(), index.end(),[&](const int& a, const int& b) {
@@ -437,9 +438,15 @@ void Mesh::getNodeVecs( Eigen::ArrayXXd& n, Eigen::ArrayXXd& t){
 		    }
 		);
 
+
+
 		// weighted average of 2 nearest midpoints
-		n.row(i) = ( 1/dist(index(0))*nVecs.row(index(0)) + 1/dist(index(1))*nVecs.row(index(1)))/(1/dist(index(0)) + 1/dist(index(1)));
-		t.row(i) = ( 1/dist(index(0))*tVecs.row(index(0)) + 1/dist(index(1))*tVecs.row(index(1)))/(1/dist(index(0)) + 1/dist(index(1)));
+//		n.row(i) = ( 1/dist(index(0))*nVecs.row(index(0)) + 1/dist(index(1))*nVecs.row(index(1)))/(1/dist(index(0)) + 1/dist(index(1)));
+//		t.row(i) = ( 1/dist(index(0))*tVecs.row(index(0)) + 1/dist(index(1))*tVecs.row(index(1)))/(1/dist(index(0)) + 1/dist(index(1)));
+
+		//simply nearest point
+		n.row(i) = nVecs.row(index(0));
+		t.row(i) = tVecs.row(index(0));
 	}
 }
 
