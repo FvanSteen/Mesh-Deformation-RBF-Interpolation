@@ -10,13 +10,13 @@
 #include <math.h>
 using Eigen::MatrixXd;
 
-Mesh::Mesh(const std::string& inputFileName,const std::string& outputFileName,const std::vector<std::string>& ibTags,const std::vector<std::string>& ebTags,const double& rFac,const int& debugLvl)
-:ifName(inputFileName), ofName(outputFileName), nNodes(0), nDims(0),nElem(0),lvl(debugLvl), r(0)
-{readMeshFile(ibTags,ebTags,rFac);
+Mesh::Mesh(const std::string& inputFileName,const std::string& outputFileName,const std::vector<std::string>& ibTags,const std::vector<std::string>& ebTags,const double& rFac,const int& debugLvl, const std::string& slidingMode)
+:ifName(inputFileName), ofName(outputFileName), nNodes(0), nDims(0),nElem(0),lvl(debugLvl), r(0), mode(slidingMode)
+{readMeshFile(ibTags,ebTags);
 r = rFac*charLength();
 }
 
-void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector<std::string>& ebTags,const double& rFac){
+void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector<std::string>& ebTags){
 	if(lvl>=1){
 		std::cout << "Reading mesh file: " << ifName << std::endl;
 	}
@@ -27,8 +27,7 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 	int nIntBdryNodes = 0, nExtBdryNodes = 0;	// counters for int/ext boundary nodes
 	int nPnts = 0;								// counter for number of points
 	int pntsIdx;								// int that stores the line where "NPOIN= " is
-//	Eigen::ArrayXXi extBdryNodesMat(0,3);
-//	Eigen::ArrayXXi intBdryNodesMat(0,3);
+
 	extBdryNodesMat.resize(0,3);
 	intBdryNodesMat.resize(0,3);
 	int extBdryElemCnt = 0;
@@ -39,7 +38,7 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 	int nExtMarker = 0; 				// Counts the number of external boundary markers
 
 	std::string line;	// string containing line obtained by getline() function
-	std::ifstream mFile(ifName); 	//opening file name stored in mFile object
+	std::ifstream mFile("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes\\" +ifName); 	//opening file name stored in mFile object
 	// Check if file is opened
 	if (mFile.is_open()){
 		//Obtain line
@@ -137,7 +136,7 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 				// Check if line states number of elements in boundary
 				if(line.rfind("MARKER_ELEMS= ",0)==0){
 					MarkerElems = stoi(line.substr(13));
-					nExtBdryElems+= MarkerElems;
+					nExtBdryElems+= MarkerElems; //todo MarkerElems is redundant?
 					extBdryEndsIdx(nExtMarker) = nExtBdryElems-1;
 					extBdryNodesMat.conservativeResize(nExtBdryElems,extBdryNodesMat.cols());
 					nExtMarker++;
@@ -163,6 +162,7 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 				}
 			}
 
+
 			// Check if line corresponds to line containing node coordinates
 			if (lineNo > pntsIdx && nPnts < nNodes){
 				std::istringstream is(line);
@@ -178,6 +178,7 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 			}
 			lineNo++;
 		}
+
 		mFile.close();
 	}
 	else std::cout << "Not able to open input mesh file";
@@ -186,12 +187,13 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 	getBdryNodes(intBdryNodesMat, intBdryNodes, nIntBdryNodes, nIntBdryElems);
 	getBdryNodes(extBdryNodesMat, extBdryNodes, nExtBdryNodes, nExtBdryElems);
 
-	getMovingNodes(ebTags, extBdryEndsIdx);
-	getSlidingNodes();
-//	std::cout << "Internal boundary nodes: \n" << intBdryNodes <<std::endl;
-//	std::cout << "External boundary nodes: \n" << extBdryNodes <<std::endl;
-//	std::cout << "Moving boundary nodes: \n" << movingNodes <<std::endl;
-//	std::cout << "Sliding boundary nodes: \n" << slidingNodes << std::endl;
+
+
+	std::cout << "Sliding mode: " << mode << std::endl;
+	if(mode=="ds" || mode=="ps"){
+		getExtStaticNodes(ebTags, extBdryEndsIdx);
+		getSlidingNodes();
+	}
 
 
 	midPnts.resize(nExtBdryElems,nDims);
@@ -200,6 +202,17 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 
 	getIntNodes();
 
+	N_i = intNodes.size();
+	N_ib = intBdryNodes.size();
+	N_eb = extBdryNodes.size();
+	N_se = slidingNodes.size();
+	N_es = extStaticNodes.size();
+//
+//	std::cout << "Internal boundary nodes: \n" << intBdryNodes <<std::endl;
+//	std::cout << "External boundary nodes: \n" << extBdryNodes <<std::endl;
+//	std::cout << "Static external boundary nodes: \n" << extStaticNodes <<std::endl;
+//	std::cout << "Sliding boundary nodes: \n" << slidingNodes << std::endl;
+//	std::cout << "Internal nodes: \n " << intNodes << std::endl;
 	std::cout << "Mesh file read successfully" << std::endl;
 
 }
@@ -216,6 +229,9 @@ void Mesh::getBdryNodes(Eigen::ArrayXXi& bdryNodesMat, Eigen::ArrayXi& bdryNodes
 			case 5:
 				n = 3;
 				break;
+			case 9:
+				n = 4;
+				break;
 		}
 		int j = 0;
 		while(j<n){
@@ -226,8 +242,7 @@ void Mesh::getBdryNodes(Eigen::ArrayXXi& bdryNodesMat, Eigen::ArrayXi& bdryNodes
 	removeDuplicates(bdryNodesArr);
 }
 
-void Mesh::getMovingNodes(const std::vector<std::string>& ebTags, Eigen::ArrayXi& extBdryEndsIdx){
-
+void Mesh::getExtStaticNodes(const std::vector<std::string>& ebTags, Eigen::ArrayXi& extBdryEndsIdx){
 	// Adding first element indices
 	for(int i = 0; i < int(ebTags.size())-1; i ++){
 		extBdryEndsIdx(ebTags.size()+i) = extBdryEndsIdx(i)+1;
@@ -255,15 +270,15 @@ void Mesh::getMovingNodes(const std::vector<std::string>& ebTags, Eigen::ArrayXi
 	extBdryEnds.conservativeResize(idx+1);
 	std::sort(std::begin(extBdryEnds), std::end(extBdryEnds));
 
-	movingNodes.conservativeResize(idx+1);
-	int movingNodeIdx = 0;
+	extStaticNodes.conservativeResize(idx+1);
+	int extStaticNodeIdx = 0;
 	for(int i = 0; i<idx; i++){
 		if(extBdryEnds(i+1) == extBdryEnds(i)){
-			movingNodes(movingNodeIdx)=  extBdryEnds(i+1);
-			movingNodeIdx++;
+			extStaticNodes(extStaticNodeIdx)=  extBdryEnds(i+1);
+			extStaticNodeIdx++;
 		}
 	}
-	movingNodes.conservativeResize(movingNodeIdx);
+	extStaticNodes.conservativeResize(extStaticNodeIdx);
 }
 
 void Mesh::removeDuplicates(Eigen::ArrayXi& arr){
@@ -295,22 +310,22 @@ void Mesh::removeDuplicates(Eigen::ArrayXi& arr){
 
 void Mesh::getSlidingNodes(){
 	std::cout << "Determining sliding nodes" << std::endl;
-	slidingNodes.resize(extBdryNodes.size()-movingNodes.size());
+	slidingNodes.resize(extBdryNodes.size()-extStaticNodes.size());
 
 	int cnt = 0; int i=0, j=0;
 
 	while(j < int(extBdryNodes.size())){							// while loop over all nodes
-		if(i < int(movingNodes.size())){				// check if j is within the size of the boundary nodes
+		if(i < int(extStaticNodes.size())){				// check if j is within the size of the boundary nodes
 
-			if(extBdryNodes(j) == movingNodes(i)){				// if node i is equal to the j-th boundary elements then i is not a internal node
+			if(extBdryNodes(j) == extStaticNodes(i)){				// if node i is equal to the j-th boundary elements then i is not a internal node
 				i++; j++;						// going to next node i and element j of the boundary nodes
 			}
-			else if(extBdryNodes(j) < movingNodes(i)){			// if i is smaller than the j-th element of the boundary nodes
+			else if(extBdryNodes(j) < extStaticNodes(i)){			// if i is smaller than the j-th element of the boundary nodes
 				slidingNodes(cnt) = extBdryNodes(j);				// then i is an internal node
 				j++; cnt++;						// update index of internal nodes and i
 
 			}
-			else if(extBdryNodes(j) > movingNodes(i)){			// if i is larger than the j-th boundary element
+			else if(extBdryNodes(j) > extStaticNodes(i)){			// if i is larger than the j-th boundary element
 				i++;							// then next boundary element should be checked.
 			}
 		}
@@ -377,9 +392,10 @@ void Mesh::writeMeshFile(){
 //	std::cout << coords << std::endl;
 	std::ofstream outputF;
 	outputF.precision(15);		// sets precision of the floats in the file
-	outputF.open(ofName, std::ios::out); // ios::out allows output to file
 
-	std::ifstream inputF(ifName);
+	outputF.open("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes\\" + ofName, std::ios::out); // ios::out allows output to file
+
+	std::ifstream inputF("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes\\" + ifName);
 	std::string mystring;
 
 	bool printFlag = false;
@@ -387,7 +403,12 @@ void Mesh::writeMeshFile(){
 
 	while (getline(inputF, mystring)){
 		if(printFlag && cnt < nNodes){
-			outputF << coords(cnt,0)<< '\t' << coords(cnt,1) << '\t'<< cnt << std::endl;
+			if(nDims == 2){
+				outputF << coords(cnt,0)<< '\t' << coords(cnt,1) << '\t'<< cnt << std::endl;
+			}
+			else if(nDims == 3){
+				outputF << coords(cnt,0)<< '\t' << coords(cnt,1) << '\t' << coords(cnt,2) << '\t' << cnt << std::endl;
+			}
 			cnt++;
 
 		} else outputF << mystring << std::endl;
@@ -400,7 +421,6 @@ void Mesh::writeMeshFile(){
 	outputF.close();
 	std::cout << "Done writing mesh file: " << ofName << std::endl;
 }
-
 
 void Mesh::getExtBdryData(){
 	double length,dx,dy;
@@ -420,7 +440,7 @@ void Mesh::getExtBdryData(){
 
 
 
-void Mesh::getNodeVecs( Eigen::ArrayXXd& n, Eigen::ArrayXXd& t){
+void Mesh::getNodeVecs(Eigen::ArrayXXd& n, Eigen::ArrayXXd& t){
 
 	Eigen::ArrayXd dist;
 
@@ -430,7 +450,6 @@ void Mesh::getNodeVecs( Eigen::ArrayXXd& n, Eigen::ArrayXXd& t){
 	// Find for each sliding node the nearest midPnts
 	for(int i = 0; i < int(slidingNodes.size()); i++){
 		// Distance from sliding node to all mid-points
-
 		dist = (midPnts.rowwise()-coords.row(slidingNodes(i))).rowwise().norm();
 		// Sorting the indices with a custom comparator based on dist
 		std::sort(index.begin(), index.end(),[&](const int& a, const int& b) {
@@ -439,7 +458,7 @@ void Mesh::getNodeVecs( Eigen::ArrayXXd& n, Eigen::ArrayXXd& t){
 		);
 
 
-
+		//todo is weighted average the best option?
 		// weighted average of 2 nearest midpoints
 //		n.row(i) = ( 1/dist(index(0))*nVecs.row(index(0)) + 1/dist(index(1))*nVecs.row(index(1)))/(1/dist(index(0)) + 1/dist(index(1)));
 //		t.row(i) = ( 1/dist(index(0))*tVecs.row(index(0)) + 1/dist(index(1))*tVecs.row(index(1)))/(1/dist(index(0)) + 1/dist(index(1)));
@@ -447,6 +466,32 @@ void Mesh::getNodeVecs( Eigen::ArrayXXd& n, Eigen::ArrayXXd& t){
 		//simply nearest point
 		n.row(i) = nVecs.row(index(0));
 		t.row(i) = tVecs.row(index(0));
+	}
+}
+
+void Mesh::getNormals(Eigen::ArrayXXd& n){
+
+	Eigen::ArrayXd dist;
+
+	// Array with unsorted indices ranging from 0,1...N_midPnts
+	Eigen::ArrayXi index = Eigen::ArrayXi::LinSpaced(midPnts.rows(),0,midPnts.rows()-1);
+
+	// Find for each sliding node the nearest midPnts
+	for(int i = 0; i < int(slidingNodes.size()); i++){
+		// Distance from sliding node to all mid-points
+		dist = (midPnts.rowwise()-coords.row(slidingNodes(i))).rowwise().norm();
+		// Sorting the indices with a custom comparator based on dist
+		std::sort(index.begin(), index.end(),[&](const int& a, const int& b) {
+		        return (dist[a] < dist[b]);
+		    }
+		);
+		//todo is weighted average the best option?
+		// weighted average of 2 nearest midpoints
+//		n.row(i) = ( 1/dist(index(0))*nVecs.row(index(0)) + 1/dist(index(1))*nVecs.row(index(1)))/(1/dist(index(0)) + 1/dist(index(1)));
+//		t.row(i) = ( 1/dist(index(0))*tVecs.row(index(0)) + 1/dist(index(1))*tVecs.row(index(1)))/(1/dist(index(0)) + 1/dist(index(1)));
+
+		//simply nearest point
+		n.row(i) = nVecs.row(index(0));
 	}
 }
 

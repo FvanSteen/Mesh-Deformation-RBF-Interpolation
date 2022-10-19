@@ -9,31 +9,32 @@
 class rbf {
 public:
 	Mesh m;
-	const double dx, dy;
+	const double dx, dy, dz;
 	Eigen::RowVectorXd rotPnt;
 	const int steps;
-	int N_m, N_se;
+	int N_m;
+	int N_mPro; // subset used in the first projection step
+	Eigen::ArrayXi mNodesPro;
 	Eigen::Matrix2d rotMat;
 	Eigen::ArrayXi mNodes;
 	const std::string mode;
-	// todo can rotationPnt be passed by reference?
-	rbf(Mesh& meshOb,const double xDef, const double yDef, const double rotDefDeg, const int steps, Eigen::RowVectorXd rotationPnt, const std::string& mode);
-//	Eigen::MatrixXd newCoords;
+	Eigen::VectorXd dVec;
+	rbf(Mesh& meshOb,const double xDef, const double yDef, const double zDef, const double rotDefDeg, const int steps, Eigen::RowVectorXd& rotationPnt, const std::string& slidingMode);
 
-	void performRbfDS();
-	void performRbfInterpolation();
+	void RBFMain();
 
+	void RBF_standard();
+	void performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVec);
 	void getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::ArrayXi& idxSet2);
-	void getDefVec(Eigen::VectorXd& defVec);
-	void getRotDef();
-	// todo check the rbf eval function
-	double rbfEval(double distance);
-	void getDisplacement(Eigen::MatrixXd& Phi, Eigen::VectorXd& a_x, Eigen::VectorXd& a_y, Eigen::VectorXd& defVec);
+	void getDefVec(Eigen::VectorXd& defVec, int& N);
+
+	void RBF_DS();
+	void performRBF_DS(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_im, Eigen::MatrixXd& Phi_is, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_ss, Eigen::VectorXd& defVec, Eigen::VectorXd& alpha);
 	void getPhiDS(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_mm,Eigen::MatrixXd& Phi_ms, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_ss, Eigen::ArrayXXd& n, Eigen::ArrayXXd& t);
-	void getDisplacementDS(Eigen::MatrixXd& Phi_im, Eigen::MatrixXd& Phi_is,Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_ss, Eigen::VectorXd& alpha, Eigen::VectorXd& defVec);
 
-	void performRbfPS();
-
+	void RBF_PS();
+	void performRBF_PS(Eigen::MatrixXd& Phi_mmPro, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVecPro, Eigen::ArrayXXd& delta,Eigen::ArrayXXd& n, Eigen::ArrayXXd& finalDef, Eigen::VectorXd& defVec);
+	//	double rbfEval(double distance);
 private:
 
 
