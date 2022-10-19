@@ -3,7 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.collections
 from colMap import colMap
-
+import math
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from getCrossSection import getCrossSection
 def getMeshQuals(faces,vertices, alphas_0):
     
     [alphas,lambda_11, lambda_22] = getMeshQualParams(faces,vertices)
@@ -32,13 +34,15 @@ def getMeshQualParams(faces, vertices):
     return [alphas,lambda_11,lambda_22]
 
 def getPlotData(fileName, intBdryTag):
+    x = os.getcwd()
     fileObj = open(x+fileName, "r") 
 
     lines = fileObj.read().splitlines()
     fileObj.close()
-
+    
     idx = 0
     for line in lines:
+        
         if line.strip().startswith('NDIME= '):
             nDim = int(line[7:])
             nDimIdx = idx
@@ -50,26 +54,26 @@ def getPlotData(fileName, intBdryTag):
             nPntIdx = idx
         elif line.strip().startswith('MARKER_TAG= '+intBdryTag):
             intBdryIdx = idx+1
-        
         idx += 1
     
 
     print("Dimensions:\t", nDim, "\nElements:\t",nElem, "\nPoints:\t\t", nPnt)
     print(nDimIdx,nElemIdx,nPntIdx)
-    
+#    
     nLine = lines[intBdryIdx]
     nInElems = int(nLine[14:])
     f_in = np.empty([1,2*nInElems],dtype=int)
-    
-    for i in range(nInElems):
-        lineData = lines[intBdryIdx+1+i].strip().split('\t')    
-        f_in[0,2*i:2*i+2] = lineData[1:3]
+#    
+#    for i in range(nInElems):
+#        lineData = lines[intBdryIdx+1+i].strip().split('\t')    
+#        f_in[0,2*i:2*i+2] = lineData[1:3]
     
     # Change the 3 and 4 here to be adjustable to the type of elements used in the mesh
-    f = np.empty((nElem,4),dtype=int)
+#    nElem = 1
+    f = np.empty((nElem,8),dtype=int)
     for i in range(nElem):
         lineData = lines[i+nElemIdx+1].strip().split('\t')
-        f[i,:] = lineData[1:5]
+        f[i,:] = lineData[1:9]
         
         
     
@@ -78,6 +82,7 @@ def getPlotData(fileName, intBdryTag):
         lineData = lines[i+nPntIdx+1].strip().split('\t')
         v[i,:] = lineData[:nDim]
             
+        
     return [f,v,f_in]
 
 # importing the default matlab colormap from colMap.py
@@ -85,36 +90,62 @@ cmapMatlab = colMap();
  
 # Setting directory to find .su2 files
 os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes')
-x = os.getcwd()
+#os.chdir('c:\\Users\\floyd\\eclipse-workspace\\Thesis\\createMeshFiles')
+
+
 
 # Provide filenames of the meshes
-fileNames = ['/5x5.su2', '/5x5_def.su2']
+#fileNames = ['/25x25mesh.su2', '/25x25mesh_def.su2']
 #fileNames = ['/TestMesh.su2', '/TestMesh_def.su2']
-intBdryTag = "block"
-#plt.close('all')
+intBdryTag = "BLOCK"
+fileNames = ["/15x15x5_def.su2"] 
+
+[f,v,f_in] = getPlotData(fileNames[0],intBdryTag)
+
+
+
+#verts = [np.array([[0,0,0], [1,0,0], [1,1,1], [0,1,1]])]
+
+z_cut = .5
+data = getCrossSection(f,v,z_cut)
+
+
 fig = plt.figure()
+ax = fig.add_subplot(1,1,1)
+pc = matplotlib.collections.PolyCollection(data, facecolor='b', edgecolor='black')
+polys = ax.add_collection(pc)
+ax.set_xlim(0,1)
+ax.set_ylim(0,1)
+ax.set_aspect('equal')
+plt.show()
+
+#
+#fig = plt.figure()
+#ax = fig.add_subplot(1,1,1,projection='3d')
+##for i in range(len(f)):
+#for i in range(50,75):
+#    verts = [np.array([v[f][i][0],v[f][i][1],v[f][i][5],v[f][i][4]]),
+#          np.array([v[f][i][3],v[f][i][2],v[f][i][6],v[f][i][7]]),
+#          np.array([v[f][i][3],v[f][i][0],v[f][i][4],v[f][i][7]]),
+#          np.array([v[f][i][2],v[f][i][1],v[f][i][5],v[f][i][6]]),
+#          np.array([v[f][i][0],v[f][i][1],v[f][i][2],v[f][i][3]]),
+#          np.array([v[f][i][4],v[f][i][5],v[f][i][6],v[f][i][7]])]
+#    pc = Poly3DCollection(verts, facecolors="red", edgecolor="black",linewidth=0.5)
+#    polys = ax.add_collection3d(pc)
+#
+#ax.set_xlabel('x')
+#ax.set_ylabel('y')
+#ax.set_zlabel('z')
+##
+###ax.azim = 90
+###ax.elev = 90
+#ax.set_xlim(0,1)
+#ax.set_ylim(0,1)
+#ax.set_zlim(0,1)
 
 
-for i in range(0,len(fileNames)):
-    ax = fig.add_subplot(1,len(fileNames),i+1)
-    [f,v,f_in] = getPlotData(fileNames[i],intBdryTag)  
-    
-    if i==0:
-        [alphas_0,_,_] = getMeshQualParams(f,v)
-        
-    meshQual = getMeshQuals(f,v,alphas_0)
-    colors = cmapMatlab(plt.Normalize(0,1)(meshQual))
-    pc = matplotlib.collections.PolyCollection(v[f],cmap=cmapMatlab, facecolors=colors, edgecolor="black",linewidth=0.5)
-    pc_inner = matplotlib.collections.PolyCollection(v[f_in],cmap=cmapMatlab, facecolors="white", edgecolor="black",linewidth=0.5)
-    polys = ax.add_collection(pc)
-    polys = ax.add_collection(pc_inner)    
-    
-    pc.set_array(None)
-    ax.autoscale()
-    ax.set_aspect('equal')
-    polys.set_clim(0,1)
-    plt.colorbar(polys, ax=ax, shrink=0.44)
-    ax.title.set_text('Initial Mesh')
-    ax.set_ylim([-0.05, 1.05])
+
+
+
 
 
