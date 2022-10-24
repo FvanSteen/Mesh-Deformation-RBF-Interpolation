@@ -19,9 +19,11 @@ public:
 	Eigen::ArrayXXd nVecs;
 	Eigen::ArrayXXd tVecs;
 	Eigen::ArrayXXd midPnts;
-	Eigen::ArrayXi extStaticNodes, slidingNodes;
+	Eigen::ArrayXi extStaticNodes, slidingSurfNodes, slidingEdgeNodes;
+	Eigen::ArrayXi nrElemsExtBdry;
+	Eigen::ArrayXXi edgeConnectivity, surfConnectivity;
 	double r; // support radius
-	int N_i, N_ib, N_eb, N_se, N_es;
+	int N_i, N_ib, N_eb, N_se, N_es, N_ss;
 	const std::string mode;
 
 
@@ -37,6 +39,13 @@ public:
 	void getBdryNodes(Eigen::ArrayXXi& bdryNodesMat, Eigen::ArrayXi& bdryNodesArr, int& nBdryNodes, int& nBdryElems);
 	void getNodeVecs(Eigen::ArrayXXd& n, Eigen::ArrayXXd& t);
 	void getNormals(Eigen::ArrayXXd& n);
+
+	void getNodeType(Eigen::ArrayXi& nrElemsExtBdry, Eigen::ArrayXXi& extBdryNodesMat);
+	void getEdgeConnectivity(Eigen::ArrayXi& nrElemsExtBdry);
+	void getSurfConnectivity();
+	void getVecs(Eigen::ArrayXXd& t_se, Eigen::ArrayXXd& n1_se, Eigen::ArrayXXd& n2_se, Eigen::ArrayXXd& n_ss, Eigen::ArrayXXd& t1_ss, Eigen::ArrayXXd& t2_ss);
+	void getPerpVecs(Eigen::ArrayXXd& v1,Eigen::ArrayXXd& v2,Eigen::ArrayXXd& v3);
+
 };
 
 #endif /* MESH_H_ */

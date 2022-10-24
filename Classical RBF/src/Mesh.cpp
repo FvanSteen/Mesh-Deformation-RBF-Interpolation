@@ -37,6 +37,7 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 	int MarkerElems;				// locally stores how many elements are in that boundary
 	int nExtMarker = 0; 				// Counts the number of external boundary markers
 
+	nrElemsExtBdry.resize(ebTags.size());
 	std::string line;	// string containing line obtained by getline() function
 	std::ifstream mFile("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes\\" +ifName); 	//opening file name stored in mFile object
 	// Check if file is opened
@@ -138,6 +139,7 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 					MarkerElems = stoi(line.substr(13));
 					nExtBdryElems+= MarkerElems; //todo MarkerElems is redundant?
 					extBdryEndsIdx(nExtMarker) = nExtBdryElems-1;
+					nrElemsExtBdry(nExtMarker) = MarkerElems;
 					extBdryNodesMat.conservativeResize(nExtBdryElems,extBdryNodesMat.cols());
 					nExtMarker++;
 				}
@@ -183,17 +185,24 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 	}
 	else std::cout << "Not able to open input mesh file";
 
+//	Eigen::ArrayXi idxSlidingSurf, idxSlidingEdge, idxExtStatic;
+
+
+	if(mode=="ds" || mode=="ps"){
+		getNodeType(nrElemsExtBdry, extBdryNodesMat);
+		N_se = slidingEdgeNodes.size();
+		N_ss = slidingSurfNodes.size();
+		N_es = extStaticNodes.size();
+
+		getEdgeConnectivity(nrElemsExtBdry);
+		if(nDims == 3){
+			getSurfConnectivity();
+		}
+	}
 
 	getBdryNodes(intBdryNodesMat, intBdryNodes, nIntBdryNodes, nIntBdryElems);
 	getBdryNodes(extBdryNodesMat, extBdryNodes, nExtBdryNodes, nExtBdryElems);
 
-
-
-	std::cout << "Sliding mode: " << mode << std::endl;
-	if(mode=="ds" || mode=="ps"){
-		getExtStaticNodes(ebTags, extBdryEndsIdx);
-		getSlidingNodes();
-	}
 
 
 	midPnts.resize(nExtBdryElems,nDims);
@@ -205,8 +214,7 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 	N_i = intNodes.size();
 	N_ib = intBdryNodes.size();
 	N_eb = extBdryNodes.size();
-	N_se = slidingNodes.size();
-	N_es = extStaticNodes.size();
+
 //
 //	std::cout << "Internal boundary nodes: \n" << intBdryNodes <<std::endl;
 //	std::cout << "External boundary nodes: \n" << extBdryNodes <<std::endl;
@@ -217,6 +225,69 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 
 }
 
+void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, Eigen::ArrayXXi& extBdryNodesMat){//todo extbdryNodesMat is a public variable
+	Eigen::ArrayXi bdryNodesArr;
+	Eigen::ArrayXi idxSS, idxSE, idxStatic;
+	int cSS,cSE,cStat;
+
+	for(int elem = 0; elem < nrElemsExtBdry.size(); elem++){
+		bdryNodesArr.resize(nrElemsExtBdry(elem)*(extBdryNodesMat.cols()-1));
+		for(int i =0; i<nrElemsExtBdry(elem);i++){
+			for(int j=0; j< extBdryNodesMat.cols()-1; j++ ){
+				bdryNodesArr(j+i*(extBdryNodesMat.cols()-1)) = extBdryNodesMat(i+ nrElemsExtBdry(Eigen::seqN(0,elem)).sum(),j+1);
+			}
+		}
+		std::sort(std::begin(bdryNodesArr),std::end(bdryNodesArr));
+
+		if(idxSS.size() != bdryNodesArr.size()){
+			idxSS.resize(bdryNodesArr.size());
+			idxSE.resize(bdryNodesArr.size());
+			idxStatic.resize(bdryNodesArr.size());
+		}
+
+		cSS = 0; cSE = 0; cStat = 0;
+
+		if(nDims == 3){
+			for (int i= 0; i< bdryNodesArr.size();i++){
+				if(i< bdryNodesArr.size()-3 && bdryNodesArr(i) == bdryNodesArr(i+1) && bdryNodesArr(i+1) == bdryNodesArr(i+2) && bdryNodesArr(i+2) == bdryNodesArr(i+3)){
+					idxSS(cSS) = bdryNodesArr(i); cSS++;
+					i+= 3;
+				}else if(i< bdryNodesArr.size()-1 && bdryNodesArr(i) == bdryNodesArr(i+1)){
+					idxSE(cSE) = bdryNodesArr(i); cSE++;
+					i++;
+				}else{
+					idxStatic(cStat) = bdryNodesArr(i); cStat++;
+				}
+			}
+		}else if(nDims ==2){
+			for (int i= 0; i< bdryNodesArr.size();i++){
+				if(i< bdryNodesArr.size()-1 && bdryNodesArr(i) == bdryNodesArr(i+1)){
+					idxSE(cSE) = bdryNodesArr(i); cSE++;
+					i++;
+				}else{
+					idxStatic(cStat) = bdryNodesArr(i); cStat++;
+				}
+			}
+		}
+
+		slidingSurfNodes.conservativeResize(slidingSurfNodes.size()+cSS);
+		slidingSurfNodes(Eigen::lastN(cSS)) = idxSS(Eigen::seqN(0,cSS));
+
+		slidingEdgeNodes.conservativeResize(slidingEdgeNodes.size()+cSE);
+		slidingEdgeNodes(Eigen::lastN(cSE)) = idxSE(Eigen::seqN(0,cSE));
+
+		extStaticNodes.conservativeResize(extStaticNodes.size()+cStat);
+		extStaticNodes(Eigen::lastN(cStat)) = idxStatic(Eigen::seqN(0,cStat));
+
+	}
+
+	if(nDims==3){
+		removeDuplicates(slidingSurfNodes);
+	}
+
+	removeDuplicates(slidingEdgeNodes);
+	removeDuplicates(extStaticNodes);
+}
 void Mesh::getBdryNodes(Eigen::ArrayXXi& bdryNodesMat, Eigen::ArrayXi& bdryNodesArr, int& nBdryNodes, int& nBdryElems){
 	bdryNodesArr.resize(nBdryNodes);
 	int count = 0;
@@ -239,6 +310,7 @@ void Mesh::getBdryNodes(Eigen::ArrayXXi& bdryNodesMat, Eigen::ArrayXi& bdryNodes
 			j++;count++;
 		}
 	}
+
 	removeDuplicates(bdryNodesArr);
 }
 
@@ -289,7 +361,6 @@ void Mesh::removeDuplicates(Eigen::ArrayXi& arr){
 	 */
 
 	std::sort(std::begin(arr), std::end(arr));
-
 	// Initialise array for the unique elements, could at most contain arr.size() unique elements
 	Eigen::ArrayXi uniqueElems(arr.size());
 
@@ -310,7 +381,7 @@ void Mesh::removeDuplicates(Eigen::ArrayXi& arr){
 
 void Mesh::getSlidingNodes(){
 	std::cout << "Determining sliding nodes" << std::endl;
-	slidingNodes.resize(extBdryNodes.size()-extStaticNodes.size());
+	slidingEdgeNodes.resize(extBdryNodes.size()-extStaticNodes.size());
 
 	int cnt = 0; int i=0, j=0;
 
@@ -321,7 +392,7 @@ void Mesh::getSlidingNodes(){
 				i++; j++;						// going to next node i and element j of the boundary nodes
 			}
 			else if(extBdryNodes(j) < extStaticNodes(i)){			// if i is smaller than the j-th element of the boundary nodes
-				slidingNodes(cnt) = extBdryNodes(j);				// then i is an internal node
+				slidingEdgeNodes(cnt) = extBdryNodes(j);				// then i is an internal node
 				j++; cnt++;						// update index of internal nodes and i
 
 			}
@@ -330,7 +401,7 @@ void Mesh::getSlidingNodes(){
 			}
 		}
 		else{									// if all j boundary elements are checked and i < nNodes
-			slidingNodes(cnt) = extBdryNodes(j);					// include remaining points as internal nodes
+			slidingEdgeNodes(cnt) = extBdryNodes(j);					// include remaining points as internal nodes
 			cnt++; j++;							// update index and i
 		}
 
@@ -448,9 +519,9 @@ void Mesh::getNodeVecs(Eigen::ArrayXXd& n, Eigen::ArrayXXd& t){
 	Eigen::ArrayXi index = Eigen::ArrayXi::LinSpaced(midPnts.rows(),0,midPnts.rows()-1);
 
 	// Find for each sliding node the nearest midPnts
-	for(int i = 0; i < int(slidingNodes.size()); i++){
+	for(int i = 0; i < int(slidingEdgeNodes.size()); i++){
 		// Distance from sliding node to all mid-points
-		dist = (midPnts.rowwise()-coords.row(slidingNodes(i))).rowwise().norm();
+		dist = (midPnts.rowwise()-coords.row(slidingEdgeNodes(i))).rowwise().norm();
 		// Sorting the indices with a custom comparator based on dist
 		std::sort(index.begin(), index.end(),[&](const int& a, const int& b) {
 		        return (dist[a] < dist[b]);
@@ -477,9 +548,9 @@ void Mesh::getNormals(Eigen::ArrayXXd& n){
 	Eigen::ArrayXi index = Eigen::ArrayXi::LinSpaced(midPnts.rows(),0,midPnts.rows()-1);
 
 	// Find for each sliding node the nearest midPnts
-	for(int i = 0; i < int(slidingNodes.size()); i++){
+	for(int i = 0; i < int(slidingEdgeNodes.size()); i++){
 		// Distance from sliding node to all mid-points
-		dist = (midPnts.rowwise()-coords.row(slidingNodes(i))).rowwise().norm();
+		dist = (midPnts.rowwise()-coords.row(slidingEdgeNodes(i))).rowwise().norm();
 		// Sorting the indices with a custom comparator based on dist
 		std::sort(index.begin(), index.end(),[&](const int& a, const int& b) {
 		        return (dist[a] < dist[b]);
@@ -495,4 +566,196 @@ void Mesh::getNormals(Eigen::ArrayXXd& n){
 	}
 }
 
+void Mesh::getEdgeConnectivity(Eigen::ArrayXi& nrElemsExtBdry){
+	std::cout << "Obtaining edge connectivity" << std::endl;
 
+	edgeConnectivity.resize(N_se,2);
+	int row, idx, col, cnt;
+	bool found;
+
+	Eigen::ArrayXi bdryElement;
+	// for each sliding edge node
+	for(int node = 0; node < N_se; node++){
+		col = 1;	// start from second column since first contains the element type
+		cnt = 0;	// set count to zero, will go to 2 when both edges corresponding to a node are found
+
+//		 for each column in extBdryNodesMat and while the cnt has not reached 2
+
+		while(col<extBdryNodesMat.cols() && cnt < 2){
+
+
+			// find the row that contains the slidingEdgeNode
+			row = std::distance(std::begin(extBdryNodesMat.col(col)), std::find(std::begin(extBdryNodesMat.col(col)), std::end(extBdryNodesMat.col(col)), slidingEdgeNodes(node)));
+//			std::cout << row << std::endl;
+//			std::cout << extBdryNodesMat.row(row) << std::endl;
+//				bdryElement = extBdryNodesMat(Eigen::seqN(startElem,nrElemsExtBdry(bdry)), col);
+//				std::cout << bdryElement << std::endl;
+//				row = std::distance(std::begin(bdryElement), std::find(std::begin(bdryElement), std::end(bdryElement), slidingEdgeNodes(node)));
+//				std::cout << "row= " << row << std::endl;
+			// if row is not equal to the amount of rows in extBdryNodesMat then that column contain the sliding edge node
+			if (row!=extBdryNodesMat.rows()){
+//					std::cout << "val is found in column" << std::endl;
+				found = false; // boolean for checking if one of the edges corresponds to an ext static node
+				// first a check is performed if the edge corresponds to an ext static node
+//					std::cout << extBdryNodesMat.row(row) << std::endl;
+				for (int j=1; j< extBdryNodesMat.cols(); j++){
+					// if value j in row is not equal to the sliding edge node
+
+					if(extBdryNodesMat(row,j) != slidingEdgeNodes(node)){
+						// check if the value is in the extStaticNodes array
+						idx = std::distance(std::begin(extStaticNodes), std::find(std::begin(extStaticNodes), std::end(extStaticNodes),extBdryNodesMat(row,j)));
+						// if the value is in the array and either the count is zero or the found value is not equal to a previously found value
+						if(idx!=N_es){
+							if(cnt == 0 || extBdryNodesMat(row,j) != edgeConnectivity(node,cnt-1)){
+
+//								std::cout << "Coupled Nodes: " << slidingEdgeNodes(node) << '\t' << extBdryNodesMat(row,j) << std::endl;
+								edgeConnectivity(node,cnt) = extBdryNodesMat(row,j); // add found node to connectivity array
+								cnt++; // update count
+								found = true; // if an ext static value is found then there is no need to check the other sliding edge nodes
+							} else{
+
+								found = true;
+							}
+						}
+					}
+				}
+
+				// if the edge does not correspond to a ext static node, then other sliding edge nodes are checked
+				if(found!= true){
+					// for each column of the row
+					for (int j=1; j< extBdryNodesMat.cols(); j++){
+						// if the value is not equal to the sliding edge node
+						if(extBdryNodesMat(row,j) != slidingEdgeNodes(node)){
+							// obtain index of the row
+							idx = std::distance(std::begin(slidingEdgeNodes), std::find(std::begin(slidingEdgeNodes), std::end(slidingEdgeNodes),extBdryNodesMat(row,j)));
+
+							// if the value exists in the array and the cnt is zero or the the value has not been found yet
+							if(idx!=N_se && (cnt == 0 || extBdryNodesMat(row,j) != edgeConnectivity(node,cnt-1))){
+//								std::cout << "Coupled Nodes: " << slidingEdgeNodes(node) << '\t' << extBdryNodesMat(row,j) << std::endl;
+								edgeConnectivity(node,cnt) = extBdryNodesMat(row,j); // add found node to connectivity array
+								cnt++;	// update count
+							}
+						}
+
+					}
+				}
+			}
+		col++;
+//			}
+//			std::cout << nrElemsExtBdry << std::endl;
+//			startElem += nrElemsExtBdry(bdry);
+		}
+
+	}
+//	for(int i=0; i < edgeConnectivity.rows(); i++){
+//		std::cout << slidingEdgeNodes(i) << '\t'  << edgeConnectivity.row(i)<<std::endl;
+//	}
+}
+
+
+void Mesh::getSurfConnectivity(){
+	surfConnectivity.resize(N_ss, 4);
+	int col,idx,cnt;
+	for(int i=0; i<N_ss; i++){
+		col = 1;
+		cnt = 0;
+		while(col < extBdryNodesMat.cols()){
+			idx = std::distance(std::begin(extBdryNodesMat.col(col)), std::find( std::begin(extBdryNodesMat.col(col)), std::end(extBdryNodesMat.col(col)), slidingSurfNodes(i)));
+			if(idx!=extBdryNodesMat.rows()){
+//				std::cout << idx << '\t' << extBdryNodesMat.row(idx) << std::endl;
+				surfConnectivity(i,cnt) = idx;
+				cnt++;
+			}
+		col++;
+		}
+	}
+//	std::cout << surfConnectivity << std::endl;
+}
+
+void Mesh::getVecs(Eigen::ArrayXXd& t_se, Eigen::ArrayXXd& n1_se, Eigen::ArrayXXd& n2_se, Eigen::ArrayXXd& n_ss, Eigen::ArrayXXd& t1_ss, Eigen::ArrayXXd& t2_ss){
+//	Eigen::ArrayXXd tVecs_se(N_se,nDims);
+//	Eigen::ArrayXXd nVecs1_se(N_se,nDims);
+//	Eigen::ArrayXXd nVecs2_se(N_se,nDims);
+
+
+	Eigen::RowVectorXd t(nDims), n(nDims);
+	Eigen::RowVectorXd v1(nDims),v2(nDims), v3(nDims);
+	double totalDist, dist;
+	Eigen::VectorXd midPntVec;
+	std::cout << "Finding sliding edge vectors" << std::endl;
+//	for(int i =0;i<N_se;i++){
+	for(int i =0;i<N_se;i++){
+		//todo 2 terms can possibly be eliminated from the next line
+		v1 = coords.row(edgeConnectivity(i,0)) - coords.row(slidingEdgeNodes(i));
+		v2 = coords.row(slidingEdgeNodes(i)) - coords.row(edgeConnectivity(i,1));
+//		t = (coords.row(edgeConnectivity(i,0)) - coords.row(slidingEdgeNodes(i)) + coords.row(slidingEdgeNodes(i)) - coords.row(edgeConnectivity(i,1)))/2;
+
+
+//		t = (v1/v1.norm() + v2/v2.norm);
+		t = (v1/v1.norm() + v2/v2.norm())/(1/v1.norm()+1/v2.norm());
+		t_se.row(i) = t/t.norm();
+
+	}
+
+	getPerpVecs(t_se, n1_se, n2_se);
+
+	for(int j= 0; j<N_ss; j++){
+//		std::cout << "sliding surf node in question: " << slidingSurfNodes(j) << std::endl;
+		n = Eigen::RowVectorXd::Zero(nDims);
+		totalDist = 0;
+		for (int k=0;k<4;k++){
+//			std::cout << std::endl;
+//			std::cout << extBdryNodesMat.row(surfConnectivity(j,k)) << std::endl;
+			v1 = coords.row(extBdryNodesMat(surfConnectivity(j,k),2)) - coords.row(extBdryNodesMat(surfConnectivity(j,k),1));
+			v2 = coords.row(extBdryNodesMat(surfConnectivity(j,k),4)) - coords.row(extBdryNodesMat(surfConnectivity(j,k),1));
+
+			v3(0) = v1(1)*v2(2) - v1(2)*v2(1);
+			v3(1) = v1(2)*v2(0) - v1(0)*v2(2);
+			v3(2) = v1(0)*v2(1) - v1(1)*v2(0);
+//			std::cout << v1 << '\t' << v2 << '\t' << v3 << std::endl;
+			midPntVec = (coords.row(extBdryNodesMat(surfConnectivity(j,k),1)) + coords.row(extBdryNodesMat(surfConnectivity(j,k),2)) + coords.row(extBdryNodesMat(surfConnectivity(j,k),3)) + coords.row(extBdryNodesMat(surfConnectivity(j,k),4)))/4 - coords.row(slidingSurfNodes(j));
+			dist = midPntVec.norm();
+			totalDist += 1/dist;
+			n += v3/dist;
+			//
+//			/for(int l = 0; l< surfConnectivity.cols();l++){
+//				sum = sum + coords.row(extBdryNodesMat(surfConnectivity(j,k),l));
+//			}
+
+//			std::cout << totalDist << '\t'<< dist << std::endl;
+//			std::cout << n <<  std::endl;
+
+		}
+
+		n = (n/totalDist);
+		n_ss.row(j) = n/n.norm();
+	}
+
+	getPerpVecs(n_ss, t1_ss, t2_ss);
+}
+
+void Mesh::getPerpVecs(Eigen::ArrayXXd& v1,Eigen::ArrayXXd& v2, Eigen::ArrayXXd& v3){
+
+	v2.col(0) = v1.col(1) - v1.col(2);
+	v2.col(1) = v1.col(2) - v1.col(0);
+	v2.col(2) = v1.col(0) - v1.col(1);
+
+	v3.col(0) = v1.col(1)*v2.col(2) - v1.col(2)*v2.col(1);
+	v3.col(1) = v1.col(2)*v2.col(0) - v1.col(0)*v2.col(2);
+	v3.col(2) = v1.col(0)*v2.col(1) - v1.col(1)*v2.col(0);
+
+	for(int x = 0; x<v2.rows();x++){
+		v2.row(x) = v2.row(x)/ v2.row(x).matrix().norm();
+		v3.row(x) = v3.row(x)/ v3.row(x).matrix().norm();
+	}
+
+
+//	for(int i=0; i<v1.rows();i++){
+//		Eigen::VectorXd vec1 = v2.row(i);
+//		Eigen::VectorXd vec2 = v3.row(i);
+//
+//		std::cout << vec1.dot(vec2) << std::endl;
+//	}
+
+
+}
