@@ -22,21 +22,21 @@ int main()
 //	const string ifName = "5x5.su2";
 //	const string ofName = "5x5_def.su2";
 //	string ifName = "25x25.su2";
-//	string ofName = "25x25_def.su2";
+//	string ofName = "25x25_def_ps.su2";
 //	const vector<string> intBdryTags = {"block"}; //What if there are multiple  tags?
 //	const vector<string> extBdryTags = {"lower","right","upper", "left"};
 
-	string ifName = "3x3x3.su2";
-	string ofName = "3x3x3_def.su2";
+	string ifName = "5x5x5.su2";
+	string ofName = "5x5x5_def.su2";
 	const vector<string> intBdryTags = {"BLOCK"};
 	const vector<string> extBdryTags = {"FRONT", "BACK", "LEFT", "RIGHT", "LOWER", "UPPER"};
-	const string slidingMode = "ds";
+	const string slidingMode = "none";
 
-	// initialising object m, reads mesh input file in constructor.
+	// initialising class object m, reads mesh input file in constructor.
 	Mesh meshOb(ifName,ofName, intBdryTags, extBdryTags, rFactor, debugLvl, slidingMode);
 
 
-	const double xDef = -0.1, yDef = -0.1, zDef= -0.1;
+	const double xDef = -0.20, yDef = -0.20, zDef= -0.0;
 
 	const int steps = 1;
 	Eigen::VectorXd rotVec;
@@ -48,16 +48,10 @@ int main()
 	}else{
 		rotationPnt << 0.5,0.5,0.5;
 		rotVec.resize(3);
-		rotVec << 0,0,0;
+		rotVec << 0,0,60;
 	}
 
 	rbf rbf(meshOb, xDef, yDef, zDef, rotVec, steps, rotationPnt, slidingMode);
 	rbf.RBFMain();
-
-//	const double xDef = -10, yDef = -10, rotDefDeg = -30;
-//	const int steps = 20;
-//	Eigen::Vector2d rotationPoint = {0.25,0.0};
-//	rbf.performRbfInterpolation(xDef,yDef,rotDefDeg,steps,rotationPoint);
-//	rbf.performRbfDS(xDef, yDef, rotDefDeg, steps, rotationPoint);
 
 }

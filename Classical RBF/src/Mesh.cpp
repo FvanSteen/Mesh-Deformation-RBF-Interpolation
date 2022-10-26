@@ -16,7 +16,9 @@ Mesh::Mesh(const std::string& inputFileName,const std::string& outputFileName,co
 r = rFac*charLength();
 }
 
+// Main function for reading the .su2 mesh files
 void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector<std::string>& ebTags){
+
 	if(lvl>=1){
 		std::cout << "Reading mesh file: " << ifName << std::endl;
 	}
@@ -28,13 +30,10 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 	int nPnts = 0;								// counter for number of points
 	int pntsIdx;								// int that stores the line where "NPOIN= " is
 
-	extBdryNodesMat.resize(0,3);
-	intBdryNodesMat.resize(0,3);
-	int extBdryElemCnt = 0;
-	int intBdryElemCnt = 0;// counting the elements of the external boundary
+	int extBdryElemCnt = 0, intBdryElemCnt = 0; // counting the elements of the boundaries
 	Eigen::ArrayXi extBdryEndsIdx(2*ebTags.size());
 
-	int MarkerElems;				// locally stores how many elements are in that boundary
+	int MarkerElems;					// locally stores how many elements are in that boundary
 	int nExtMarker = 0; 				// Counts the number of external boundary markers
 
 	nrElemsExtBdry.resize(ebTags.size());
@@ -185,9 +184,8 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 	}
 	else std::cout << "Not able to open input mesh file";
 
-//	Eigen::ArrayXi idxSlidingSurf, idxSlidingEdge, idxExtStatic;
 
-
+	std::cout << extBdryNodesMat << std::endl;
 	if(mode=="ds" || mode=="ps"){
 		getNodeType(nrElemsExtBdry, extBdryNodesMat);
 		N_se = slidingEdgeNodes.size();
@@ -444,6 +442,7 @@ void Mesh::getIntNodes(){
 
 	}
 	bdryNodes << intBdryNodes, extBdryNodes;
+
 }
 
 double Mesh::charLength(){

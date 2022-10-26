@@ -130,7 +130,7 @@ void rbf::RBF_DS_3D(){
 		getPhi(Phi_ss, m.slidingSurfNodes, m.slidingSurfNodes);
 		getPhi(Phi_im, m.intNodes, mNodes);
 		getPhi(Phi_ie, m.intNodes, m.slidingEdgeNodes);
-		getPhi(Phi_is, m.intNodes, m.slidingEdgeNodes);
+		getPhi(Phi_is, m.intNodes, m.slidingSurfNodes);
 
 
 
@@ -147,12 +147,28 @@ void rbf::RBF_DS_3D(){
 //		std::cout << defVec << std::endl;
 
 		getPhiDS_3D(Phi,Phi_mm, Phi_me, Phi_ms, Phi_em, Phi_ee, Phi_es, Phi_sm, Phi_se, Phi_ss,t_se, n1_se, n2_se, n_ss,t1_ss,t2_ss);
-		std::cout << "DONE" << std::endl;
-		std::exit(0);
-//		performRBF_DS(Phi, Phi_im, Phi_is, Phi_sm, Phi_ss,defVec, alpha);
+//		std::cout << Phi << std::endl;
+//		std::cout << "DONE" << std::endl;
+//		std::exit(0);
+		performRBF_DS_3D(Phi, Phi_im, Phi_ie, Phi_is, Phi_em, Phi_ee, Phi_es, Phi_sm, Phi_se, Phi_ss,defVec, alpha);
 	}
 
 	m.writeMeshFile();
+}
+
+void rbf::performRBF_DS_3D(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_im, Eigen::MatrixXd& Phi_ie, Eigen::MatrixXd& Phi_is, Eigen::MatrixXd& Phi_em, Eigen::MatrixXd& Phi_ee, Eigen::MatrixXd& Phi_es, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_se, Eigen::MatrixXd& Phi_ss, Eigen::VectorXd& defVec, Eigen::VectorXd& alpha){
+
+	alpha = Phi.partialPivLu().solve(defVec);
+	std::cout << "SOLUTION WAS FOUND" << std::endl;
+
+	for (int dim = 0; dim < m.nDims; dim++){
+
+		m.coords(m.intNodes, dim) += (Phi_im*alpha(Eigen::seqN(dim*(N_m+m.N_se+m.N_ss),N_m)) + Phi_ie*alpha(Eigen::seqN(dim*(N_m+m.N_se+m.N_ss)+N_m, m.N_se)) + Phi_is*alpha(Eigen::seqN(dim*(N_m+m.N_se+m.N_ss)+N_m+m.N_se, m.N_ss)) ).array();
+		m.coords(m.slidingEdgeNodes, dim) += (Phi_em*alpha(Eigen::seqN(dim*(N_m+m.N_se+m.N_ss),N_m)) + Phi_ee*alpha(Eigen::seqN(dim*(N_m+m.N_se+m.N_ss)+N_m, m.N_se)) + Phi_es*alpha(Eigen::seqN(dim*(N_m+m.N_se+m.N_ss)+N_m+m.N_se, m.N_ss)) ).array();
+		m.coords(m.slidingSurfNodes, dim) += (Phi_sm*alpha(Eigen::seqN(dim*(N_m+m.N_se+m.N_ss),N_m)) + Phi_se*alpha(Eigen::seqN(dim*(N_m+m.N_se+m.N_ss)+N_m, m.N_se)) + Phi_ss*alpha(Eigen::seqN(dim*(N_m+m.N_se+m.N_ss)+N_m+m.N_se, m.N_ss)) ).array();
+		m.coords(m.intBdryNodes, dim) += (defVec(Eigen::seqN(dim*N_m,m.N_ib))).array();
+		rotPnt(dim) += dVec(dim);
+	}
 }
 
 void rbf::getPhiDS_3D(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd&  Phi_me, Eigen::MatrixXd&  Phi_ms, Eigen::MatrixXd& Phi_em, Eigen::MatrixXd& Phi_ee, Eigen::MatrixXd& Phi_es, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_se, Eigen::MatrixXd& Phi_ss,
@@ -160,20 +176,35 @@ void rbf::getPhiDS_3D(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_mm, Eigen::Matr
 
 	Phi = Eigen::MatrixXd::Zero(m.nDims*(N_m+m.N_se+m.N_ss),m.nDims*(N_m+m.N_se+m.N_ss));
 
-	std::cout << Phi.rows() << '\t' << Phi.cols() << std::endl;
+
 	// todo from here onwards
 	for(int dim = 0; dim< m.nDims; dim++){
 		// blocks related to the known displacements
-		Phi.block(dim*N_m, dim*(N_m+m.N_se), N_m, N_m) = Phi_mm;
-		Phi.block(dim*N_m, dim*(N_m+m.N_se)+N_m, N_m, m.N_se) = Phi_ms;
+		Phi.block(dim*N_m, dim*(N_m+m.N_se+m.N_ss), N_m, N_m) = Phi_mm;
+		Phi.block(dim*N_m, dim*(N_m+m.N_se+m.N_ss)+N_m, N_m, m.N_se) = Phi_me;
+		Phi.block(dim*N_m, dim*(N_m+m.N_se+m.N_ss)+N_m+m.N_se, N_m, m.N_ss) = Phi_ms;
 
-		// blocks related to the zero normal displacement condition
-//		Phi.block(2*N_m, dim*(N_m+m.N_se), m.N_se, N_m) = Phi_sm.array().colwise() * n.col(dim);
-//		Phi.block(2*N_m, dim*(N_m+m.N_se)+N_m, m.N_se, m.N_se) = Phi_ss.array().colwise() * n.col(dim);
+		//blocks realteð to the first zero normal displacement condition of the sliding edge nodes
+		Phi.block(3*N_m, dim*(N_m+m.N_se+m.N_ss),					m.N_se, N_m ) = Phi_em.array().colwise() * n1_se.col(dim);
+		Phi.block(3*N_m, dim*(N_m+m.N_se+m.N_ss) + N_m,				m.N_se, m.N_se ) = Phi_ee.array().colwise() * n1_se.col(dim);
+		Phi.block(3*N_m, dim*(N_m+m.N_se+m.N_ss) + N_m + m.N_se,	m.N_se,	m.N_ss ) = Phi_es.array().colwise() * n1_se.col(dim);
+		//blocks realteð to the second zero normal displacement condition of the sliding edge nodes
+		Phi.block(3*N_m+m.N_se, dim*(N_m+m.N_se+m.N_ss),					m.N_se, N_m ) = Phi_em.array().colwise() * n2_se.col(dim);
+		Phi.block(3*N_m+m.N_se, dim*(N_m+m.N_se+m.N_ss) + N_m,				m.N_se, m.N_se ) = Phi_ee.array().colwise() * n2_se.col(dim);
+		Phi.block(3*N_m+m.N_se, dim*(N_m+m.N_se+m.N_ss) + N_m + m.N_se,		m.N_se,	m.N_ss ) = Phi_es.array().colwise() * n2_se.col(dim);
+		// blocks related to the zero tangential contribution of the sliding edge nodes
+		Phi.block(3*N_m+2*m.N_se, dim*(N_m+m.N_se+m.N_ss) + N_m,	m.N_se, m.N_se) = Eigen::MatrixXd(t_se.col(dim).matrix().asDiagonal());
+		// blocks related to the zero normal displacement condition of the sliding surface nodes
+		Phi.block(3*N_m+3*m.N_se, dim*(N_m+m.N_se+m.N_ss),		m.N_ss,N_m) = Phi_sm.array().colwise() * n_ss.col(dim);
+		Phi.block(3*N_m+3*m.N_se, dim*(N_m+m.N_se+m.N_ss)+N_m,	m.N_ss,m.N_se) = Phi_se.array().colwise() * n_ss.col(dim);
+		Phi.block(3*N_m+3*m.N_se, dim*(N_m+m.N_se+m.N_ss)+N_m+m.N_se,	m.N_ss,m.N_ss) = Phi_ss.array().colwise() * n_ss.col(dim);
 
-		//blocks related to the zero tangential contribution condition
-//		Phi.block(2*N_m + m.N_se, dim*(N_m+m.N_se)+N_m, m.N_se, m.N_se) = Eigen::MatrixXd(t.col(dim).matrix().asDiagonal());
+		// blocks related to the zero tangential contribution of the sliding surface nodes.
+		Phi.block(3*N_m+3*m.N_se+m.N_ss, dim*(N_m+m.N_se+m.N_ss)+N_m+m.N_se, m.N_ss,m.N_ss) = Eigen::MatrixXd(t1_ss.col(dim).matrix().asDiagonal());
+		Phi.block(3*N_m+3*m.N_se+2*m.N_ss, dim*(N_m+m.N_se+m.N_ss)+N_m+m.N_se, m.N_ss,m.N_ss) = Eigen::MatrixXd(t2_ss.col(dim).matrix().asDiagonal());
 	}
+
+
 }
 
 
