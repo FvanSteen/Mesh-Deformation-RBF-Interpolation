@@ -11,7 +11,7 @@ using namespace std;
 
 int main()
 {
-	int debugLvl = 3;
+	int debugLvl = 2;
 	const double rFactor = 2.5;
 
 //	string ifName = "mesh_NACA0012_inv.su2";
@@ -21,24 +21,26 @@ int main()
 //
 //	const string ifName = "5x5.su2";
 //	const string ofName = "5x5_def.su2";
-//	string ifName = "25x25.su2";
-//	string ofName = "25x25_def_ps.su2";
-//	const vector<string> intBdryTags = {"block"}; //What if there are multiple  tags?
-//	const vector<string> extBdryTags = {"lower","right","upper", "left"};
+	string ifName = "25x25.su2";
+	string ofName = "25x25_def.su2";
+	const vector<string> intBdryTags = {"block"}; //What if there are multiple  tags?
+	const vector<string> extBdryTags = {"lower","right","upper", "left"};
 
-	string ifName = "5x5x5.su2";
-	string ofName = "5x5x5_def.su2";
-	const vector<string> intBdryTags = {"BLOCK"};
-	const vector<string> extBdryTags = {"FRONT", "BACK", "LEFT", "RIGHT", "LOWER", "UPPER"};
-	const string slidingMode = "none";
-
+//	string ifName = "5x5x5.su2";
+//	string ofName = "5x5x5_def.su2";
+//	const vector<string> intBdryTags = {"BLOCK"};
+//	const vector<string> extBdryTags = {"FRONT", "BACK", "LEFT", "RIGHT", "LOWER", "UPPER"};
+	const string slidingMode = "ps";
+	const string periodicMode = "moving";
+	const vector<string> periodicBdry = {"lower","upper"};
+//	const vector<string> periodicBdry = {};
 	// initialising class object m, reads mesh input file in constructor.
-	Mesh meshOb(ifName,ofName, intBdryTags, extBdryTags, rFactor, debugLvl, slidingMode);
+	Mesh meshOb(ifName,ofName, intBdryTags, extBdryTags, rFactor, debugLvl, slidingMode, periodicBdry, periodicMode);
 
 
-	const double xDef = -0.20, yDef = -0.20, zDef= -0.0;
+	const double xDef = -0.2, yDef = -0.32, zDef= -0.0;
 
-	const int steps = 1;
+	const int steps = 4;
 	Eigen::VectorXd rotVec;
 	Eigen::RowVectorXd rotationPnt(meshOb.nDims);
 	if(meshOb.nDims == 2){
