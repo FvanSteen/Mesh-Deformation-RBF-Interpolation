@@ -7,53 +7,22 @@
 #include <algorithm>
 #include <iterator>
 #include <string>
+#include <chrono>
 
-rbf::rbf(Mesh& meshOb, const double xDef, const double yDef,const double zDef, Eigen::VectorXd& rVec, const int steps, Eigen::RowVectorXd& rotationPnt, const std::string& slidingMode)
-:m(meshOb), dx(xDef/steps), dy(yDef/steps), dz(zDef/steps), rotPnt(rotationPnt), steps(steps), smode(slidingMode), rotVec(rVec)
+rbf::rbf(Mesh& meshOb, Eigen::VectorXd& displacementVector, Eigen::VectorXd& rVec, const int steps, Eigen::RowVectorXd& rotationPnt, const std::string& slidingMode, const std::string& periodicDirection, const bool& curved)
+:m(meshOb), dVec(displacementVector), rotPnt(rotationPnt), steps(steps), smode(slidingMode), rotVec(rVec), curved(curved)
 {
 	// todo specifying the periodic direction(s)
 	// todo smode is already in the mesh class -> replace all instances with m.smode
-	std::cout << "Current sliding mode: " << smode << std::endl;
-	if(smode=="none"){
-		mNodes.resize(m.N_ib+m.N_eb);
-		mNodes << m.intBdryNodes, m.extBdryNodes;
-	}else if(smode=="ds"){
-		mNodes.resize(m.N_ib+m.N_es);
-		mNodes << m.intBdryNodes, m.extStaticNodes;
 
-	}else if(smode=="ps"){
-		mNodes.resize(m.N_ib + m.N_es + m.N_se);
-		mNodes << m.intBdryNodes, m.extStaticNodes, m.slidingEdgeNodes;
 
-		if(m.pmode == "fixed"){
-			mNodesPro.resize(m.N_ib+m.N_es);
-			mNodesPro << m.intBdryNodes, m.extStaticNodes;
-			N_mPro = m.N_ib+m.N_es;
-		}
-		else if(m.pmode == "moving"){
-			mNodesPro.resize(m.N_ib);
-			mNodesPro << m.intBdryNodes;
-			N_mPro = m.N_ib;
-			sNodes.resize(m.N_se + m.N_es);
-			sNodes << m.slidingEdgeNodes, m.extStaticNodes;
-			N_s = sNodes.size();
-		}
+	getNodeTypes();
 
-		iNodes.resize(m.N_i + m.N_p);
-		iNodes << m.intNodes, m.periodicNodes;
-	}
-	N_m = mNodes.size();
-
-	// todo an vector with displacements could be passed as argument straight from ClassicalRBF.cpp
-	dVec.resize(m.nDims);
-	if(m.nDims==2){
-		dVec << dx,dy;
-	}
-	else if(m.nDims==3){
-		dVec << dx,dy,dz;
-	}
+	getPeriodicParams(periodicDirection);
 
 	getRotationalMat();
+
+
 
 }
 
@@ -80,7 +49,7 @@ void rbf::RBF_PS(){
 	Eigen::MatrixXd Phi_mmPro, Phi_sm, Phi_mm, Phi_im; 	//In this case only the internal boundary and static ext bdry
 	Eigen::VectorXd defVecPro, defVec;
 //	Eigen::ArrayXXd delta(m.N_se, m.nDims), finalDef(m.N_se,m.nDims);
-	Eigen::ArrayXXd delta(N_s, m.nDims), finalDef(m.N_se,m.nDims);
+	Eigen::ArrayXXd delta(N_s, m.nDims), finalDef(N_s,m.nDims);
 
 	for(int i = 0; i < steps; i++){
 		std::cout << "Deformation step: " << i+1 << std::endl;
@@ -96,7 +65,7 @@ void rbf::RBF_PS(){
 		getDefVec(defVecPro, N_mPro);
 
 		performRBF_PS(Phi_mmPro, Phi_sm, Phi_mm, Phi_im, defVecPro, delta, finalDef, defVec);
-//		if(i==1){
+//		if(i==0){
 //			m.writeMeshFile();
 //			std::exit(0);
 //		}
@@ -108,34 +77,54 @@ void rbf::RBF_PS(){
 void rbf::performRBF_PS(Eigen::MatrixXd& Phi_mmPro, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVecPro,Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef, Eigen::VectorXd& defVec){
 
 	for(int dim = 0; dim < m.nDims; dim++){
-		delta.col(dim) = (Phi_sm*(Phi_mmPro.llt().solve(defVecPro(Eigen::seqN(dim*N_mPro,N_mPro))))).array();
+		delta.col(dim) = (Phi_sm*(Phi_mmPro.fullPivHouseholderQr().solve(defVecPro(Eigen::seqN(dim*N_mPro,N_mPro))))).array();
 	}
 
 
-//	m.coords(m.slidingEdgeNodes,Eigen::all) = m.coords(m.slidingEdgeNodes,Eigen::all) + delta;
-	m.coords(sNodes,Eigen::all) = m.coords(sNodes,Eigen::all) + delta;
-	for(int x =0; x < m.nDims;x++ ){
-		m.coords(mNodesPro,x) = m.coords(mNodesPro,x) + defVecPro(Eigen::seqN(x*N_mPro,N_mPro)).array();
-	}
-//	std::cout << m.coords << std::endl;
 
-	m.getVecs();
-	for(int i=0; i<m.N_se; i++){
-		finalDef.row(i) = (delta.row(i)).matrix().transpose() - (delta.row(i).matrix()).dot((m.n.row(i)).matrix().transpose())*(m.n.row(i)).matrix().transpose();
+	// todo make pVec an array instead of vector
+//	m.getVecs();
+//	for(int i=0; i<m.N_se; i++){
+//		finalDef.row(i) = (delta.row(i)).matrix().transpose() - (delta.row(i).matrix()).dot((m.n.row(i)).matrix().transpose())*(m.n.row(i)).matrix().transpose();
+////				std::cout << "finalDef \t" << finalDef.row(i) << std::endl;
+////				std::cout << "delta \t" << delta.row(i) << std::endl;
+//	}
+
+	project(delta,finalDef);
+
+
+	//todo make an if statement for fixed vertices
+	if(m.pmode == "moving"){
+		for(int i=0; i < m.N_es ; i++){
+			finalDef.row(m.N_se+i) = pVec.transpose().array()*delta.row(m.N_se+i);
+//		std::cout << "finalDef \t" << finalDef.row(m.N_se+i) << std::endl;
+//		std::cout << "delta \t" << delta.row(m.N_se+i) << std::endl;
+//			m.coords.row(m.extStaticNodes(i)) +=  pVec.transpose().array()*delta.row(m.N_se+i);
+		}
 	}
-	std::cout << finalDef.rows() << std::endl;
-//	std::cout << finalDef << std::endl;
-//	m.coords(m.slidingEdgeNodes,Eigen::all) = m.coords(m.slidingEdgeNodes,Eigen::all) + finalDef;
-	m.writeMeshFile();
-	std::exit(0);
+
+
+
+
+
+//	m.coords(m.extStaticNodes,1) += delta(Eigen::seq(Eigen::last+1-4,Eigen::last), 1);
+//	m.coords(sNodes,Eigen::all) = m.coords(sNodes,Eigen::all) + finalDef;
+//	m.writeMeshFile();
+
 
 	defVec = Eigen::VectorXd::Zero(N_m*m.nDims);
+//	std::cout << N_m << '\t' << N_mPro <<  '\t' << m.N_se << std::endl;
 	for(int dim = 0; dim< m.nDims; dim++){
 		defVec(Eigen::seqN(dim*N_m,N_mPro)) = defVecPro(Eigen::seqN(dim*N_mPro,N_mPro));
-		defVec(Eigen::seqN(dim*N_m+N_mPro,m.N_se)) = finalDef.col(dim);
+//		defVec(Eigen::seqN(dim*N_m+N_mPro,m.N_se)) = finalDef.col(dim);
+		defVec(Eigen::seqN(dim*N_m+N_mPro,N_s)) = finalDef.col(dim);
 	}
 
-	performRBF(Phi_mm,Phi_im,defVec);
+//	std::cout << "finalDef: \n" << finalDef << "\n" << std::endl;
+//	std::cout << "defVec: \n" << defVec << std::endl;
+
+//	std::exit(0);
+	performRBF(Phi_mm,Phi_im,defVec,mNodes,N_m);
 }
 
 void rbf::RBF_DS_3D(){
@@ -238,27 +227,21 @@ void rbf::RBF_DS(){
 	std::cout << "Performing RBF DS " << std::endl;
 
 	Eigen::MatrixXd Phi_mm, Phi_ms, Phi_sm, Phi_ss, Phi_im, Phi_is, Phi;
-//	Eigen::ArrayXXd n(m.N_se, m.nDims), t(m.N_se, m.nDims);		// two column array containing normal vector components
-	Eigen::VectorXd defVec, alpha(m.nDims*(N_m+m.N_se));
+	Eigen::VectorXd defVec, alpha(m.nDims*(N_m+N_s));
 
 	for (int i = 0; i < steps; i++){
 		std::cout << "Deformation step: " << i+1 << std::endl;
+
 		getPhi(Phi_mm, mNodes,mNodes);
-		getPhi(Phi_ms, mNodes, m.slidingEdgeNodes);
-		getPhi(Phi_sm, m.slidingEdgeNodes, mNodes);
-		getPhi(Phi_ss, m.slidingEdgeNodes, m.slidingEdgeNodes);
-		getPhi(Phi_im, m.intNodes, mNodes);
-		getPhi(Phi_is, m.intNodes, m.slidingEdgeNodes);
-
-
+		getPhi(Phi_ms, mNodes, sNodes);
+		getPhi(Phi_sm, sNodes, mNodes);
+		getPhi(Phi_ss, sNodes, sNodes);
+		getPhi(Phi_im, iNodes, mNodes);
+		getPhi(Phi_is, iNodes, sNodes);
 
 		m.getVecs();
 
-
-//		m.getExtBdryData();
-//		m.getNodeVecs(n,t);
-
-		defVec = Eigen::VectorXd::Zero((N_m+m.N_se)*m.nDims);
+		defVec = Eigen::VectorXd::Zero((N_m+N_s)*m.nDims);
 		getDefVec(defVec,N_m);
 
 		getPhiDS(Phi,Phi_mm,Phi_ms, Phi_sm, Phi_ss, m.n, m.t);
@@ -271,68 +254,147 @@ void rbf::RBF_DS(){
 
 void rbf::performRBF_DS(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_im, Eigen::MatrixXd& Phi_is, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_ss, Eigen::VectorXd& defVec, Eigen::VectorXd& alpha){
 
-	alpha = Phi.householderQr().solve(defVec);
+	alpha = Phi.fullPivLu().solve(defVec);
 
-	for (int dim = 0; dim < m.nDims; dim++){
-		m.coords(m.intNodes, dim) += (Phi_im*alpha(Eigen::seqN(dim*(N_m+m.N_se),N_m)) + Phi_is*alpha(Eigen::seqN(dim*(N_m+m.N_se)+N_m, m.N_se))).array();
-		m.coords(m.slidingEdgeNodes, dim) += (Phi_sm*alpha(Eigen::seqN(dim*(N_m+m.N_se),N_m)) + Phi_ss*alpha(Eigen::seqN(dim*(N_m+m.N_se)+N_m, m.N_se))).array();
-		m.coords(m.intBdryNodes, dim) += (defVec(Eigen::seqN(dim*N_m,m.N_ib))).array();
-		rotPnt(dim) += dVec(dim);
+	if(curved){
+		Eigen::ArrayXXd delta(N_s, m.nDims), finalDef(N_s,m.nDims);
+
+		// find displacement
+		for (int dim = 0; dim < m.nDims; dim++){
+			delta.col(dim) = (Phi_sm*alpha(Eigen::seqN(dim*(N_m+N_s),N_m)) + Phi_ss*alpha(Eigen::seqN(dim*(N_m+N_s)+N_m, N_s))).array();
+		}
+//		std::cout << delta << std::endl;
+
+		// calling project function to find the final deformation after the projection
+		project(delta,finalDef);
+
+//		std::cout << finalDef << std::endl;
+//		std::exit(0);
+		defVec = Eigen::VectorXd::Zero(N_m2*m.nDims);
+		getDefVec(defVec,N_m2);
+
+		for(int dim = 0; dim< m.nDims; dim++){
+//			defVec(Eigen::seqN(dim*(N_m2)+m.N_ib+m.N_es,N_s)) = finalDef.col(dim);
+			defVec(Eigen::seqN(dim*(N_m2)+m.N_ib,N_s)) = finalDef.col(dim);
+		}
+
+		Eigen::MatrixXd Phi_mm2, Phi_im2;
+
+		getPhi(Phi_mm2, mNodes2,mNodes2);
+		getPhi(Phi_im2,iNodes,mNodes2);
+
+		performRBF(Phi_mm2,Phi_im2,defVec,mNodes2,N_m2);
+	}
+	else{
+		for (int dim = 0; dim < m.nDims; dim++){
+			m.coords(iNodes, dim) += (Phi_im*alpha(Eigen::seqN(dim*(N_m+N_s),N_m)) + Phi_is*alpha(Eigen::seqN(dim*(N_m+N_s)+N_m, N_s))).array();
+			m.coords(sNodes, dim) += (Phi_sm*alpha(Eigen::seqN(dim*(N_m+N_s),N_m)) + Phi_ss*alpha(Eigen::seqN(dim*(N_m+N_s)+N_m, N_s))).array();
+			m.coords(m.intBdryNodes, dim) += (defVec(Eigen::seqN(dim*N_m,m.N_ib))).array();
+
+			rotPnt(dim) += dVec(dim);
+		}
 	}
 }
 
 
+
 void rbf::getPhiDS(Eigen::MatrixXd& Phi,Eigen::MatrixXd& Phi_mm,Eigen::MatrixXd& Phi_ms, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_ss, Eigen::ArrayXXd& n, Eigen::ArrayXXd& t){
 
-	Phi = Eigen::MatrixXd::Zero(m.nDims*(N_m+m.N_se),m.nDims*(N_m+m.N_se));
+//	Phi = Eigen::MatrixXd::Zero(m.nDims*(N_m+m.N_se),m.nDims*(N_m+m.N_se));
+	Phi = Eigen::MatrixXd::Zero(m.nDims*(N_m+N_s),m.nDims*(N_m+N_s));
+
+
+	if(m.pmode == "moving"){
+		n.conservativeResize(N_s,m.nDims);
+		t.conservativeResize(N_s,m.nDims);
+		for(int i = 0; i<m.N_es; i++){
+			n.row(m.N_se+i) = pnVec;
+			t.row(m.N_se+i) = pVec;
+		}
+	}
+
 
 	for(int dim = 0; dim< m.nDims; dim++){
 		// blocks related to the known displacements
-		Phi.block(dim*N_m, dim*(N_m+m.N_se), N_m, N_m) = Phi_mm;
-		Phi.block(dim*N_m, dim*(N_m+m.N_se)+N_m, N_m, m.N_se) = Phi_ms;
+		Phi.block(dim*N_m, dim*(N_m+N_s), N_m, N_m) = Phi_mm;
+		Phi.block(dim*N_m, dim*(N_m+N_s)+N_m, N_m, N_s) = Phi_ms;
 
 		// blocks related to the zero normal displacement condition
-		Phi.block(2*N_m, dim*(N_m+m.N_se), m.N_se, N_m) = Phi_sm.array().colwise() * n.col(dim);
-		Phi.block(2*N_m, dim*(N_m+m.N_se)+N_m, m.N_se, m.N_se) = Phi_ss.array().colwise() * n.col(dim);
+		Phi.block(2*N_m, dim*(N_m+N_s), N_s, N_m) = Phi_sm.array().colwise() * n.col(dim);
+		Phi.block(2*N_m, dim*(N_m+N_s)+N_m, N_s, N_s) = Phi_ss.array().colwise() * n.col(dim);
 
 		//blocks related to the zero tangential contribution condition
-		Phi.block(2*N_m + m.N_se, dim*(N_m+m.N_se)+N_m, m.N_se, m.N_se) = Eigen::MatrixXd(t.col(dim).matrix().asDiagonal());
+		Phi.block(2*N_m + N_s, dim*(N_m+N_s)+N_m, N_s, N_s) = Eigen::MatrixXd(t.col(dim).matrix().asDiagonal());
 	}
+
+
 }
 
 
 
 void rbf::RBF_standard(){
+
+	auto start = std::chrono::high_resolution_clock::now();
 	Eigen::MatrixXd Phi_mm, Phi_im;
 	Eigen::VectorXd defVec;
+
 	for(int i=0; i<steps; i++){
+		auto start2 = std::chrono::high_resolution_clock::now();
 		std::cout << "Deformation step: " << i+1 << std::endl;
-		defVec = Eigen::VectorXd::Zero(N_m*m.nDims);
+
 		std::cout << "Obtaining Phi_mm" << std::endl;
+		auto starti = std::chrono::high_resolution_clock::now();
 		getPhi(Phi_mm, mNodes,mNodes);
+		auto stopi = std::chrono::high_resolution_clock::now();
+		auto durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
+		std::cout << "Runtime duration obtaining Phi_mm: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+
 
 		std::cout << "Obtaining Phi_im" << std::endl;
-		getPhi(Phi_im, m.intNodes,mNodes);
+		starti = std::chrono::high_resolution_clock::now();
+		getPhi(Phi_im, iNodes,mNodes);
+		stopi = std::chrono::high_resolution_clock::now();
+		durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
+		std::cout << "Runtime duration obtaining Phi_im: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+
+
 		std::cout << "Obtaining deformation vector" << std::endl;
+		starti = std::chrono::high_resolution_clock::now();
+
 		getDefVec(defVec,N_m);
-		std::cout << defVec << std::endl;
+		stopi = std::chrono::high_resolution_clock::now();
+		durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
+		std::cout << "Runtime duration obtaining defVec: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+
 		std::cout << "Performing RBF" << std::endl;
-		performRBF(Phi_mm, Phi_im, defVec);
+		starti = std::chrono::high_resolution_clock::now();
+		performRBF(Phi_mm, Phi_im, defVec,mNodes,N_m);
+		stopi = std::chrono::high_resolution_clock::now();
+		durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
+		std::cout << "Runtime duration obtaining solution and updating nodes: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+
+
+
+
+		auto stop2 = std::chrono::high_resolution_clock::now();
+		auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(stop2-start2);
+		std::cout << "Runtime duration whole step: \t"<<  duration2.count()/1e6 << " seconds"<< std::endl;
+
 	}
+	auto stop = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
+
+	std::cout << "Runtime duration: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
 	m.writeMeshFile();
 }
 
-void rbf::performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVec){
+void rbf::performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVec, Eigen::ArrayXi& movingNodes, int& N){
 	for(int dim = 0; dim < m.nDims; dim++){
 		std::cout << "Solving for dimension: " << dim << std::endl;
-//		m.coords(m.intNodes,dim) += (Phi_im*(Phi_mm.householderQr().solve(defVec(Eigen::seqN(dim*N_m,N_m))))).array();
-		m.coords(iNodes,dim) += (Phi_im*(Phi_mm.householderQr().solve(defVec(Eigen::seqN(dim*N_m,N_m))))).array();
-		m.coords(mNodes,dim) += defVec(Eigen::seqN(dim*N_m,N_m)).array();
+		m.coords(iNodes,dim) += (Phi_im*(Phi_mm.llt().solve(defVec(Eigen::seqN(dim*N,N))))).array();
+		m.coords(movingNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
 		rotPnt(dim) += dVec(dim);
 	}
-//	m.writeMeshFile();
-//	std::exit(0);
-
 }
 
 
@@ -346,12 +408,33 @@ void rbf::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::ArrayXi& 
 
 //				dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1),2));
 
-				dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(1/M_PI*sin( (m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1))*M_PI/1),2));
+
+				//todo following if statement is introduced to improve efficiency, check if anything else can be done
+				if(m.pmode != "none"){
+					dist = 0;
+					for(int dim = 0; dim < m.nDims; dim++){
+						if(pVec(dim)){
+							//todo change function to allow for periodic length in stead of unit length
+							dist += pow(1/M_PI*sin( (m.coords(idxSet1(i),dim)-m.coords(idxSet2(j),dim))*M_PI/1),2);
+						}
+						else{
+							dist += pow(m.coords(idxSet1(i),dim)-m.coords(idxSet2(j),dim),2);
+						}
+
+					}
+					dist = sqrt(dist);
+				}
+				else{
+					//todo can the difference in coordinates by calculated for the whole row. then take the power of 2, sum and take square root??
+					dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1),2) );
+				}
+//				dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(1/M_PI*sin( (m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1))*M_PI/1),2));
 //				std::cout << dist << std::endl;
 //				std::cout << 'x' << '\t' << m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0) << std::endl;
 //				std::cout << 'y' << '\t' << m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1) << std::endl;
 
 			}
+			//todo if statements can probably by removed if the calc is done with the previous for loop.
 			else if(m.nDims == 3){
 				dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1),2) + pow(m.coords(idxSet1(i),2)-m.coords(idxSet2(j),2),2));
 			}
@@ -364,10 +447,8 @@ void rbf::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::ArrayXi& 
 void rbf::getDefVec(Eigen::VectorXd& defVec, int& N){
 	Eigen::MatrixXd intPnts(m.N_ib,m.nDims);
 	Eigen::MatrixXd rotDef;
-
+	defVec = Eigen::VectorXd::Zero(N_m*m.nDims);
 	intPnts = m.coords(m.intBdryNodes,Eigen::all);
-//	std::cout << intPnts.rowwise() - rotPnt << std::endl;
-//	std::cout << (rotMatZ*(intPnts.rowwise() - rotPnt).transpose()).transpose() << std::endl;
 
 	if(m.nDims == 2){
 		rotDef = (rotMat*(intPnts.rowwise() - rotPnt).transpose()).transpose().rowwise() +rotPnt - intPnts;
@@ -390,6 +471,7 @@ void rbf::getDefVec(Eigen::VectorXd& defVec, int& N){
 		defVec(Eigen::seqN(dim*N, m.N_ib)).array() += dVec(dim);
 		defVec(Eigen::seqN(dim*N, m.N_ib)) += rotDef.col(dim);
 	}
+
  }
 
 void rbf::getRotationalMat(){
@@ -415,8 +497,132 @@ void rbf::getRotationalMat(){
 	}
 }
 
-//void rbf::rbfEval(double distance){
-////	double xi = distance/m.r;	// distance scaled by support radius
-//	f_xi = pow((1-(distance/m.r)),4)*(4*(distance/m.r)+1);
-////	return f_xi;
-//}
+void rbf::getNodeTypes(){
+	iNodes.resize(m.N_i+m.N_p);
+	iNodes << m.intNodes, m.periodicNodes;
+
+	if(m.smode== "none" || smode == "ps"){
+		mNodes.resize(m.N_ib + m.N_es + m.N_se);
+		mNodes << m.intBdryNodes, m.extStaticNodes, m.slidingEdgeNodes;
+
+		if(m.smode == "ps" && m.pmode == "moving"){
+			mNodesPro.resize(m.N_ib);
+			mNodesPro << m.intBdryNodes;
+
+			sNodes.resize(m.N_se + m.N_es);
+			sNodes << m.slidingEdgeNodes, m.extStaticNodes;
+
+		}else{
+			mNodesPro.resize(m.N_ib+m.N_es);
+			mNodesPro << m.intBdryNodes, m.extStaticNodes;
+
+			sNodes.resize(m.N_se); // sNodes is always the sliding nodes in 2D
+			sNodes << m.slidingEdgeNodes;
+		}
+		N_s = sNodes.size();
+		N_mPro = mNodesPro.size();
+
+	}else if(m.smode=="ds"){
+
+		if(m.pmode == "moving"){
+			mNodes.resize(m.N_ib);
+			mNodes << m.intBdryNodes;
+			sNodes.resize(m.N_se+m.N_es);
+			sNodes << m.slidingEdgeNodes, m.extStaticNodes;
+		}else{
+			mNodes.resize(m.N_ib+m.N_es);
+			mNodes << m.intBdryNodes, m.extStaticNodes;
+			sNodes.resize(m.N_se);
+			sNodes << m.slidingEdgeNodes;
+		}
+		if(curved){
+			// todo rename to make clearer
+			mNodes2.resize(m.N_ib+m.N_es+m.N_se);
+			mNodes2 << m.intBdryNodes,m.extStaticNodes, m.slidingEdgeNodes;
+			N_m2 = mNodes2.size();
+		}
+	}
+	N_i = iNodes.size();
+	N_s = sNodes.size();
+	N_m = mNodes.size();
+}
+
+
+void rbf::getPeriodicParams(const std::string& periodicDirection){
+	pVec.resize(m.nDims);
+	pnVec.resize(m.nDims);
+	if(m.nDims==2){
+		if(m.pmode != "none"){
+			if(periodicDirection == "x"){
+				pVec << 1,0;
+				pnVec << 0,1;
+			}
+			else if(periodicDirection == "y"){
+				pVec << 0,1;
+				pnVec << 1,0;
+			}
+		}
+		else{
+			pVec << 0,0;
+		}
+
+	// todo do the same for 3D
+	}
+	else if(m.nDims==3){
+
+	}
+
+//	std::cout << "vector in the periodic direction is: \n" << pVec << std::endl;
+
+}
+
+double rbf::rbfEval(double distance){
+//	double xi = distance/m.r;	// distance scaled by support radius
+
+	double f_xi = pow((1-(distance/m.r)),4)*(4*(distance/m.r)+1);
+	return f_xi;
+}
+
+
+void rbf::project(Eigen::ArrayXXd& delta,Eigen::ArrayXXd& finalDef){
+	std::cout << "Doing Projection" << std::endl;
+
+	// updating the midpoints on the external boundary of the mesh
+	m.getMidPnts();
+
+	Eigen::RowVectorXd d;
+	Eigen::ArrayXd dist, projection;
+	Eigen::ArrayXi index = Eigen::ArrayXi::LinSpaced(m.midPnts.rows(),0,m.midPnts.rows()-1);
+
+	for(int i=0; i<N_s; i++){
+		if(i<m.N_se){
+
+			// distance to all midpoints
+			dist = (m.midPnts.rowwise()-(m.coords.row(sNodes(i)) + delta.row(i))).rowwise().norm();
+
+			// finding closest midpoint by sorting them in ascending order
+			std::sort(index.begin(), index.end(),[&](const int& a, const int& b) {
+				return (dist[a] < dist[b]);
+				}
+			);
+
+			// vector with distance from closest midpoint to displaced sliding node.
+			d = m.midPnts.row(index(0)) - (m.coords.row(sNodes(i)) + delta.row(i));
+
+			// Projection required to bring node back on the external boundary
+			projection = d.dot(m.midPntNormals.row(index(0)).matrix())*m.midPntNormals.row(index(0));
+
+			// Final deformation is the initial displacement plus the projection to bring the node back on the boundary
+			finalDef.row(i) = delta.row(i) + projection.transpose();
+		}else{
+//			std::cout << sNodes(i) << '\t' << i << std::endl;
+//			std::cout << delta.row(i) << std::endl;
+//			std::cout << pVec << std::endl;
+//			std::cout << delta.row(i)*pVec.transpose().array() << std::endl;
+			finalDef.row(i) = delta.row(i)*pVec.transpose().array();
+		}
+	}
+	std::cout << "projection is done " << std::endl;
+}
+
+

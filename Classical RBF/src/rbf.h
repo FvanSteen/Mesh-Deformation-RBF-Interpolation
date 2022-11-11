@@ -9,24 +9,28 @@
 class rbf {
 public:
 	Mesh m;
-	const double dx, dy, dz;
+//	const double dx, dy, dz;
+	Eigen::VectorXd dVec;
 	Eigen::RowVectorXd rotPnt;
 	const int steps;
-	int N_m,N_s;
+	int N_m,N_s,N_m2,N_i;
 	int N_mPro; // subset used in the first projection step
-	Eigen::ArrayXi mNodesPro;
+	Eigen::ArrayXi mNodesPro,mNodes2;
 	Eigen::Matrix3d rotMatX, rotMatY, rotMatZ;//todo differentiate between 2 and 3d!
 	Eigen::Matrix2d rotMat;
 	Eigen::ArrayXi mNodes, iNodes,sNodes;
 	const std::string smode, pmode;
-	Eigen::VectorXd dVec;
+
 	Eigen::VectorXd rotVec;
-	rbf(Mesh& meshOb,const double xDef, const double yDef, const double zDef, Eigen::VectorXd& rVec, const int steps, Eigen::RowVectorXd& rotationPnt, const std::string& slidingMode);
+	Eigen::VectorXd pVec, pnVec;
+
+	const bool curved;
+	rbf(Mesh& meshOb, Eigen::VectorXd& displacementVector, Eigen::VectorXd& rVec, const int steps, Eigen::RowVectorXd& rotationPnt, const std::string& slidingMode, const std::string& periodicDirection, const bool& curved);
 
 	void RBFMain();
 
 	void RBF_standard();
-	void performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVec);
+	void performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVec, Eigen::ArrayXi& movingNodes, int& N);
 	void getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::ArrayXi& idxSet2);
 	void getDefVec(Eigen::VectorXd& defVec, int& N);
 	void getRotationalMat();
@@ -40,7 +44,14 @@ public:
 
 	void RBF_PS();
 	void performRBF_PS(Eigen::MatrixXd& Phi_mmPro, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVecPro, Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef, Eigen::VectorXd& defVec);
-	//	double rbfEval(double distance);
+
+
+
+	void getNodeTypes();
+	void getPeriodicParams(const std::string& periodicDirection);
+	void project(Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef);
+
+	double rbfEval(double distance);
 private:
 
 

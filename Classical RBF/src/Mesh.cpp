@@ -1,4 +1,3 @@
-#include "rbf.h"
 #include "Mesh.h"
 #include <iostream>
 #include <Eigen/Dense>
@@ -214,19 +213,23 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 
 
 	// In case of either sliding algorithm the external boundary nodes have to be identified as either, sliding edge, sliding surface or static nodes
-	if(smode=="ds" || smode=="ps"){
+//	if(smode=="ds" || smode=="ps"){
 		// obtaining type of node.
-		getNodeType(nrElemsExtBdry,ebTags);
-		N_se = slidingEdgeNodes.size();
-		N_ss = slidingSurfNodes.size();
-		N_es = extStaticNodes.size();
-		N_p = periodicNodes.size();
+	getNodeType(nrElemsExtBdry,ebTags);
 
-		getEdgeConnectivity(nrElemsExtBdry);
-		if(nDims == 3){
-			getSurfConnectivity();
-		}
+	N_se = slidingEdgeNodes.size();
+	N_ss = slidingSurfNodes.size();
+	N_es = extStaticNodes.size();
+	N_p = periodicNodes.size();
+
+	getEdgeConnectivity(nrElemsExtBdry);
+	if(nDims == 3){
+		getSurfConnectivity();
 	}
+//	}
+
+
+
 
 	// todo write some details about the next lines
 
@@ -235,9 +238,9 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 
 
 
-	midPnts.resize(nExtBdryElems,nDims);
-	nVecs.resize(nExtBdryElems,nDims);
-	tVecs.resize(nExtBdryElems,nDims);
+//	midPnts.resize(nExtBdryElems,nDims);
+//	nVecs.resize(nExtBdryElems,nDims);
+//	tVecs.resize(nExtBdryElems,nDims);
 
 	getIntNodes();
 
@@ -253,6 +256,11 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 //	std::cout << "Internal nodes: \n " << intNodes << std::endl;
 //	std::cout << "Periodic Nodes: \n " << periodicNodes << std::endl;
 
+
+	// obtaining the nodes that make up the line segments of the external boundary
+	getExtBdryEdgeSegments(nrElemsExtBdry);
+
+
 	std::cout << "Mesh file read successfully" << std::endl;
 
 }
@@ -267,9 +275,19 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
  * For 2D meshes the sliding surface nodes don't have to be found.
  */
 void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::string>& ebTags){
+	if(lvl>=1){
+		std::cout << "Obtaining node types" << std::endl;
+	}
+
 	Eigen::ArrayXi bdryNodesArr; 						// 1D array that will contain the all nodes for each respective boundary
 	Eigen::ArrayXi idxSS, idxSE, idxStatic, idxPer;		// Arrays containing specific type of nodes
 	int cSS,cSE,cStat,cPer;								// counters for the number of sliding surface (SS) sliding edge (SE), static (Stat) and periodic (Per) nodes
+
+
+	// array that will contain the external edge boundary nodes in the order of the meshing file.
+	// This will be used to establish the line segments of the boundary and the corresponding midpoints.
+	extBdryEdgeNodes.resize(extBdryNodesMat.rows()+nrElemsExtBdry.size());
+	int edgeNodeCnt = 0;
 
 	bool periodic;										// boolean that is set based on whether its a periodic boundary element or not.
 
@@ -297,7 +315,6 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 		// sorting the array such that the nodes are ascending
 		std::sort(std::begin(bdryNodesArr),std::end(bdryNodesArr));
 
-
 		// Set size of the arrays of the various nodes equal to the size of the bdryNodesArr.
 		if(idxSS.size() != bdryNodesArr.size()){
 			idxSS.resize(bdryNodesArr.size());
@@ -312,6 +329,7 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 		// todo make adjustments for the periodic boundaries
 		// In case of 3D also sliding surface nodes have to be found
 		if(nDims == 3){
+
 			for (int i= 0; i< bdryNodesArr.size();i++){
 				// checking if there are 3 subsequent equal nodes. If so then this must be a sliding surface node
 				if(i< bdryNodesArr.size()-3 && bdryNodesArr(i) == bdryNodesArr(i+1) && bdryNodesArr(i+1) == bdryNodesArr(i+2) && bdryNodesArr(i+2) == bdryNodesArr(i+3)){
@@ -335,7 +353,7 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 				if(i< bdryNodesArr.size()-1 && bdryNodesArr(i) == bdryNodesArr(i+1)){
 
 					// if nodes are on a periodic boundary and are allowed to be displaced save them in a separate periodic nodes array
-					if(periodic && pmode != "none"){
+					if(periodic && (pmode == "fixed" || pmode == "moving")){
 						idxPer(cPer) = bdryNodesArr(i), cPer++;
 
 					// else save them in the sliding edge array
@@ -348,6 +366,10 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 				}else{
 					idxStatic(cStat) = bdryNodesArr(i); cStat++;
 				}
+				// saving the nodes in the order they were found to be able to establish the line segments of the external boundary
+				// and their corresponding midpoints.
+				extBdryEdgeNodes(edgeNodeCnt) = bdryNodesArr(i);
+				edgeNodeCnt++;
 			}
 		}
 
@@ -372,11 +394,21 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 		removeDuplicates(slidingSurfNodes);
 	}
 	removeDuplicates(slidingEdgeNodes);
-	removeDuplicates(extStaticNodes);
+
+	if(extStaticNodes.size()!=0){
+		removeDuplicates(extStaticNodes);
+	}
+
 
 	// periodicNodes will only have a nonzero size if the nodes on the periodic boundary are allowed to be displaced with pmode "fixed" or "moving" vertices.
-	if(pmode != "none"){
+	if(pmode == "fixed" || pmode == "moving"){
 		removeDuplicates(periodicNodes);
+	}
+
+	// In case there is just a single external boundary then the final element is equal to the first element
+	// This ensures that the line segments making up the external boundary is closed.
+	if(nrElemsExtBdry.size()==1){
+		extBdryEdgeNodes(edgeNodeCnt) = extBdryEdgeNodes(0);
 	}
 
 }
@@ -461,10 +493,15 @@ void Mesh::removeDuplicates(Eigen::ArrayXi& arr){
  */
 
 void Mesh::getIntNodes(){
+	if(lvl>=1){
+		std::cout << "Determining internal nodes " << std::endl;
+	}
+
 	// resize the array containing all boundary nodes and assign the int + ext boundary nodes to it.
 	bdryNodes.resize(intBdryNodes.size()+extBdryNodes.size());
 	bdryNodes << intBdryNodes, extBdryNodes;
-	std::cout << "Determining internal nodes " << std::endl;
+
+
 
 	std::sort(std::begin(bdryNodes), std::end(bdryNodes));		// bdryNodes need to be sorted for this algorithm to work
 	intNodes.resize(nNodes-bdryNodes.size());	// Resizing intNodes accordingly
@@ -769,6 +806,7 @@ void Mesh::getVecs(){
 		// set the type of element to edge and calling a function to obtain the normal vector perpendicular to the tangential vectors.
 		type = "edge";
 		getPerpVecs(type);
+
 	}
 	// else in case of 3D
 	else if(nDims == 3){
@@ -827,6 +865,7 @@ void Mesh::getEdgeTan(Eigen::ArrayXXd& t){
 		// Transforming the tangential vector in a unit vector and assigning it to its respective row in the tangential vector array.
 		t.row(i) = tan/tan.norm();
 	}
+
 }
 
 /* getSurfNormal function
@@ -961,3 +1000,80 @@ void Mesh::getPerpVecs(std::string& type){
 		}
 	}
 }
+
+
+
+/* getExtBdryEdgeSegment function
+ *
+ * This function takes an array with the external boundary edge nodes in the order as specified in the mesh file and
+ * creates an array (extBdryEdgeSegments) where the rows will contain the nodes making up all the boundary line segments.
+ * This array can then be further used to find the midpoints of these line segments and its normals.
+ * Therefore, the midPnts and midPntNormals are already resized accordingly in this function
+ */
+
+void Mesh::getExtBdryEdgeSegments(Eigen::ArrayXi& nrElemsExtBdry){
+	if(lvl>=2){
+		std::cout << "obtaining the external boundary edge segments" << std::endl;
+	}
+
+	//todo periodic points can likely be left out, since there will not be a projection there.
+	// the amount of edge segments is equal to the total amount of external boundary nodes
+	extBdryEdgeSegments.resize(N_se+N_es+N_p,2);
+
+	// starting index and segment counter
+	int startIdx = 0,segment=0;
+
+	// going through each external boundary seperately
+	for(int i=0;i<nrElemsExtBdry.size();i++){
+
+		// for all boundary elements specified for that boundary
+		// for a boundary having n elements there are n+1 nodes that make up n line segments.
+		for(int j=0;j<nrElemsExtBdry(i);j++){
+
+			// each row consists of the two nodes that make up a line segment
+			extBdryEdgeSegments.row(segment) << extBdryEdgeNodes(startIdx+j), extBdryEdgeNodes(startIdx+j+1);
+			segment++;
+		}
+		// ensuring that the starting index is moved n+1 nodes
+		startIdx += (nrElemsExtBdry(i)+1);
+	}
+	// resizing the arrays containing the midpoints of the line segments and their normals
+	midPnts.resize(extBdryEdgeSegments.rows(),nDims);
+	midPntNormals.resize(extBdryEdgeSegments.rows(),nDims);
+}
+
+/* getMidPnts function
+ *
+ * This function obtains the midpoints of the external boundary edge segments by using the array
+ * containing the nodes making up the line segments extBdryEdgeSegments.
+ * This array is also used to find the tangential of the line segment,
+ * which allows for obtaining the normal of the line segments.
+ *
+ */
+
+void Mesh::getMidPnts(){
+	if(lvl>=2){
+		std::cout << "obtaining the midpoints and normals of the external boundary edge segments" << std::endl;
+	}
+
+	// vector containing the tangential of a line segment
+	Eigen::VectorXd tan(nDims);
+
+	// for each line segment on the external boundary
+	for(int i=0;i<extBdryEdgeSegments.rows();i++){
+		// obtaining midpoint by averaging the coordinates of both nodes
+		midPnts.row(i) = (coords.row(extBdryEdgeSegments(i,0)) + coords.row(extBdryEdgeSegments(i,1)))/2;
+
+		// defining the tangential vector by moving from one node to the other.
+		tan = coords.row(extBdryEdgeSegments(i,1)) - coords.row(extBdryEdgeSegments(i,0));
+
+		// a normal of a tangential [x,y] is [y,-x]
+		midPntNormals.row(i) << tan(1),-tan(0);
+		// making the normal unit length
+		midPntNormals.row(i) = midPntNormals.row(i)/tan.norm();
+	}
+}
+
+
+
+

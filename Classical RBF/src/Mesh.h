@@ -25,6 +25,9 @@ public:
 	Eigen::ArrayXXi edgeConnectivity, surfConnectivity;
 	Eigen::ArrayXXd n, t;
 	Eigen::ArrayXXd t_se, n1_se, n2_se, n_ss,t1_ss,t2_ss;
+	Eigen::ArrayXi extBdryEdgeNodes;
+	Eigen::ArrayXXi extBdryEdgeSegments;
+	Eigen::ArrayXXd midPntNormals;
 	double r; // support radius
 	int N_i, N_ib, N_eb, N_se, N_es, N_ss, N_p;
 	const std::string smode, pmode;
@@ -52,6 +55,8 @@ public:
 	void getVecs();
 	void getEdgeTan(Eigen::ArrayXXd& t);
 	void getSurfNormal();
+	void getExtBdryEdgeSegments(Eigen::ArrayXi& nrElemsExtBdry);
+	void getMidPnts();
 
 };
 
