@@ -20,24 +20,24 @@ int main()
 	int debugLvl = 2;
 	const double rFactor = 2.5;
 
-//	string ifName = "mesh_NACA0012_inv.su2";
-//	string ofName = "mesh_NACA0012_inv_def.su2";
-//	vector<string> intBdryTags = {"airfoil"};
-//	vector<string> extBdryTags = {"farfield"};
+	string ifName = "mesh_NACA0012_inv.su2";
+	string ofName = "mesh_NACA0012_inv_def.su2";
+	vector<string> intBdryTags = {"airfoil"};
+	vector<string> extBdryTags = {"farfield"};
 
 //	const string ifName = "5x5.su2";
 //	const string ofName = "5x5_def.su2";
-	string ifName = "25x25.su2";
-	string ofName = "25x25_def.su2";
-	const vector<string> intBdryTags = {"block"}; //What if there are multiple  tags?
-	const vector<string> extBdryTags = {"lower","right","upper", "left"};
+//	string ifName = "25x25.su2";
+//	string ofName = "25x25_def.su2";
+//	const vector<string> intBdryTags = {"block"}; //What if there are multiple  tags?
+//	const vector<string> extBdryTags = {"lower","right","upper", "left"};
 
 //	string ifName = "5x5x5.su2";
 //	string ofName = "5x5x5_def.su2";
 //	const vector<string> intBdryTags = {"BLOCK"};
 //	const vector<string> extBdryTags = {"FRONT", "BACK", "LEFT", "RIGHT", "LOWER", "UPPER"};
-	const string slidingMode = "none";
-	const bool curved = false; // only relevant in case of ds algorithm
+	const string slidingMode = "ps";
+	const bool curved = false ; // only relevant in case of ds algorithm
 	const string periodicMode = "none";				// none for no periodicity, periodic for making the domain periodic in a to be specified direction ,fixed for allowing periodic boundary displacement with fixed corners, moving for periodic boundary displacement with moving corners
 	const vector<string> periodicBdry = {"upper","lower"};
 	const string periodicDirection = "y";

@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include "TestingGround.h"
 #include <string>
 #include <Eigen/Dense>
 #include <vector>
@@ -9,6 +10,7 @@
 class rbf {
 public:
 	Mesh m;
+//	TestingGround tg;
 //	const double dx, dy, dz;
 	Eigen::VectorXd dVec;
 	Eigen::RowVectorXd rotPnt;
@@ -32,7 +34,7 @@ public:
 	void RBF_standard();
 	void performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVec, Eigen::ArrayXi& movingNodes, int& N);
 	void getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::ArrayXi& idxSet2);
-	void getDefVec(Eigen::VectorXd& defVec, int& N);
+	void getDefVec(Eigen::VectorXd& defVec, int& N, int defVecLength);
 	void getRotationalMat();
 
 	void RBF_DS();

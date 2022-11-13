@@ -55,7 +55,7 @@ public:
 	void getVecs();
 	void getEdgeTan(Eigen::ArrayXXd& t);
 	void getSurfNormal();
-	void getExtBdryEdgeSegments(Eigen::ArrayXi& nrElemsExtBdry);
+	void getExtBdryEdgeSegments(Eigen::ArrayXi& nrElemsExtBdry,const std::vector<std::string>& ebTags);
 	void getMidPnts();
 
 };

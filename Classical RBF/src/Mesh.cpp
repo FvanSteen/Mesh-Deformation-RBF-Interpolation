@@ -258,7 +258,7 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 
 
 	// obtaining the nodes that make up the line segments of the external boundary
-	getExtBdryEdgeSegments(nrElemsExtBdry);
+	getExtBdryEdgeSegments(nrElemsExtBdry,ebTags);
 
 
 	std::cout << "Mesh file read successfully" << std::endl;
@@ -290,7 +290,7 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 	int edgeNodeCnt = 0;
 
 	bool periodic;										// boolean that is set based on whether its a periodic boundary element or not.
-
+	std::cout << "startin... " << std::endl;
 	// for each external boundary the sliding edge, sliding surface and static nodes are identified
 	for(int elem = 0; elem < nrElemsExtBdry.size(); elem++){
 
@@ -326,6 +326,9 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 		// setting counters to zero
 		cSS = 0; cSE = 0; cStat = 0, cPer = 0;
 
+
+
+
 		// todo make adjustments for the periodic boundaries
 		// In case of 3D also sliding surface nodes have to be found
 		if(nDims == 3){
@@ -359,17 +362,22 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 					// else save them in the sliding edge array
 					}else{
 						idxSE(cSE) = bdryNodesArr(i); cSE++;
+						extBdryEdgeNodes(edgeNodeCnt) = bdryNodesArr(i);
+						edgeNodeCnt++;
 					}
 					i++;
 
 				// else its a static node
 				}else{
 					idxStatic(cStat) = bdryNodesArr(i); cStat++;
+					if(periodic == false || (pmode == "none" || pmode == "periodic")){
+						extBdryEdgeNodes(edgeNodeCnt) = bdryNodesArr(i);
+						edgeNodeCnt++;
+					}
 				}
 				// saving the nodes in the order they were found to be able to establish the line segments of the external boundary
 				// and their corresponding midpoints.
-				extBdryEdgeNodes(edgeNodeCnt) = bdryNodesArr(i);
-				edgeNodeCnt++;
+
 			}
 		}
 
@@ -389,6 +397,9 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 
 	}
 
+
+
+
 	// Calling a function that removes any duplicate elements from the arrays.
 	if(nDims==3){
 		removeDuplicates(slidingSurfNodes);
@@ -407,10 +418,14 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 
 	// In case there is just a single external boundary then the final element is equal to the first element
 	// This ensures that the line segments making up the external boundary is closed.
+	std::cout << extBdryEdgeNodes << std::endl;
 	if(nrElemsExtBdry.size()==1){
+		extBdryEdgeNodes.conservativeResize(edgeNodeCnt+1);
 		extBdryEdgeNodes(edgeNodeCnt) = extBdryEdgeNodes(0);
+	}else{
+		extBdryEdgeNodes.conservativeResize(edgeNodeCnt);
 	}
-
+	std::cout << "check " << std::endl;
 }
 
 
@@ -1011,35 +1026,50 @@ void Mesh::getPerpVecs(std::string& type){
  * Therefore, the midPnts and midPntNormals are already resized accordingly in this function
  */
 
-void Mesh::getExtBdryEdgeSegments(Eigen::ArrayXi& nrElemsExtBdry){
+void Mesh::getExtBdryEdgeSegments(Eigen::ArrayXi& nrElemsExtBdry,const std::vector<std::string>& ebTags){
 	if(lvl>=2){
 		std::cout << "obtaining the external boundary edge segments" << std::endl;
 	}
 
 	//todo periodic points can likely be left out, since there will not be a projection there.
 	// the amount of edge segments is equal to the total amount of external boundary nodes
-	extBdryEdgeSegments.resize(N_se+N_es+N_p,2);
-
+	if(ebTags.size()==1){
+		std::cout << "check" << std::endl;
+		extBdryEdgeSegments.resize(N_se,2);
+	}else if(pmode == "none" || pmode == "periodic"){
+		extBdryEdgeSegments.resize(N_se+ebTags.size(),2);
+	}else if(pmode == "fixed" || pmode == "moving"){
+		extBdryEdgeSegments.resize(N_se+ebTags.size()-perBdry.size(),2);
+	}
+	std::cout << extBdryEdgeNodes << std::endl;
 	// starting index and segment counter
 	int startIdx = 0,segment=0;
 
 	// going through each external boundary seperately
 	for(int i=0;i<nrElemsExtBdry.size();i++){
+		// checking if the boundary tag is among the specified periodic boundary tags
+		if(std::find(std::begin(perBdry),std::end(perBdry),ebTags[i]) == std::end(perBdry) || (pmode == "none" || pmode == "periodic")){
+			std::cout << i << std::endl;
+			// for all boundary elements specified for that boundary
+			// for a boundary having n elements there are n+1 nodes that make up n line segments.
+			for(int j=0;j<nrElemsExtBdry(i);j++){
 
-		// for all boundary elements specified for that boundary
-		// for a boundary having n elements there are n+1 nodes that make up n line segments.
-		for(int j=0;j<nrElemsExtBdry(i);j++){
-
-			// each row consists of the two nodes that make up a line segment
-			extBdryEdgeSegments.row(segment) << extBdryEdgeNodes(startIdx+j), extBdryEdgeNodes(startIdx+j+1);
-			segment++;
+				// each row consists of the two nodes that make up a line segment
+				extBdryEdgeSegments.row(segment) << extBdryEdgeNodes(startIdx+j), extBdryEdgeNodes(startIdx+j+1);
+				segment++;
+			}
+			// ensuring that the starting index is moved n+1 nodes
+			startIdx += (nrElemsExtBdry(i)+1);
 		}
-		// ensuring that the starting index is moved n+1 nodes
-		startIdx += (nrElemsExtBdry(i)+1);
 	}
+	std::cout << extBdryEdgeSegments << std::endl;
+	std::cout << "check" << std::endl;
+	std::cout << extBdryEdgeSegments.rows() << std::endl;
+	std::cout << segment << std::endl;
 	// resizing the arrays containing the midpoints of the line segments and their normals
 	midPnts.resize(extBdryEdgeSegments.rows(),nDims);
 	midPntNormals.resize(extBdryEdgeSegments.rows(),nDims);
+
 }
 
 /* getMidPnts function
@@ -1061,6 +1091,7 @@ void Mesh::getMidPnts(){
 
 	// for each line segment on the external boundary
 	for(int i=0;i<extBdryEdgeSegments.rows();i++){
+
 		// obtaining midpoint by averaging the coordinates of both nodes
 		midPnts.row(i) = (coords.row(extBdryEdgeSegments(i,0)) + coords.row(extBdryEdgeSegments(i,1)))/2;
 
@@ -1069,9 +1100,15 @@ void Mesh::getMidPnts(){
 
 		// a normal of a tangential [x,y] is [y,-x]
 		midPntNormals.row(i) << tan(1),-tan(0);
+
 		// making the normal unit length
 		midPntNormals.row(i) = midPntNormals.row(i)/tan.norm();
+
 	}
+
+	std::cout << midPnts << std::endl;
+	std::cout << midPntNormals << std::endl;
+
 }
 
 
