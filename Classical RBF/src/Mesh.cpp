@@ -1,11 +1,9 @@
 #include "Mesh.h"
 #include <iostream>
-#include <Eigen/Dense>
 #include <fstream>
 #include <string>
 #include <algorithm>
 #include <iterator>
-#include <string>
 #include <math.h>
 using Eigen::MatrixXd;
 
@@ -290,7 +288,7 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 	int edgeNodeCnt = 0;
 
 	bool periodic;										// boolean that is set based on whether its a periodic boundary element or not.
-	std::cout << "startin... " << std::endl;
+
 	// for each external boundary the sliding edge, sliding surface and static nodes are identified
 	for(int elem = 0; elem < nrElemsExtBdry.size(); elem++){
 
@@ -418,14 +416,14 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 
 	// In case there is just a single external boundary then the final element is equal to the first element
 	// This ensures that the line segments making up the external boundary is closed.
-	std::cout << extBdryEdgeNodes << std::endl;
+
 	if(nrElemsExtBdry.size()==1){
 		extBdryEdgeNodes.conservativeResize(edgeNodeCnt+1);
 		extBdryEdgeNodes(edgeNodeCnt) = extBdryEdgeNodes(0);
 	}else{
 		extBdryEdgeNodes.conservativeResize(edgeNodeCnt);
 	}
-	std::cout << "check " << std::endl;
+
 }
 
 
@@ -1034,14 +1032,14 @@ void Mesh::getExtBdryEdgeSegments(Eigen::ArrayXi& nrElemsExtBdry,const std::vect
 	//todo periodic points can likely be left out, since there will not be a projection there.
 	// the amount of edge segments is equal to the total amount of external boundary nodes
 	if(ebTags.size()==1){
-		std::cout << "check" << std::endl;
+
 		extBdryEdgeSegments.resize(N_se,2);
 	}else if(pmode == "none" || pmode == "periodic"){
 		extBdryEdgeSegments.resize(N_se+ebTags.size(),2);
 	}else if(pmode == "fixed" || pmode == "moving"){
 		extBdryEdgeSegments.resize(N_se+ebTags.size()-perBdry.size(),2);
 	}
-	std::cout << extBdryEdgeNodes << std::endl;
+
 	// starting index and segment counter
 	int startIdx = 0,segment=0;
 
@@ -1049,7 +1047,7 @@ void Mesh::getExtBdryEdgeSegments(Eigen::ArrayXi& nrElemsExtBdry,const std::vect
 	for(int i=0;i<nrElemsExtBdry.size();i++){
 		// checking if the boundary tag is among the specified periodic boundary tags
 		if(std::find(std::begin(perBdry),std::end(perBdry),ebTags[i]) == std::end(perBdry) || (pmode == "none" || pmode == "periodic")){
-			std::cout << i << std::endl;
+
 			// for all boundary elements specified for that boundary
 			// for a boundary having n elements there are n+1 nodes that make up n line segments.
 			for(int j=0;j<nrElemsExtBdry(i);j++){
@@ -1062,10 +1060,6 @@ void Mesh::getExtBdryEdgeSegments(Eigen::ArrayXi& nrElemsExtBdry,const std::vect
 			startIdx += (nrElemsExtBdry(i)+1);
 		}
 	}
-	std::cout << extBdryEdgeSegments << std::endl;
-	std::cout << "check" << std::endl;
-	std::cout << extBdryEdgeSegments.rows() << std::endl;
-	std::cout << segment << std::endl;
 	// resizing the arrays containing the midpoints of the line segments and their normals
 	midPnts.resize(extBdryEdgeSegments.rows(),nDims);
 	midPntNormals.resize(extBdryEdgeSegments.rows(),nDims);
@@ -1105,10 +1099,6 @@ void Mesh::getMidPnts(){
 		midPntNormals.row(i) = midPntNormals.row(i)/tan.norm();
 
 	}
-
-	std::cout << midPnts << std::endl;
-	std::cout << midPntNormals << std::endl;
-
 }
 
 
