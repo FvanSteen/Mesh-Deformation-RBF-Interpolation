@@ -13,6 +13,12 @@ int main()
 	int debugLvl = 2;
 	const double rFactor = 2.5;
 
+//	string ifName = "su2mesh.su2";
+//	string ofName = "su2mesh_def.su2";
+//	vector<string> intBdryTags = {"wall1","wall2"};
+//	vector<string> extBdryTags = {"inflow","outflow","periodic1","periodic2"};
+
+//
 //	string ifName = "mesh_NACA0012_inv.su2";
 //	string ofName = "mesh_NACA0012_inv_def.su2";
 //	vector<string> intBdryTags = {"airfoil"};
@@ -29,13 +35,13 @@ int main()
 //	string ofName = "5x5x5_def.su2";
 //	const vector<string> intBdryTags = {"BLOC K"};
 //	const vector<string> extBdryTags = {"FRONT", "BACK", "LEFT", "RIGHT", "LOWER", "UPPER"};
-	const string slidingMode = "ps";
-	const bool curved = false; // only relevant in case of ds algorithm
+	const string slidingMode = "ds";
+//	const bool curved = false; // only relevant in case of ds algorithm
 	const string periodicMode = "none";				// none for no periodicity, periodic for making the domain periodic in a to be specified direction ,fixed for allowing periodic boundary displacement with fixed corners, moving for periodic boundary displacement with moving corners
 	const vector<string> periodicBdry = {"upper","lower"};
 	const string periodicDirection = "y";
 
-	const bool dataReduction = false;
+//	const bool dataReduction = false;
 
 	// initialising class object m, reads mesh input file in constructor.
 //	Mesh *meshPtr;
@@ -45,21 +51,23 @@ int main()
 
 
 
+//	const double xDef = 0.0004, yDef = -0.0004, zDef= -0.0;
 	const double xDef = -0.2, yDef = -0.32, zDef= -0.0;
-	const int steps = 20;
+	int steps = 20;
 	struct probParams probParams;
 	probParams.dVec.resize(2);
 	probParams.dVec << xDef/steps,yDef/steps;
 	probParams.rotVec.resize(1);
 	probParams.rotVec << 60;
-	probParams.steps = 20;
+	probParams.steps = steps;
 	probParams.rotPnt.resize(2);
 	probParams.rotPnt << 0.5,0.5;
 	probParams.sMode = slidingMode;
 	probParams.pMode = "none";
 	probParams.curved = false;
 	probParams.pDir = "y";
-	probParams.dataRed = true;
+	probParams.dataRed = false;
+	probParams.tolerance = 1e-4;
 
 
 

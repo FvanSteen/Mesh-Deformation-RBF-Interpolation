@@ -120,7 +120,7 @@ greedy::greedy()  {
 }
 
 
-void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, Eigen::VectorXd& exactDeformation, double& e, int& idxMax){
+void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, Eigen::VectorXd& exactDeformation, double& e, int& idxMax, std::string sMode){
 	std::cout << "obtaining error" << std::endl;
 //	Eigen::VectorXd defVec;
 //	int N = rbf.m.N_ib-n.N_ib;
@@ -145,7 +145,7 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, Eigen::V
 //		std::cout << n.iNodes(rbf.m.N_i+rbf.m.N_p + i) << std::endl;
 
 	}
-	std::cout << "check" << std::endl;
+//	std::cout << "check" << std::endl;
 	for(j = 0; j < meshOb.N_es - n.N_es ; j++){
 //		std::cout << i + j << std::endl;
 		for(int dim=0; dim<meshOb.nDims;dim++){
@@ -153,26 +153,53 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, Eigen::V
 		}
 		error(i+j) = sqrt(error(i+j));
 	}
-	std::cout << "check" << std::endl;
+//	std::cout << "check" << std::endl;
 
 //	std::cout << rbf.m.n << std::endl;
+//	std::cout< < meshOb.N_se << std::endl;
+//	std::cout << meshOb.N_es << std::endl;
+
+
+
+	// todo include as function argument
+//	std::string smode = "none";
+
 	int idx;
-	for(k=0; k< meshOb.N_se - n.N_s; k++){
+	if(sMode == "ps"){
+		for(k=0; k< meshOb.N_se - n.N_s; k++){
 //		std::cout << n.iNodes(rbf.m.N_i+rbf.m.N_p+i+j+k) << std::endl;
-		idx = std::distance(std::begin(meshOb.slidingEdgeNodes),std::find(std::begin(meshOb.slidingEdgeNodes),std::end(meshOb.slidingEdgeNodes),n.iNodes(meshOb.N_i+meshOb.N_p+i+j+k)));
+			idx = std::distance(std::begin(meshOb.slidingEdgeNodes),std::find(std::begin(meshOb.slidingEdgeNodes),std::end(meshOb.slidingEdgeNodes),n.iNodes(meshOb.N_i+meshOb.N_p+i+j+k)));
 
 //		std::cout << idx << std::endl;
 //		std::cout << i+j+k << std::endl;
 //		std::cout << rbf.m.n.row(k) << std::endl;
 //		std::cout << rbf.d.row(rbf.m.N_i+rbf.m.N_p + i + j+k) << std::endl;
 //		std::cout << std::abs(rbf.m.n.row(k).matrix().dot(rbf.d.row(rbf.m.N_i+rbf.m.N_p + i + j+k).matrix())) << std::endl;
-		error(i+j+k) = std::abs(meshOb.n.row(idx).matrix().dot(d.row(meshOb.N_i+meshOb.N_p + i + j + k).matrix()));
+			error(i+j+k) = std::abs(meshOb.n.row(idx).matrix().dot(d.row(meshOb.N_i+meshOb.N_p + i + j + k).matrix()));
+		}
+	}
+//	std::cout << n.iNodes << std::endl;
+//	std::cout << d << std::endl;
+//	std::cout << '\n';
 
+
+	if(sMode == "none"){
+		for(k=0; k< meshOb.N_se - n.N_s; k++){
+			// for loop through dimensions
+//			std::cout << k << std::endl;
+//			std::cout << meshOb.slidingEdgeNodes(k) << std::endl;
+//			std::cout << d.row(meshOb.N_i+meshOb.N_p + i + j+k) << std::endl; // this is the error, since the displacement should actually by zero for the none sliding mode.
+			for(int dim=0; dim<meshOb.nDims;dim++){
+				error(i+j+k) += pow(d(meshOb.N_i+meshOb.N_p + i + j+ k,dim),2);
+			}
+			error(i+j+k) = sqrt(error(i+j+k));
+		}
 	}
 
-	std::cout << "check" << std::endl;
+//	std::cout << "check" << std::endl;
 
-	std::cout << "error Array: \n" << error << '\n' << std::endl;
+//	std::cout << "error Array: \n" << error << '\n' << std::endl;
+//	std::exit(0);
 //	std::exit(0);
 
 	error.maxCoeff(&idxMax);

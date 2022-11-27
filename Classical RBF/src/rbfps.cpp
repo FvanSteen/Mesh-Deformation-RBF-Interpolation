@@ -57,30 +57,25 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 	if(params.dataRed){
 		n.GreedyInit();
-		n.greedyNodes(m.intBdryNodes(0));
+		n.greedyNodes(m.intBdryNodes(0),params.sMode);
 
 	}
-	// initial node for greedy;
-//	int idxMax = m.intBdryNodes(0);
-	int idxMax;
+
+	int maxErrorNode;
 	greedy go;
 
-	int cnt;
+	int iter;
 	for(int i = 0; i < params.steps; i++){
+		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 		double error = 1;
-		cnt = 0;
-		while(error > 0.0001){
-			if(cnt!=0){
-				n.greedyNodes(idxMax);
-				std::cout << n.N_mStd << std::endl;
+		iter = 0;
+		while(error > params.tolerance){
+			if(iter!=0){
+				n.greedyNodes(maxErrorNode,params.sMode);
+//				std::cout << n.N_mStd << std::endl;
 			}
 			delta.resize(n.N_s, m.nDims);
 			finalDef.resize(n.N_s,m.nDims);
-
-
-
-
-			std::cout << "Deformation step: " << i+1 << std::endl;
 
 			getPhi(Phi_mm, n.mNodes, n.mNodes);
 
@@ -89,18 +84,16 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 			getPhi(Phi_im, n.iNodes, n.mNodesStd);
 
-	//		defVecPro = Eigen::VectorXd::Zero(N_mPro*m.nDims);
 			std::cout << "got Phi's" << std::endl;
+
 			defVec = Eigen::VectorXd::Zero(n.N_m*m.nDims);
 			std::cout << "initialised deformation vector " << std::endl;
 			getDefVec(defVec, n.N_m,n.ibNodes);
-
 			std::cout << "got deformation vector " << std::endl;
 
 			if(params.curved || i==0){
 				m.getMidPnts();
 				m.getVecs();
-				std::cout << "midPnts are obtained!" << std::endl;
 			}
 
 			performRBF_PS(Phi_mm, Phi_sm, Phi_mmStd, Phi_im, defVec, delta, finalDef, defVecStd, n);
@@ -112,24 +105,24 @@ void rbf_ps::perform_rbf(getNodeType& n){
 				Eigen::VectorXd exactDef;
 				getExactDef(n, exactDef);
 
+				//next statement should also take into account the periodic nodes
 				if(m.N_i == n.N_i){
 					std::cout << "error zet to zero" << std::endl;
 					error = 0;
 				}else{
-					go.getError(n,m,d,exactDef,error,idxMax);
+					go.getError(n,m,d,exactDef,error,maxErrorNode,params.sMode);
 				}
-				std::cout << "error: \t"<< error <<" at node: \t" << idxMax<< std::endl;
+				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNode<< std::endl;
 			}else{
 				error = 0;
 			}
-
-
-			cnt++;
+			iter++;
 
 		}
+		std::cout << iter << std::endl;
 		if(params.dataRed){
 			updateNodes(defVecStd,n.mNodesStd,n.iNodes,n.N_mStd);
-			std::cout << n.mNodesStd << std::endl;
+//			std::cout << n.mNodesStd << std::endl;
 		}
 
 
@@ -220,15 +213,5 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 	std::cout <<  "performing classical rbf: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
 }
 
-void rbf_ps::getExactDef(getNodeType& n, Eigen::VectorXd& exactDeformation){
 
-	int N = m.N_ib-n.N_ib;
-	exactDeformation = Eigen::VectorXd::Zero(m.nDims*N);
-//	std::cout << n.iNodes(Eigen::seq(rbf.m.N_i+rbf.m.N_p, rbf.m.N_i+rbf.m.N_p+rbf.m.N_ib-n.N_ib-1)) << std::endl;
-
-
-	Eigen::ArrayXi ibNodes = n.iNodes(Eigen::seq(m.N_i+m.N_p, m.N_i+m.N_p+m.N_ib-n.N_ib-1));
-	getDefVec(exactDeformation, N, ibNodes);
-//	std::cout << exactDeformation << std::endl;
-}
 

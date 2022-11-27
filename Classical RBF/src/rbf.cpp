@@ -3,7 +3,7 @@
 
 #include "rbfstd.h"
 #include "rbfps.h"
-//#include "rbfds.h"
+#include "rbfds.h"
 #include "greedy.h"
 //#include "selectRbf.h"
 #include <iostream>
@@ -50,7 +50,9 @@ void rbf::RBFMain(){
 		rbf.perform_rbf(n);
 
 	}
-//	else if(smode=="ds"){
+	else if(params.sMode=="ds"){
+		rbf_ds rbf(m, params);
+		rbf.perform_rbf(n);
 //		if(m.nDims ==3){
 ////			RBF_DS_3D();
 //		}else if(m.nDims ==2){
@@ -58,7 +60,7 @@ void rbf::RBFMain(){
 //			rbf.perform_rbf(n.iNodes,n.mNodes,n.mNodesStd,n.sNodes,n.N_i,n.N_m,n.N_mStd,n.N_s);
 ////			RBF_DS();
 //		}
-//	}
+	}
 	else if(params.sMode=="ps"){
 ////		RBF_PS();
 //		rbf_ps *ptr;

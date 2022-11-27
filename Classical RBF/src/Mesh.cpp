@@ -15,7 +15,7 @@ r = rFac*charLength();
 
 // Main function for reading the .su2 mesh files
 void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector<std::string>& ebTags){
-
+	std::cout << "digit is at the third index" << std::endl;
 	if(lvl>=1){
 		std::cout << "Reading mesh file: " << ifName << std::endl;
 	}
@@ -113,7 +113,7 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 
 				}
 				// check if line contains nodes corresponding to the boundary
-				else if(isdigit(line[0])){
+				else if(isdigit(line[2])){
 					// split line by '\t' character
 					std::istringstream is(line);
 					// elements on the line are assigned to data in a while loop. lineElem counts the number of elements per line
@@ -157,9 +157,11 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 					nExtMarker++;
 
 				}
-				else if(isdigit(line[0])){
+
+				else if(isdigit(line[2])){
 					// split line by '\t' character
 					std::istringstream is(line);
+
 					// elements on the line are assigned to data in a while loop. lineElem counts the number of elements per line
 					int data, lineElem = 0;
 					while(is >> data){
@@ -220,6 +222,12 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 	N_es = extStaticNodes.size();
 	N_p = periodicNodes.size();
 
+
+
+//	std::cout << N_se << '\t' << N_ss  << '\t' << N_es  << '\t' << N_p << std::endl;
+	//	std::cout << extBdryNodesMat << std::endl;
+
+
 	getEdgeConnectivity(nrElemsExtBdry);
 	if(nDims == 3){
 		getSurfConnectivity();
@@ -234,7 +242,8 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 	getBdryNodes(intBdryNodesMat, intBdryNodes, nIntBdryNodes, nIntBdryElems);
 	getBdryNodes(extBdryNodesMat, extBdryNodes, nExtBdryNodes, nExtBdryElems);
 
-
+//	std::cout << intBdryNodes << std::endl;
+//	std::cout << "\n" << extBdryNodes << std::endl;
 
 //	midPnts.resize(nExtBdryElems,nDims);
 //	nVecs.resize(nExtBdryElems,nDims);

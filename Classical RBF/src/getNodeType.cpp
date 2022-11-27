@@ -19,6 +19,11 @@ getNodeType::getNodeType(Mesh& meshOb)
 	N_i = m.N_i+m.N_p;
 	iNodes.resize(N_i);
 	iNodes << m.intNodes, m.periodicNodes;
+
+	N_es = m.N_es;
+	esNodes.resize(N_es);
+	esNodes << m.extStaticNodes;
+
 	if(m.smode == "none"){
 		N_m = m.N_ib+ m.N_es + m.N_se;
 		mNodes.resize(N_m);
@@ -61,9 +66,9 @@ getNodeType::getNodeType(Mesh& meshOb)
 	std::cout << "done assigning node types" << std::endl;
 }
 
-void getNodeType::greedyNodes(int node){
-	std::cout << "in the greedyNodes function" << std::endl;
-	std::cout << node << std::endl;
+void getNodeType::greedyNodes(int node,std::string smode){
+//	std::cout << "in the greedyNodes function" << std::endl;
+//	std::cout << "Node added to greedy control nodes: \t" << node << std::endl;
 //	std::distance(std::begin(extBdryNodesMat.col(col)), std::find( std::begin(extBdryNodesMat.col(col)), std::end(extBdryNodesMat.col(col)), slidingSurfNodes(i)));
 	auto iterI = std::find(std::begin(m.intBdryNodes),std::end(m.intBdryNodes),node);
 	auto iterS = std::find(std::begin(m.slidingEdgeNodes),std::end(m.slidingEdgeNodes),node);
@@ -71,7 +76,7 @@ void getNodeType::greedyNodes(int node){
 	int idx;
 	if( iterI != std::end(m.intBdryNodes)){
 		// in case the added node is an internal boundary node
-		std::cout << "yes int bdry" << std::endl;
+//		std::cout << "yes int bdry" << std::endl;
 
 		// update the included internal boundary nodes
 		N_ib++;
@@ -95,7 +100,11 @@ void getNodeType::greedyNodes(int node){
 		// updating the moving nodes array
 		N_m++;
 		mNodes.resize(N_m);
-		mNodes << ibNodes, esNodes;
+		if(smode == "none"){
+			mNodes << ibNodes, esNodes, sNodes;
+		}else{
+			mNodes << ibNodes, esNodes;
+		}
 
 		// updating the nodes that are used in the std rbf interpolation
 		N_mStd++;
@@ -103,7 +112,7 @@ void getNodeType::greedyNodes(int node){
 		mNodesStd << ibNodes, esNodes, sNodes;
 
 	}else if( iterS != std::end(m.slidingEdgeNodes)){
-		std::cout << "yes slide" << std::endl;
+//		std::cout << "yes slide" << std::endl;
 
 		N_s++;
 		sNodes.conservativeResize(N_s);
@@ -119,11 +128,19 @@ void getNodeType::greedyNodes(int node){
 		iNodes.conservativeResize(N_i);
 
 		// updating the moving nodes array
+		if(smode == "none"){
+
+			N_m++;
+			mNodes.resize(N_m);
+			mNodes << ibNodes,esNodes, sNodes;
+		}
 //		N_m++;
 //		mNodes.resize(N_m);
 //		mNodes << ibNodes, esNodes;
 
 		// updating the nodes that are used in the std rbf interpolation
+		//todo this part might not be used in case of standard rbf.
+
 		N_mStd++;
 		mNodesStd.resize(N_mStd);
 		mNodesStd << ibNodes, esNodes, sNodes;
@@ -138,7 +155,7 @@ void getNodeType::greedyNodes(int node){
 
 	}else if( iterES != std::end(m.extStaticNodes)){
 		// in case the added node is an internal boundary node
-		std::cout << "yes ext stat" << std::endl;
+//		std::cout << "yes ext stat" << std::endl;
 
 		// update the included internal boundary nodes
 		N_es++;
@@ -161,7 +178,11 @@ void getNodeType::greedyNodes(int node){
 		// updating the moving nodes array
 		N_m++;
 		mNodes.resize(N_m);
-		mNodes << ibNodes, esNodes;
+		if(smode == "none"){
+			mNodes << ibNodes, esNodes , sNodes;
+		}else{
+			mNodes << ibNodes, esNodes;
+		}
 
 		// updating the nodes that are used in the std rbf interpolation
 		N_mStd++;
@@ -197,9 +218,6 @@ void getNodeType::GreedyInit(){
 	sNodes.resize(N_s);
 	mNodesStd.resize(N_mStd);
 	ibNodes.resize(N_ib);
-
-
-
 
 }
 

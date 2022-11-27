@@ -13,6 +13,8 @@
 #include "rbfGenFunc.h"
 #include "getNodeType.h"
 
+
+
 class rbf_std : public rbfGenFunc
 //class rbf_std
 {
@@ -26,6 +28,7 @@ public:
 	virtual void perform_rbf(getNodeType& n);
 	void performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVec, Eigen::ArrayXi& movingNodes, Eigen::ArrayXi& internalNodes, int& N);
 	void updateNodes(Eigen::VectorXd& defVec, Eigen::ArrayXi& movingNodes, Eigen::ArrayXi& internalNodes,int& N);
+	void getExactDef(getNodeType& n, Eigen::VectorXd& exactDeformation);
 	virtual ~rbf_std(){};
 };
 

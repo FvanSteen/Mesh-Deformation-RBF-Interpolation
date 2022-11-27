@@ -1,5 +1,5 @@
 #include "rbfstd.h"
-
+#include "greedy.h"
 #include <Eigen/Dense>
 #include <chrono>
 #include <iostream>
@@ -24,57 +24,78 @@ rbf_std::rbf_std(Mesh& meshObject, struct probParams& probParamsObject)
 
 
 void rbf_std::perform_rbf(getNodeType& n){
-
 	std::cout << "Performing standard rbf interpolation" << std::endl;
 
 	auto start = std::chrono::high_resolution_clock::now();
 	Eigen::MatrixXd Phi_mm, Phi_im;
-	Eigen::VectorXd defVec;
+	Eigen::VectorXd defVec,defVecStd;
+
+
+
+	if(params.dataRed){
+		n.GreedyInit();
+		n.greedyNodes(m.intBdryNodes(0), params.sMode);
+	}
+
+
+
+
+	// node containing max error, iter for nr of greedy iterations
+	int maxErrorNode,iter;
+	// max error.
+	double error;
+	greedy go;
+
+
 
 	for(int i=0; i<params.steps; i++){
-		auto start2 = std::chrono::high_resolution_clock::now();
-		std::cout << "Deformation step: " << i+1 << std::endl;
+		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
+		error = 1;
+		iter = 0;
+		while(error>params.tolerance){
 
-		std::cout << "Obtaining Phi_mm" << std::endl;
-		auto starti = std::chrono::high_resolution_clock::now();
-		getPhi(Phi_mm, n.mNodes,n.mNodes);
+			if(iter!=0){
+				n.greedyNodes(maxErrorNode,params.sMode);
+			}
 
-		auto stopi = std::chrono::high_resolution_clock::now();
-		auto durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-		std::cout << "Runtime duration obtaining Phi_mm: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+			std::cout << "Obtaining Phi_mm" << std::endl;
+			getPhi(Phi_mm, n.mNodes,n.mNodes);
 
-		std::cout << "Obtaining Phi_im" << std::endl;
-		starti = std::chrono::high_resolution_clock::now();
-		getPhi(Phi_im, n.iNodes,n.mNodes);
-		stopi = std::chrono::high_resolution_clock::now();
-		durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-		std::cout << "Runtime duration obtaining Phi_im: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+			std::cout << "Obtaining Phi_im" << std::endl;
+			getPhi(Phi_im, n.iNodes,n.mNodes);
 
-		std::cout << "Obtaining deformation vector" << std::endl;
-		starti = std::chrono::high_resolution_clock::now();
-		defVec = Eigen::VectorXd::Zero(n.N_m*m.nDims);
-		getDefVec(defVec,n.N_m,n.ibNodes);
+			std::cout << "Obtaining deformation vector" << std::endl;
+			defVec = Eigen::VectorXd::Zero(n.N_m*m.nDims);
+			getDefVec(defVec,n.N_m,n.ibNodes);
 
+			std::cout << "Performing RBF" << std::endl;
+			performRBF(Phi_mm, Phi_im, defVec,n.mNodes,n.iNodes, n.N_m);
 
-		stopi = std::chrono::high_resolution_clock::now();
-		durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-		std::cout << "Runtime duration obtaining defVec: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+			if(params.dataRed){
+				// exact deformation of internal boundary nodes not included in the interpolation
+				Eigen::VectorXd exactDef;
+				getExactDef(n, exactDef);
 
-		std::cout << "Performing RBF" << std::endl;
-		starti = std::chrono::high_resolution_clock::now();
-//		Eigen::ArrayXXd d;
-		performRBF(Phi_mm, Phi_im, defVec,n.mNodes,n.iNodes, n.N_m);
-		stopi = std::chrono::high_resolution_clock::now();
-		durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-		std::cout << "Runtime duration obtaining solution and updating nodes: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+				//next statement should also take into account the periodic nodes
+				if(m.N_i == n.N_i){
+					std::cout << "error zet to zero" << std::endl;
+					error = 0;
+				}else{
+					go.getError(n,m,d,exactDef,error,maxErrorNode, params.sMode);
+				}
+				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNode<< std::endl;
+			}else{
+				error = 0;
+			}
 
+			iter++;
+		}
 
-
-
-		auto stop2 = std::chrono::high_resolution_clock::now();
-		auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(stop2-start2);
-		std::cout << "Runtime duration whole step: \t"<<  duration2.count()/1e6 << " seconds"<< std::endl;
-
+		if(params.dataRed){
+			defVecStd = Eigen::VectorXd::Zero(n.N_mStd*m.nDims);
+			getDefVec(defVecStd,n.N_mStd,n.ibNodes);
+			updateNodes(defVecStd,n.mNodesStd,n.iNodes,n.N_mStd);
+		}
 	}
 	auto stop = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
@@ -98,11 +119,15 @@ void rbf_std::performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen
 ////	std::cout << side2 << std::endl;
 //	std::cout << side1*side2 << std::endl;
 //	std::cout << std::endl;
+//	std::cout << movingNodes << std::endl;
 	for(int dim = 0; dim < m.nDims; dim++){
 		std::cout << "Solving for dimension: " << dim << std::endl;
 		if(params.dataRed){
 			d.col(dim) = (Phi_im*(Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))))).array();
+//			std::cout << (Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N)))) << std::endl;
 		}else{
+//			std::cout << movingNodes << std::endl;
+//			std::cout << (Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N)))) << std::endl;
 			m.coords(internalNodes,dim) += (Phi_im*(Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))))).array();
 			m.coords(movingNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
 			params.rotPnt(dim) += params.dVec(dim);
@@ -145,4 +170,15 @@ void rbf_std::updateNodes(Eigen::VectorXd& defVec, Eigen::ArrayXi& movingNodes, 
 		m.coords(movingNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
 		params.rotPnt(dim) += params.dVec(dim);
 	}
+}
+
+void rbf_std::getExactDef(getNodeType& n, Eigen::VectorXd& exactDeformation){
+
+	int N = m.N_ib-n.N_ib;
+	exactDeformation = Eigen::VectorXd::Zero(m.nDims*N);
+//	std::cout << n.iNodes(Eigen::seq(rbf.m.N_i+rbf.m.N_p, rbf.m.N_i+rbf.m.N_p+rbf.m.N_ib-n.N_ib-1)) << std::endl;
+
+	Eigen::ArrayXi ibNodes = n.iNodes(Eigen::seq(m.N_i+m.N_p, m.N_i+m.N_p+m.N_ib-n.N_ib-1));
+	getDefVec(exactDeformation, N, ibNodes);
+//	std::cout << exactDeformation << std::endl;
 }

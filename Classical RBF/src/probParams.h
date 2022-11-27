@@ -19,6 +19,7 @@ struct probParams{
 	bool curved;
 	std::string pDir;
 	bool dataRed;
+	double tolerance;
 };
 
 

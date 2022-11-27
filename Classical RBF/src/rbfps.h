@@ -29,7 +29,7 @@ public:
 	rbf_ps(Mesh& meshObject, struct probParams& probParamsObject);
 	void perform_rbf(getNodeType& n);
 	void performRBF_PS(Eigen::MatrixXd& Phi_mmPro, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVecPro,Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef, Eigen::VectorXd& defVec, getNodeType& n);
-	void getExactDef(getNodeType& n, Eigen::VectorXd& exactDeformation);
+
 };
 
 
