@@ -10,66 +10,99 @@ using namespace std;
 
 int main()
 {
+
+	// amount of debugLvl messages
 	int debugLvl = 2;
+	// the radius of influence of the RBFs is the rFactor times the max domain length
 	const double rFactor = 2.5;
 
-//	string ifName = "su2mesh.su2";
-//	string ofName = "su2mesh_def.su2";
-//	vector<string> intBdryTags = {"wall1","wall2"};
-//	vector<string> extBdryTags = {"inflow","outflow","periodic1","periodic2"};
+	// input mesh file, output mesh file, internal and external boundary tags.
+	string ifName = "su2mesh.su2";
+	string ofName = "su2mesh_def_ps_ref.su2";
+	vector<string> intBdryTags = {"wall1","wall2"};
+	vector<string> extBdryTags = {"inflow","outflow","periodic1","periodic2"};
 
-//
+//	string ifName = "mesh_original.su2";
+//	string ofName = "mesh_original_def.su2";
+//	vector<string> intBdryTags = {"tube1","tube2","tube3","tube4","tube5","tube6","tube7","tube8","tube9","tube10",};
+//	vector<string> extBdryTags = {"inlet","outlet","periodic_upper","periodic_lower"};
+
+
+
 //	string ifName = "mesh_NACA0012_inv.su2";
-//	string ofName = "mesh_NACA0012_inv_def.su2";
+//	string ofName = "mesh_NACA0012_inv_def_ps_ref.su2";
 //	vector<string> intBdryTags = {"airfoil"};
 //	vector<string> extBdryTags = {"farfield"};
 
 //	const string ifName = "5x5.su2";
 //	const string ofName = "5x5_def.su2";
-	string ifName = "25x25.su2";
-	string ofName = "25x25_def.su2";
-	const vector<string> intBdryTags = {"block"}; //What if there are multiple  tags?
-	const vector<string> extBdryTags = {"lower","right","upper", "left"};
+//	string ifName = "25x25.su2";
+//	string ofName = "25x25_def.su2";
+//	const vector<string> intBdryTags = {"block"}; //What if there are multiple  tags?
+//	const vector<string> extBdryTags = {"lower","right","upper", "left"};
 
 //	string ifName = "5x5x5.su2";
 //	string ofName = "5x5x5_def.su2";
 //	const vector<string> intBdryTags = {"BLOC K"};
 //	const vector<string> extBdryTags = {"FRONT", "BACK", "LEFT", "RIGHT", "LOWER", "UPPER"};
-	const string slidingMode = "ds";
-//	const bool curved = false; // only relevant in case of ds algorithm
+
+
+	// sliding modes:
+	// regular rbf: none
+	// pseudo sliding: ps
+	// direct sliding: ds
+	const string slidingMode = "none";
+	// periodic modes:
+	// no periodicity: none
+	// periodic rbf: periodic
+	// moving periodic boundaries with fixed vertices: fixed
+	// moving periodic boundaries with moving vertices: moving
 	const string periodicMode = "none";				// none for no periodicity, periodic for making the domain periodic in a to be specified direction ,fixed for allowing periodic boundary displacement with fixed corners, moving for periodic boundary displacement with moving corners
+
+	// periodic boundary tags
 	const vector<string> periodicBdry = {"upper","lower"};
+
+	// direction of periodicity
 	const string periodicDirection = "y";
 
 //	const bool dataReduction = false;
 
 	// initialising class object m, reads mesh input file in constructor.
-//	Mesh *meshPtr;
 	Mesh meshOb(ifName,ofName, intBdryTags, extBdryTags, rFactor, debugLvl, slidingMode, periodicBdry, periodicMode);
-//	meshPtr = &meshOb;
 
 
 
+	// constant deformation
+	const double xDef = 0.0004, yDef = -0.0004, zDef= -0.0;
+//	const double xDef = -0.0, yDef = -0.0, zDef= -0.0;
 
-//	const double xDef = 0.0004, yDef = -0.0004, zDef= -0.0;
-	const double xDef = -0.2, yDef = -0.32, zDef= -0.0;
-	int steps = 20;
+	// number of deformation steps
+	int steps = 10;
 	struct probParams probParams;
+
 	probParams.dVec.resize(2);
 	probParams.dVec << xDef/steps,yDef/steps;
 	probParams.rotVec.resize(1);
-	probParams.rotVec << 60;
+
+	// rotational deformation
+	probParams.rotVec << 0;
 	probParams.steps = steps;
 	probParams.rotPnt.resize(2);
+	// point of rotation
 	probParams.rotPnt << 0.5,0.5;
 	probParams.sMode = slidingMode;
-	probParams.pMode = "none";
+	probParams.pMode = periodicMode;
+	// if the boundaries are curved then the normals and tangentials of the boundaries are updated
 	probParams.curved = false;
-	probParams.pDir = "y";
-	probParams.dataRed = false;
-	probParams.tolerance = 1e-4;
+	// periodic direction
+	probParams.pDir = periodicDirection;
+	// using data reduction techniques (greedy)
+	probParams.dataRed = true;
+	// tolerance for data reduction techniques
+	probParams.tolerance = 5e-6;
 
-
+	rbf rbf(meshOb, probParams);
+	rbf.RBFMain();
 
 
 //	const double xDef = -0.2, yDef = -0.32, zDef= -0.0;
@@ -107,8 +140,7 @@ int main()
 
 
 
-	rbf rbf(meshOb, probParams);
-	rbf.RBFMain();
+
 
 
 

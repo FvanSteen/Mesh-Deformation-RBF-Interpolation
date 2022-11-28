@@ -159,7 +159,7 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 				}
 
 				else if(isdigit(line[2])){
-					// split line by '\t' character
+					// split line by '\t' chara       cter
 					std::istringstream is(line);
 
 					// elements on the line are assigned to data in a while loop. lineElem counts the number of elements per line
@@ -215,6 +215,7 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 	// In case of either sliding algorithm the external boundary nodes have to be identified as either, sliding edge, sliding surface or static nodes
 //	if(smode=="ds" || smode=="ps"){
 		// obtaining type of node.
+//	std::cout << extBdryNodesMat << std::endl;
 	getNodeType(nrElemsExtBdry,ebTags);
 
 	N_se = slidingEdgeNodes.size();
@@ -223,7 +224,7 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 	N_p = periodicNodes.size();
 
 
-
+	std::cout << "node types are obtained" << std::endl;
 //	std::cout << N_se << '\t' << N_ss  << '\t' << N_es  << '\t' << N_p << std::endl;
 	//	std::cout << extBdryNodesMat << std::endl;
 
@@ -234,14 +235,18 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 	}
 //	}
 
+	std::cout << "getEdgeConnectivity is done " << std::endl;
 
 
 
 	// todo write some details about the next lines
-
+//	std::cout << intBdryNodesMat << std::endl;
 	getBdryNodes(intBdryNodesMat, intBdryNodes, nIntBdryNodes, nIntBdryElems);
+//	std::cout << extBdryNodesMat << std::endl;
 	getBdryNodes(extBdryNodesMat, extBdryNodes, nExtBdryNodes, nExtBdryElems);
 
+
+	std::cout << "Boundary nodes are stored " << std::endl;
 //	std::cout << intBdryNodes << std::endl;
 //	std::cout << "\n" << extBdryNodes << std::endl;
 
@@ -250,7 +255,7 @@ void Mesh::readMeshFile(const std::vector<std::string>& ibTags,const std::vector
 //	tVecs.resize(nExtBdryElems,nDims);
 
 	getIntNodes();
-
+	std::cout << "internal nodes are obtained" << std::endl;
 	N_i = intNodes.size();
 	N_ib = intBdryNodes.size();
 	N_eb = extBdryNodes.size();
@@ -293,7 +298,7 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 
 	// array that will contain the external edge boundary nodes in the order of the meshing file.
 	// This will be used to establish the line segments of the boundary and the corresponding midpoints.
-	extBdryEdgeNodes.resize(extBdryNodesMat.rows()+nrElemsExtBdry.size());
+	extBdryEdgeNodes.resize(extBdryNodesMat.rows()+nrElemsExtBdry.size()+200);
 	int edgeNodeCnt = 0;
 
 	bool periodic;										// boolean that is set based on whether its a periodic boundary element or not.
@@ -357,8 +362,9 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 
 		// In 2D only sliding edge and static nodes have to be considered for the sliding algorithms
 		}else if(nDims ==2){
-
+//			std::cout << "array: \n"<< bdryNodesArr << std::endl;
 			for (int i= 0; i< bdryNodesArr.size();i++){
+//				std::cout << bdryNodesArr(i) << std::endl;
 				// checking if 2 subsequent nodes are equal. If so then its a sliding edge node
 				if(i< bdryNodesArr.size()-1 && bdryNodesArr(i) == bdryNodesArr(i+1)){
 
@@ -368,7 +374,9 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 
 					// else save them in the sliding edge array
 					}else{
+//						std::cout << "sliding edge node" << std::endl;
 						idxSE(cSE) = bdryNodesArr(i); cSE++;
+//						std::cout << extBdryEdgeNodes.rows() << '\t' << edgeNodeCnt << std::endl;
 						extBdryEdgeNodes(edgeNodeCnt) = bdryNodesArr(i);
 						edgeNodeCnt++;
 					}
@@ -376,18 +384,20 @@ void Mesh::getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::st
 
 				// else its a static node
 				}else{
+//					std::cout << "static node" << std::endl;
 					idxStatic(cStat) = bdryNodesArr(i); cStat++;
 					if(periodic == false || (pmode == "none" || pmode == "periodic")){
 						extBdryEdgeNodes(edgeNodeCnt) = bdryNodesArr(i);
 						edgeNodeCnt++;
 					}
 				}
+
 				// saving the nodes in the order they were found to be able to establish the line segments of the external boundary
 				// and their corresponding midpoints.
 
 			}
 		}
-
+//		std::cout << "here" << std::endl;
 		// Resize the arrays containing the different type of nodes according to how many are found in this boundary
 		// And assigning last n-elements to the found nodes.
 		slidingSurfNodes.conservativeResize(slidingSurfNodes.size()+cSS);
@@ -518,7 +528,7 @@ void Mesh::getIntNodes(){
 	if(lvl>=1){
 		std::cout << "Determining internal nodes " << std::endl;
 	}
-
+//	std::cout << nNodes << '\t' << intBdryNodes.size() << '\t' << extBdryNodes.size() << std::endl;
 	// resize the array containing all boundary nodes and assign the int + ext boundary nodes to it.
 	bdryNodes.resize(intBdryNodes.size()+extBdryNodes.size());
 	bdryNodes << intBdryNodes, extBdryNodes;
@@ -527,10 +537,12 @@ void Mesh::getIntNodes(){
 
 	std::sort(std::begin(bdryNodes), std::end(bdryNodes));		// bdryNodes need to be sorted for this algorithm to work
 	intNodes.resize(nNodes-bdryNodes.size());	// Resizing intNodes accordingly
-
+//	std::cout << nNodes << '\t' << intBdryNodes.size() << '\t' << extBdryNodes.size() << std::endl;
+//	std::cout << bdryNodes << std::endl;
 	int cnt = 0; int i=0, j=0;					// cnt keeps track of index of intNodes, i loops over all nodes, j over the boundary nodes
-
+	std::cout << intNodes.size() << std::endl;
 	while(i < nNodes){							// while loop over all nodes
+//		std::cout << i << '\t' << nNodes << std::endl;
 		if(j < (bdryNodes.size())){				// check if j is within the size of the boundary nodes
 
 			if(i == bdryNodes(j)){				// if node i is equal to the j-th boundary elements then i is not a internal node
@@ -549,6 +561,7 @@ void Mesh::getIntNodes(){
 			intNodes(cnt) = i;					// include remaining points as internal nodes
 			cnt++; i++;							// update index and i
 		}
+//		std::cout << cnt << std::endl;
 
 	}
 	bdryNodes << intBdryNodes, extBdryNodes;	// Elsewhere, the code requires bdryNodes to be unsorted so intBdryNodes and extBdryNodes are assigned again

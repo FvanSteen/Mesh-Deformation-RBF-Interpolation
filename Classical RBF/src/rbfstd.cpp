@@ -97,6 +97,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 			updateNodes(defVecStd,n.mNodesStd,n.iNodes,n.N_mStd);
 		}
 	}
+	std::cout << "number of control nodes: " << n.N_mStd << std::endl;
 	auto stop = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
 
