@@ -17,10 +17,10 @@ int main()
 	const double rFactor = 2.5;
 
 	// input mesh file, output mesh file, internal and external boundary tags.
-	string ifName = "su2mesh.su2";
-	string ofName = "su2mesh_def_ps_ref.su2";
-	vector<string> intBdryTags = {"wall1","wall2"};
-	vector<string> extBdryTags = {"inflow","outflow","periodic1","periodic2"};
+//	string ifName = "su2mesh.su2";
+//	string ofName = "su2mesh_def_ps_ref.su2";
+//	vector<string> intBdryTags = {"wall1","wall2"};
+//	vector<string> extBdryTags = {"inflow","outflow","periodic1","periodic2"};
 
 //	string ifName = "mesh_original.su2";
 //	string ofName = "mesh_original_def.su2";
@@ -28,22 +28,23 @@ int main()
 //	vector<string> extBdryTags = {"inlet","outlet","periodic_upper","periodic_lower"};
 
 
+//
+//	const string ifName = "mesh_NACA0012_inv.su2";
+//	const string ofName = "mesh_NACA0012_inv_def_ps_ref.su2";
+//	const vector<string> bdryTags = {"airfoil","farfield"};
+//	const vector<string> movingTags = {"farfield"};
 
-//	string ifName = "mesh_NACA0012_inv.su2";
-//	string ofName = "mesh_NACA0012_inv_def_ps_ref.su2";
-//	vector<string> intBdryTags = {"airfoil"};
-//	vector<string> extBdryTags = {"farfield"};
-
-//	const string ifName = "5x5.su2";
-//	const string ofName = "5x5_def.su2";
+	const string ifName = "5x5.su2";
+	const string ofName = "5x5_def.su2";
 //	string ifName = "25x25.su2";
 //	string ofName = "25x25_def.su2";
-//	const vector<string> intBdryTags = {"block"}; //What if there are multiple  tags?
-//	const vector<string> extBdryTags = {"lower","right","upper", "left"};
 
+	const vector<string> bdryTags = {"block","lower","right","upper", "left"};
+	const vector<string> movingTags = {"block"};
+	const vector<string> periodicTags = {"lower", "upper"};
 //	string ifName = "5x5x5.su2";
 //	string ofName = "5x5x5_def.su2";
-//	const vector<string> intBdryTags = {"BLOC K"};
+//	const vector<string> intBdryTags = {"BLOCK"};
 //	const vector<string> extBdryTags = {"FRONT", "BACK", "LEFT", "RIGHT", "LOWER", "UPPER"};
 
 
@@ -51,13 +52,13 @@ int main()
 	// regular rbf: none
 	// pseudo sliding: ps
 	// direct sliding: ds
-	const string slidingMode = "none";
+	const string slidingMode = "ps";
 	// periodic modes:
 	// no periodicity: none
 	// periodic rbf: periodic
 	// moving periodic boundaries with fixed vertices: fixed
 	// moving periodic boundaries with moving vertices: moving
-	const string periodicMode = "none";				// none for no periodicity, periodic for making the domain periodic in a to be specified direction ,fixed for allowing periodic boundary displacement with fixed corners, moving for periodic boundary displacement with moving corners
+	const string periodicMode = "moving";				// none for no periodicity, periodic for making the domain periodic in a to be specified direction ,fixed for allowing periodic boundary displacement with fixed corners, moving for periodic boundary displacement with moving corners
 
 	// periodic boundary tags
 	const vector<string> periodicBdry = {"upper","lower"};
@@ -68,13 +69,13 @@ int main()
 //	const bool dataReduction = false;
 
 	// initialising class object m, reads mesh input file in constructor.
-	Mesh meshOb(ifName,ofName, intBdryTags, extBdryTags, rFactor, debugLvl, slidingMode, periodicBdry, periodicMode);
+	Mesh meshOb(ifName,ofName, bdryTags, rFactor, debugLvl, slidingMode, periodicBdry, periodicMode,movingTags, periodicTags);
 
 
 
 	// constant deformation
-	const double xDef = 0.0004, yDef = -0.0004, zDef= -0.0;
-//	const double xDef = -0.0, yDef = -0.0, zDef= -0.0;
+//	const double xDef = 0.0004, yDef = -0.0004, zDef= -0.0;
+	const double xDef = -0.2, yDef = -0.32, zDef= -0.0;
 
 	// number of deformation steps
 	int steps = 10;
@@ -85,7 +86,7 @@ int main()
 	probParams.rotVec.resize(1);
 
 	// rotational deformation
-	probParams.rotVec << 0;
+	probParams.rotVec << 60;
 	probParams.steps = steps;
 	probParams.rotPnt.resize(2);
 	// point of rotation
@@ -97,7 +98,7 @@ int main()
 	// periodic direction
 	probParams.pDir = periodicDirection;
 	// using data reduction techniques (greedy)
-	probParams.dataRed = true;
+	probParams.dataRed = false;
 	// tolerance for data reduction techniques
 	probParams.tolerance = 5e-6;
 

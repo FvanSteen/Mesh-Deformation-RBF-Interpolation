@@ -104,8 +104,10 @@ void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, int& N, Eigen::ArrayXi& ibNo
 	for(int dim = 0; dim < m.nDims; dim++){
 //		defVec(Eigen::seqN(dim*N, m.N_ib)).array() += params.dVec(dim);
 //		defVec(Eigen::seqN(dim*N, m.N_ib)) += rotDef.col(dim);
-		defVec(Eigen::seqN(dim*N, ibNodes.size())).array() += params.dVec(dim);
-		defVec(Eigen::seqN(dim*N, ibNodes.size())) += rotDef.col(dim);
+//		defVec(Eigen::seqN(dim*N, ibNodes.size())).array() += params.dVec(dim);
+//		defVec(Eigen::seqN(dim*N, ibNodes.size())) += rotDef.col(dim);
+		defVec(dim*N + m.ibIndices).array() += params.dVec(dim);
+		defVec(dim*N + m.ibIndices) += rotDef.col(dim);
 	}
 //	std::cout << "check" << std::endl;
 //	std::cout << m.coords << std::endl;

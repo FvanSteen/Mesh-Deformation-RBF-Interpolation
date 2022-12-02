@@ -74,28 +74,31 @@ void rbf_ps::perform_rbf(getNodeType& n){
 				n.greedyNodes(maxErrorNode,params.sMode);
 //				std::cout << n.N_mStd << std::endl;
 			}
-			delta.resize(n.N_s, m.nDims);
-			finalDef.resize(n.N_s,m.nDims);
+			delta.resize(m.N_se, m.nDims);
+			finalDef.resize(m.N_se,m.nDims);
 
-			getPhi(Phi_mm, n.mNodes, n.mNodes);
+			getPhi(Phi_mm, m.mNodes, m.mNodes);
 
-			getPhi(Phi_sm, n.sNodes, n.mNodes);
-			getPhi(Phi_mmStd, n.mNodesStd, n.mNodesStd);
+			getPhi(Phi_sm, m.seNodes, m.mNodes);
+			getPhi(Phi_mmStd, m.mNodesStd, m.mNodesStd);
 
-			getPhi(Phi_im, n.iNodes, n.mNodesStd);
+			getPhi(Phi_im, m.iNodes, m.mNodesStd);
 
 			std::cout << "got Phi's" << std::endl;
 
-			defVec = Eigen::VectorXd::Zero(n.N_m*m.nDims);
+			defVec = Eigen::VectorXd::Zero(m.N_m*m.nDims);
 			std::cout << "initialised deformation vector " << std::endl;
-			getDefVec(defVec, n.N_m,n.ibNodes);
+			getDefVec(defVec, m.N_m,m.intBdryNodes);
 			std::cout << "got deformation vector " << std::endl;
 
 			if(params.curved || i==0){
 				m.getMidPnts();
+
 				m.getVecs();
 			}
 
+
+			std::cout << "normals are obtained" << std::endl;
 			performRBF_PS(Phi_mm, Phi_sm, Phi_mmStd, Phi_im, defVec, delta, finalDef, defVecStd, n);
 
 			std::cout << "performed rbf PS" << std::endl;
@@ -136,11 +139,15 @@ void rbf_ps::perform_rbf(getNodeType& n){
 void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_mmStd, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVec,Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef, Eigen::VectorXd& defVecStd,getNodeType& n){
 	auto starti = std::chrono::high_resolution_clock::now();
 
+
+
 	for(int dim = 0; dim < m.nDims; dim++){
 
-		delta.col(dim) = (Phi_sm*(Phi_mm.fullPivLu().solve(defVec(Eigen::seqN(dim*n.N_m,n.N_m))))).array();
+		delta.col(dim) = (Phi_sm*(Phi_mm.fullPivLu().solve(defVec(Eigen::seqN(dim*m.N_m,m.N_m))))).array();
 
 	}
+
+
 	auto stopi = std::chrono::high_resolution_clock::now();
 	auto durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
 	std::cout <<  "obtaining solution sliding nodes: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
@@ -158,7 +165,7 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 	// updating the midpoints on the external boundary of the mesh
 //	std::cout << delta << std::endl;
 	starti = std::chrono::high_resolution_clock::now();
-	p->project(m, n.sNodes, delta, finalDef, pVec);
+	p->project(m, m.seNodes, delta, finalDef, pVec);
 
 //	std::cout << finalDef << std::endl;
 //	std::exit(0);
@@ -167,9 +174,10 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 	std::cout <<  "projection: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
 //	std::cout << finalDef << std::endl;
 
+	std::cout << finalDef << std::endl;
 	//todo make an if statement for fixed vertices
 	if(m.pmode == "moving"){
-		for(int i=0; i < m.N_es ; i++){
+		for(int i=0; i < (m.N_m - m.N_ib); i++){
 			finalDef.row(m.N_se+i) = pVec.transpose().array()*delta.row(m.N_se+i);
 //		std::cout << "finalDef \t" << finalDef.row(m.N_se+i) << std::endl;
 //		std::cout << "delta \t" << delta.row(m.N_se+i) << std::endl;
@@ -179,7 +187,8 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 
 
 
-
+	std::cout << finalDef << std::endl;
+	std::exit(0);
 
 //	m.coords(m.extStaticNodes,1) += delta(Eigen::seq(Eigen::last+1-4,Eigen::last), 1);
 //	m.coords(sNodes,Eigen::all) = m.coords(sNodes,Eigen::all) + finalDef;
@@ -189,15 +198,20 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 //	std::cout << n.N_m << std::endl;
 //	std::cout << n.N_s << std::endl;
 	starti = std::chrono::high_resolution_clock::now();
-	defVecStd = Eigen::VectorXd::Zero(n.N_mStd*m.nDims);
+	defVecStd = Eigen::VectorXd::Zero(m.N_mStd*m.nDims);
 //	std::cout << N_m << '\t' << N_mPro <<  '\t' << m.N_se << std::endl;
 	for(int dim = 0; dim< m.nDims; dim++){
-		defVecStd(Eigen::seqN(dim*n.N_mStd,n.N_m)) = defVec(Eigen::seqN(dim*n.N_m,n.N_m));
+		defVecStd(dim*m.N_mStd+m.ibIndices) = defVec(dim*m.N_m+m.ibIndices);
 //		defVec(Eigen::seqN(dim*N_m+N_mPro,m.N_se)) = finalDef.col(dim);
-		defVecStd(Eigen::seqN(dim*n.N_mStd+n.N_m,n.N_s)) = finalDef.col(dim);
+		defVecStd(Eigen::seqN(dim*m.N_mStd+m.N_m,m.N_se)) = finalDef.col(dim);
 	}
 
-	std::cout << "obtained defVecStd" << std::endl;
+//	std::cout << defVec << std::endl;
+//	std::cout << '\n' << finalDef << std::endl;
+//	std::cout << '\n' << defVecStd << std::endl;
+
+
+//	std::cout << "obtained defVecStd" << std::endl;
 //	std::cout << "finalDef: \n" << finalDef << "\n" << std::endl;
 //	std::cout << "defVec: \n" << defVec << std::endl;
 
@@ -207,7 +221,7 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 
 //	rbf_std stand;
 
-	performRBF(Phi_mmStd,Phi_im,defVecStd,n.mNodesStd,n.iNodes,n.N_mStd);
+	performRBF(Phi_mmStd,Phi_im,defVecStd,m.mNodesStd,m.iNodes,m.N_mStd);
 	stopi = std::chrono::high_resolution_clock::now();
 	durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
 	std::cout <<  "performing classical rbf: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;

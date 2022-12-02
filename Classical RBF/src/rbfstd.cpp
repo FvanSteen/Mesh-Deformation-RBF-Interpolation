@@ -26,6 +26,11 @@ rbf_std::rbf_std(Mesh& meshObject, struct probParams& probParamsObject)
 void rbf_std::perform_rbf(getNodeType& n){
 	std::cout << "Performing standard rbf interpolation" << std::endl;
 
+	n.assignNodeTypes();
+
+	std::cout << "moving: \n" << n.mNodes << std::endl;
+	std::cout << "int: \n" << n.iNodes << std::endl;
+
 	auto start = std::chrono::high_resolution_clock::now();
 	Eigen::MatrixXd Phi_mm, Phi_im;
 	Eigen::VectorXd defVec,defVecStd;
@@ -37,15 +42,11 @@ void rbf_std::perform_rbf(getNodeType& n){
 		n.greedyNodes(m.intBdryNodes(0), params.sMode);
 	}
 
-
-
-
 	// node containing max error, iter for nr of greedy iterations
 	int maxErrorNode,iter;
 	// max error.
 	double error;
 	greedy go;
-
 
 
 	for(int i=0; i<params.steps; i++){
@@ -68,6 +69,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 			defVec = Eigen::VectorXd::Zero(n.N_m*m.nDims);
 			getDefVec(defVec,n.N_m,n.ibNodes);
 
+//			std::exit(0);
 			std::cout << "Performing RBF" << std::endl;
 			performRBF(Phi_mm, Phi_im, defVec,n.mNodes,n.iNodes, n.N_m);
 
