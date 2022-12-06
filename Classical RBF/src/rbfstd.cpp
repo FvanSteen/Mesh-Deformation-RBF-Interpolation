@@ -68,8 +68,8 @@ void rbf_std::perform_rbf(getNodeType& n){
 			std::cout << "Obtaining deformation vector" << std::endl;
 			defVec = Eigen::VectorXd::Zero(n.N_m*m.nDims);
 			getDefVec(defVec,n.N_m,n.ibNodes);
-
-//			std::exit(0);
+			std::cout << defVec << std::endl;
+			std::exit(0);
 			std::cout << "Performing RBF" << std::endl;
 			performRBF(Phi_mm, Phi_im, defVec,n.mNodes,n.iNodes, n.N_m);
 

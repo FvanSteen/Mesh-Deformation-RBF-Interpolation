@@ -49,7 +49,7 @@ rbf_ds::rbf_ds(Mesh& meshObject, struct probParams& probParamsObject)
 }
 
 void rbf_ds::perform_rbf(getNodeType& n){
-
+	n.assignNodeTypes();
 
 	projection* p;
 	if(params.curved){
@@ -110,7 +110,9 @@ void rbf_ds::perform_rbf(getNodeType& n){
 //		defVec = Eigen::VectorXd::Zero((N_m+N_s)*m.nDims);
 		starti = std::chrono::high_resolution_clock::now();
 		defVec = Eigen::VectorXd::Zero((n.N_m+n.N_s)*m.nDims);
+
 		getDefVec(defVec,n.N_m,n.ibNodes);
+
 		stopi = std::chrono::high_resolution_clock::now();
 		durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
 		std::cout << "obtaining deformation vector: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
@@ -205,7 +207,7 @@ void rbf_ds::performRBF_DS(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_im, Eigen:
 		for (int dim = 0; dim < m.nDims; dim++){
 			m.coords(iNodes, dim) += (Phi_im*alpha(Eigen::seqN(dim*(N_m+N_s),N_m)) + Phi_is*alpha(Eigen::seqN(dim*(N_m+N_s)+N_m, N_s))).array();
 			m.coords(sNodes, dim) += (Phi_sm*alpha(Eigen::seqN(dim*(N_m+N_s),N_m)) + Phi_ss*alpha(Eigen::seqN(dim*(N_m+N_s)+N_m, N_s))).array();
-			m.coords(m.intBdryNodes, dim) += (defVec(Eigen::seqN(dim*N_m,m.N_ib))).array();
+			m.coords(mNodes, dim) += (defVec(Eigen::seqN(dim*N_m,N_m))).array();
 			params.rotPnt(dim) += params.dVec(dim);
 		}
 		auto stop2 = std::chrono::high_resolution_clock::now();
@@ -224,11 +226,13 @@ void rbf_ds::getPhiDS(Eigen::MatrixXd& Phi,Eigen::MatrixXd& Phi_mm,Eigen::Matrix
 	if(m.pmode == "moving"){
 		n.conservativeResize(N_s,m.nDims);
 		t.conservativeResize(N_s,m.nDims);
-		for(int i = 0; i<m.N_es; i++){
-			n.row(m.N_se+i) = pnVec;
-			t.row(m.N_se+i) = pVec;
+		for(int i = N_s - m.staticNodes.size(); i< N_s; i++){
+			n.row(i) = pnVec;
+			t.row(i) = pVec;
 		}
 	}
+
+
 
 
 	for(int dim = 0; dim< m.nDims; dim++){

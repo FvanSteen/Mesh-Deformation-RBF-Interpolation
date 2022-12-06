@@ -152,8 +152,9 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 	auto durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
 	std::cout <<  "obtaining solution sliding nodes: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
 
+	std::cout << m.seNodes << std::endl;
+	std::cout << delta << std::endl;
 
-//	std::cout << delta << std::endl;
 
 	// todo make pVec an array instead of vector
 //	m.getVecs();
@@ -174,21 +175,21 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 	std::cout <<  "projection: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
 //	std::cout << finalDef << std::endl;
 
-	std::cout << finalDef << std::endl;
+
 	//todo make an if statement for fixed vertices
-	if(m.pmode == "moving"){
-		for(int i=0; i < (m.N_m - m.N_ib); i++){
-			finalDef.row(m.N_se+i) = pVec.transpose().array()*delta.row(m.N_se+i);
+//	if(m.pmode == "moving"){
+//		for(int i=0; i < (m.N_m - m.N_ib); i++){
+//			finalDef.row(m.N_se+i) = pVec.transpose().array()*delta.row(m.N_se+i);
 //		std::cout << "finalDef \t" << finalDef.row(m.N_se+i) << std::endl;
 //		std::cout << "delta \t" << delta.row(m.N_se+i) << std::endl;
 //			m.coords.row(m.extStaticNodes(i)) +=  pVec.transpose().array()*delta.row(m.N_se+i);
-		}
-	}
+//		}
+//	}
 
 
 
-	std::cout << finalDef << std::endl;
-	std::exit(0);
+//	std::cout << finalDef << std::endl;
+//	std::exit(0);
 
 //	m.coords(m.extStaticNodes,1) += delta(Eigen::seq(Eigen::last+1-4,Eigen::last), 1);
 //	m.coords(sNodes,Eigen::all) = m.coords(sNodes,Eigen::all) + finalDef;

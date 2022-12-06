@@ -1,5 +1,6 @@
 #include "rbf.h"
 #include "probParams.h"
+#include "ReadConfigFile.h"
 #include <iostream>
 #include <fstream>
 #include <Eigen/Dense>
@@ -10,7 +11,9 @@ using namespace std;
 
 int main()
 {
-
+	std::string configFile = "config_file.txt";
+	ReadConfigFile ConfigObject(configFile);
+	std::exit(0);
 	// amount of debugLvl messages
 	int debugLvl = 2;
 	// the radius of influence of the RBFs is the rFactor times the max domain length
@@ -34,10 +37,10 @@ int main()
 //	const vector<string> bdryTags = {"airfoil","farfield"};
 //	const vector<string> movingTags = {"farfield"};
 
-	const string ifName = "5x5.su2";
-	const string ofName = "5x5_def.su2";
-//	string ifName = "25x25.su2";
-//	string ofName = "25x25_def.su2";
+//	const string ifName = "5x5.su2";
+//	const string ofName = "5x5_def.su2";
+	string ifName = "25x25.su2";
+	string ofName = "25x25_def.su2";
 
 	const vector<string> bdryTags = {"block","lower","right","upper", "left"};
 	const vector<string> movingTags = {"block"};
@@ -52,13 +55,13 @@ int main()
 	// regular rbf: none
 	// pseudo sliding: ps
 	// direct sliding: ds
-	const string slidingMode = "ps";
+	const string slidingMode = "none";
 	// periodic modes:
 	// no periodicity: none
 	// periodic rbf: periodic
 	// moving periodic boundaries with fixed vertices: fixed
 	// moving periodic boundaries with moving vertices: moving
-	const string periodicMode = "moving";				// none for no periodicity, periodic for making the domain periodic in a to be specified direction ,fixed for allowing periodic boundary displacement with fixed corners, moving for periodic boundary displacement with moving corners
+	const string periodicMode = "none";				// none for no periodicity, periodic for making the domain periodic in a to be specified direction ,fixed for allowing periodic boundary displacement with fixed corners, moving for periodic boundary displacement with moving corners
 
 	// periodic boundary tags
 	const vector<string> periodicBdry = {"upper","lower"};
@@ -71,14 +74,12 @@ int main()
 	// initialising class object m, reads mesh input file in constructor.
 	Mesh meshOb(ifName,ofName, bdryTags, rFactor, debugLvl, slidingMode, periodicBdry, periodicMode,movingTags, periodicTags);
 
-
-
 	// constant deformation
 //	const double xDef = 0.0004, yDef = -0.0004, zDef= -0.0;
 	const double xDef = -0.2, yDef = -0.32, zDef= -0.0;
 
 	// number of deformation steps
-	int steps = 10;
+	int steps = 1;
 	struct probParams probParams;
 
 	probParams.dVec.resize(2);

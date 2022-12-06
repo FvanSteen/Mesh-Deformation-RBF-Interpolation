@@ -162,10 +162,20 @@ void Mesh::readMeshFile(){
 	else std::cout << "Not able to open input mesh file";
 
 	getNodeTypes();
+	N_se = seNodes.size();
+	if(pmode == "moving"){
+		std::cout << "adjusting the sliding edge nodes by adding the static nodes" << std::endl;
+		std::cout << N_se << std::endl;
+		N_se += staticNodes.size();
+		std::cout << N_se << std::endl;
+		seNodes.conservativeResize(N_se);
+		std::cout << seNodes << std::endl;
+		seNodes(Eigen::lastN(staticNodes.size())) = staticNodes;
+	}
 
 	std::cout <<"moving Nodes: \n" <<  mNodes << std::endl;
 	std::cout <<"sliding Nodes: \n" <<  seNodes << std::endl;
-
+	std::cout << "static Nodes: \n " << staticNodes << std::endl;
 	N_m = mNodes.size();
 
 //	std::cout << intBdryNodes << std::endl;
@@ -186,7 +196,7 @@ void Mesh::readMeshFile(){
 
 
 
-	N_se = seNodes.size();
+
 //	N_ss = slidingSurfNodes.size();
 //	N_es = extStaticNodes.size();
 //	N_p = periodicNodes.size();
@@ -216,8 +226,8 @@ void Mesh::readMeshFile(){
 //	nVecs.resize(nExtBdryElems,nDims);
 //	tVecs.resize(nExtBdryElems,nDims);
 
-	getIntNodes();
-	std::cout << "internal nodes are obtained" << std::endl;
+//	getIntNodes();
+//	std::cout << "internal nodes are obtained" << std::endl;
 	N_i = iNodes.size();
 	N_ib = intBdryNodes.size();
 
@@ -234,13 +244,19 @@ void Mesh::readMeshFile(){
 
 	// obtaining the nodes that make up the line segments of the external boundary
 	getExtBdryEdgeSegments();
+	std::cout << extBdryEdgeSegments << std::endl;
 
 	if(smode != "none"){
 		N_mStd = N_m+N_se;
 		mNodesStd.resize(N_mStd);
 		mNodesStd << mNodes, seNodes;
 	}
+	std::cout << mNodesStd << std::endl;
 	std::cout << "Mesh file read successfully" << std::endl;
+
+
+
+
 
 }
 
@@ -259,15 +275,15 @@ void Mesh::getNodeTypes(){
 	}
 
 	Eigen::ArrayXi bdryNodesArr; 						// 1D array that will contain the all nodes for each respective boundary
-	Eigen::ArrayXi idxMoving, idxSliding;		// Arrays containing specific type of nodes
-	int cntMoving, cntSliding;								// counters for the number of sliding surface (SS) sliding edge (SE), static (Stat) and periodic (Per) nodes
+	Eigen::ArrayXi idxMoving, idxSliding, idxStatic;		// Arrays containing specific type of nodes
+	int cntMoving, cntSliding, cntStatic;								// counters for the number of sliding surface (SS) sliding edge (SE), static (Stat) and periodic (Per) nodes
 
 
 	// array that will contain the external edge boundary nodes in the order of the meshing file.
 	// This will be used to establish the line segments of the boundary and the corresponding midpoints.
 	int nrSegments = 0;
 	for(int elem = 0; elem < nrElemsBdry.size(); elem++){
-		if(std::find(std::begin(mTags),std::end(mTags),srtdTags[elem]) == std::end(mTags) && std::find(std::begin(pTags),std::end(pTags),srtdTags[elem]) == std::end(pTags)){
+		if(std::find(std::begin(mTags),std::end(mTags),srtdTags[elem]) == std::end(mTags) && (std::find(std::begin(pTags),std::end(pTags),srtdTags[elem]) == std::end(pTags) || pmode == "none" || pmode == "periodic" )){
 			nrSegments += nrElemsBdry(elem) + 1;
 		}
 	}
@@ -300,10 +316,11 @@ void Mesh::getNodeTypes(){
 		if(idxMoving.size() != bdryNodesArr.size()){
 			idxMoving.resize(bdryNodesArr.size());
 			idxSliding.resize(bdryNodesArr.size());
+			idxStatic.resize(bdryNodesArr.size());
 		}
 
 		// setting counters to zero
-		cntMoving = 0, cntSliding = 0;
+		cntMoving = 0, cntSliding = 0, cntStatic = 0;
 
 
 
@@ -347,9 +364,19 @@ void Mesh::getNodeTypes(){
 							i++;
 						// else its a static node
 						}else{
+							if(pmode == "moving"){
+//								idxSliding(cntSliding) = bdryNodesArr(i);
+//								cntSliding++;
+								idxStatic(cntStatic) = bdryNodesArr(i);
+								cntStatic++;
 
-							idxMoving(cntMoving) = bdryNodesArr(i);
-							cntMoving++;
+//								std::cout << "elem: " << elem<< std::endl;
+//								std::cout << "node: " << bdryNodesArr(i) << std::endl;
+//								std::cout << "index: " << cntSliding-1 << std::endl;
+							}else{
+								idxMoving(cntMoving) = bdryNodesArr(i);
+								cntMoving++;
+							}
 						}
 						extBdryEdgeNodes(edgeNodeCnt) = bdryNodesArr(i);
 						edgeNodeCnt++;
@@ -368,6 +395,12 @@ void Mesh::getNodeTypes(){
 		if(moving){
 			intBdryNodes.conservativeResize(intBdryNodes.size()+cntMoving);
 			intBdryNodes(Eigen::lastN(cntMoving)) = idxMoving(Eigen::seqN(0,cntMoving));
+		}
+
+		if(cntStatic != 0){
+			staticNodes.conservativeResize(staticNodes.size()+cntStatic);
+			staticNodes(Eigen::lastN(cntStatic)) = idxStatic(Eigen::seqN(0,cntStatic));
+
 		}
 
 		mNodes.conservativeResize(mNodes.size()+cntMoving);
@@ -615,7 +648,10 @@ void Mesh::getEdgeConnectivity(){
 	}
 
 	// resizing the array containing the connectivity information
-	edgeConnectivity.resize(N_se,2);
+
+	//todo make some counter for the number of elements
+	edgeConnectivity.resize(N_se-staticNodes.size(),2);
+
 
 	// row and col are the respective row and column index in the boundary node array.
 	// idx is index in case either a static or sliding node is found.
@@ -623,9 +659,12 @@ void Mesh::getEdgeConnectivity(){
 	int row, col, idx,  cnt;
 
 	// for-loop going through each sliding node
-	for(int node = 0; node < N_se; node++){
+	for(int node = 0; node < N_se-staticNodes.size(); node++){
+
+
 		col = 1;	// start from second column since first contains the element type
 		cnt = 0;	// set count to zero, will go to 2 when both nodes connected by a line segment are found
+
 
 //		While all columns have not been searched and while 2 nodes are not found
 		while(col<bdryNodesMat.cols() && cnt < 2){
@@ -694,6 +733,9 @@ void Mesh::getEdgeConnectivity(){
 			std::cout << seNodes(i) << '\t'  << edgeConnectivity.row(i)<<std::endl;
 		}
 	}
+
+
+
 
 }
 
@@ -772,7 +814,7 @@ void Mesh::getVecs(){
 	// in case of 2D
 	if(nDims == 2){
 		// resizing of the normal and tangential vector arrays.
-		n.resize(N_se, nDims); t.resize(N_se, nDims);
+		n.resize(N_se-staticNodes.size(), nDims); t.resize(N_se-staticNodes.size(), nDims);
 		// Calling function to obtain the tangential vectors along the line segments at the sliding boundary node.
 		getEdgeTan(t);
 
@@ -825,7 +867,7 @@ void Mesh::getEdgeTan(Eigen::ArrayXXd& t){
 	Eigen::VectorXd v1(nDims), v2(nDims), tan(nDims);
 
 	// looping through each sliding edge node
-	for(int i = 0; i < N_se; i++){
+	for(int i = 0; i < N_se-staticNodes.size(); i++){
 		// defining vectors along the line segments. Its important to note that these vectors need to have the same direction.
 		// Otherwise, the vector will (partially) cancel each other out when taking the average if they are opposite to each other.
 		// So one vector goes from connectivity node 1 to the sliding node and the second vector goes from the sliding node to connectivity node 2.
@@ -999,7 +1041,11 @@ void Mesh::getExtBdryEdgeSegments(){
 //		extBdryEdgeSegments.resize(N_se+ebTags.size()-perBdry.size(),2);
 //	}
 // todo account for periodic Tags
-	extBdryEdgeSegments.resize(extBdryEdgeNodes.size()-Tags.size() + mTags.size() + pTags.size(),2);
+	if(pmode == "fixed" || pmode == "moving"){
+		extBdryEdgeSegments.resize(extBdryEdgeNodes.size()-Tags.size() + mTags.size() + pTags.size(),2);
+	}else{
+		extBdryEdgeSegments.resize(extBdryEdgeNodes.size()-Tags.size() + mTags.size(),2);
+	}
 
 	// starting index and segment counter
 	int startIdx = 0,segment=0;
@@ -1009,7 +1055,7 @@ void Mesh::getExtBdryEdgeSegments(){
 
 		// checking if the boundary tag is among the specified periodic boundary tags
 //		if(std::find(std::begin(perBdry),std::end(perBdry),ebTags[i]) == std::end(perBdry) || (pmode == "none" || pmode == "periodic")){
-		if(std::find(std::begin(mTags),std::end(mTags),srtdTags[i]) == std::end(mTags) && std::find(std::begin(pTags),std::end(pTags),srtdTags[i]) == std::end(pTags)){
+		if(std::find(std::begin(mTags),std::end(mTags),srtdTags[i]) == std::end(mTags) && (std::find(std::begin(pTags),std::end(pTags),srtdTags[i]) == std::end(pTags) || pmode == "none" || pmode == "periodic")){
 
 			// for all boundary elements specified for that boundary
 			// for a boundary having n elements there are n+1 nodes that make up n line segments.

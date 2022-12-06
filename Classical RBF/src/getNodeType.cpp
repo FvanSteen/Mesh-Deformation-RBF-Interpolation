@@ -33,8 +33,7 @@ void getNodeType::assignNodeTypes(){
 		mNodes.resize(N_m);
 		mNodes << m.mNodes;
 
-	}else if(m.smode == "ps"){
-
+	}else{
 		// only in case pmode != moving
 		N_m = m.N_m;
 		mNodes.resize(N_m);
@@ -47,23 +46,22 @@ void getNodeType::assignNodeTypes(){
 		N_mStd = m.N_mStd;
 		mNodesStd.resize(N_mStd);
 		mNodesStd << m.mNodesStd;
-	}else if(m.smode == "ds"){ // only in case of non moving periodic boundaries.
-		N_m = m.N_ib + m.N_es;
-		mNodes.resize(N_m);
-		mNodes << m.intBdryNodes, m.extStaticNodes;
-
-		N_s = m.N_se;
-		sNodes.resize(N_s);
-		sNodes << m.slidingEdgeNodes;
-
-		// todo rename to make clearer
-		N_mStd = m.N_ib + m.N_es + m.N_se;
-		mNodesStd.resize(N_mStd);
-		mNodesStd << m.intBdryNodes,m.extStaticNodes, m.slidingEdgeNodes;
-
-
-
 	}
+//		else if(m.smode == "ds"){ // only in case of non moving periodic boundaries.
+//		N_m = m.N_ib + m.N_es;
+//		mNodes.resize(N_m);
+//		mNodes << m.intBdryNodes, m.extStaticNodes;
+//
+//		N_s = m.N_se;
+//		sNodes.resize(N_s);
+//		sNodes << m.slidingEdgeNodes;
+//
+//		// todo rename to make clearer
+//		N_mStd = m.N_ib + m.N_es + m.N_se;
+//		mNodesStd.resize(N_mStd);
+//		mNodesStd << m.intBdryNodes,m.extStaticNodes, m.slidingEdgeNodes;
+//
+//	}
 
 	std::cout << "done" << std::endl;
 

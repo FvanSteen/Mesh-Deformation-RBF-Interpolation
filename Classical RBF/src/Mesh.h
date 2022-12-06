@@ -28,7 +28,7 @@ public:
 	Eigen::ArrayXi extBdryEdgeNodes;
 	Eigen::ArrayXXi extBdryEdgeSegments;
 	Eigen::ArrayXXd midPntNormals;
-	Eigen::ArrayXi mNodes,seNodes,iNodes;
+	Eigen::ArrayXi mNodes,seNodes,iNodes, staticNodes;
 	Eigen::ArrayXi ibIndices;
 	Eigen::ArrayXi mNodesStd;
 

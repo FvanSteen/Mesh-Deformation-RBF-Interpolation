@@ -1,0 +1,31 @@
+
+MESH_FILENAME = 25x25.su2
+
+MESH_OUT_FILENAME = 25x25_def.su2
+
+MARKER_BDRY = (block, lower, right, upper,left)
+
+MARKER_MOVING = (block)
+
+MARKER_PERIODIC = (upper,lower)
+
+
+%(none, pseudo, direct)
+SLIDING_MODE = none
+
+%(none,periodic,fixed_vertices,moving_vertices)
+PERIODIC_MODE = none
+
+PERIODIC_DIRECTION = y
+
+STEPS = 10
+
+INFLUENCE_FACTOR = 2.5
+
+DEFORMATION_FILENAME = 25x25_deformation.txt
+
+CURVED = YES
+
+DATA_REDUCTION = NO
+
+DATA_RED_TOLERANCE = 1e-5
