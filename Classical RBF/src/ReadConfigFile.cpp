@@ -4,16 +4,11 @@
 #include <string>
 #include <vector>
 #include <sstream>
-ReadConfigFile::ReadConfigFile(std::string& ifName) {
-	std::cout << "Reading the displacement file" << std::endl;
+ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject) {
+	std::cout << "Reading the configuration file" << std::endl;
 //	std::string ifName = "config_file.txt";
 	std::string line;							// string containing line obtained by getline() function
-	std::ifstream file("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\ConfigFiles\\" + ifName); 	//opening file name stored in mFile object
-
-	std::string dispFile,mesh_ifName,mesh_ofName,pDir,curved,dataRed;
-	std::vector<std::string> bdryTags, mTags, pTags;
-	int steps;
-	double tol;
+	std::ifstream file("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\ConfigFiles\\" + ifName);
 
 	int first, last;
 
@@ -41,50 +36,53 @@ ReadConfigFile::ReadConfigFile(std::string& ifName) {
 			}
 			else if(line.rfind("DEFORMATION_FILENAME")==0){
 				findStringBounds(first,last,line);
-				dispFile =  line.substr(first,last-first);
+				probParamsObject.dispFile =  line.substr(first,last-first);
+			}
+			else if(line.rfind("SLIDING_MODE")==0){
+				findStringBounds(first,last,line);
+				smode =  line.substr(first,last-first);
+				probParamsObject.smode = smode;
+			}
+			else if(line.rfind("PERIODIC_MODE")==0){
+				findStringBounds(first,last,line);
+				pmode =  line.substr(first,last-first);
+				probParamsObject.pmode = pmode;
 			}
 			else if(line.rfind("PERIODIC_DIRECTION")==0){
-				std::cout << line << std::endl;
 				findStringBounds(first,last,line);
-				pDir = line.substr(first,last-first);
-				std::cout << "periodic Direction is " << pDir << std::endl;
+				probParamsObject.pDir = line.substr(first,last-first);
+
 			}
 			else if(line.rfind("STEPS")==0){
 				findStringBounds(first,last,line);
-				steps =  stoi(line.substr(first,last-first));
+				probParamsObject.steps =  stoi(line.substr(first,last-first));
 			}
 			else if(line.rfind("CURVED")==0){
 				findStringBounds(first,last,line);
-				curved =  line.substr(first,last-first);
+				if(line.substr(first,last-first) == "YES"){
+					probParamsObject.curved = true;
+				}else{
+					probParamsObject.curved = false;
+				}
 			}
 			else if(line.rfind("DATA_REDUCTION")==0){
 				findStringBounds(first,last,line);
-				dataRed =  line.substr(first,last-first);
+				if(line.substr(first,last-first) == "YES"){
+					probParamsObject.dataRed = true;
+				}else{
+					probParamsObject.dataRed = false;
+				}
 			}
 			else if(line.rfind("DATA_RED_TOLERANCE")==0){
 				findStringBounds(first,last,line);
-				tol =  stod(line.substr(first,last-first));
+				probParamsObject.tol =  stod(line.substr(first,last-first));
 			}
-
-
+			else if(line.rfind("INFLUENCE_FACTOR")==0){
+				findStringBounds(first,last,line);
+				rFac =  stod(line.substr(first,last-first));
+			}
 		}
-		std::cout << dispFile << std::endl;
-		std::cout << mesh_ifName << std::endl;
-		std::cout << mesh_ofName << std::endl;
-		for(int x = 0; x<5; x++){
-			std::cout << bdryTags[x] << std::endl;
-		}
-
-		std::cout << mTags[0] << std::endl;
-		std::cout << pTags[0] << std::endl;
-		std::cout << pTags[1] << std::endl;
-		std::cout << std::endl;
-		std::cout << pDir << std::endl;
-		std::cout << steps << std::endl;
-		std::cout << curved << std::endl;
-		std::cout << dataRed << std::endl;
-		std::cout << tol << std::endl;
-
+		file.close();
 	}else{std::cout << "Unable to open the configuration file: " << ifName << std::endl;}
 
 	std::cout << "Done reading the configuration file" << std::endl;
@@ -128,7 +126,5 @@ void ReadConfigFile::getTags(std::string& line, std::vector<std::string>& tagVec
 		tagVec.push_back(marker.substr(first,last-first+1));
 	}
 }
-
-
 
 

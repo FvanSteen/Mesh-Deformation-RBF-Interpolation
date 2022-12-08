@@ -9,15 +9,19 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <chrono>
+#include <fstream>
+#include <sstream>
 rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 //rbfGenFunc::rbfGenFunc(Mesh* meshPtr, Eigen::VectorXd& dVec, Eigen::RowVectorXd& rotPnt, Eigen::VectorXd& rotVec, const int& steps, const std::string& smode, const bool& curved, const std::string& pDir)
 :m(meshObject), params(probParamsObject)
 {
-	// TODO Auto-generated constructor stub
+
 	std::cout << "Initialised the rbfGenFunc class" << std::endl;
+	mIndex.resize(m.ibIndices.size());
+	displacement.resize(m.ibIndices.size(),m.nDims);
+	readDisplacementFile();
 
-
-	getRotationalMat();
+	displacement = displacement/params.steps; // deformation per step is more usefull then the total deformation.
 	getPeriodicParams();
 
 
@@ -69,76 +73,102 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::Ar
 //	std::exit(0);
 }
 //
-void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, int& N, Eigen::ArrayXi& ibNodes){
+void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, int& N, int& steps, Eigen::ArrayXi& movingNodes){
+	//todo in this function the N_m from the getNodeType.cpp class should be taken instead of the one from the mesh.cpp
+
+
+
+//	std::cout << '\n' << defVec.size() << '\t' << m.N_m << std::endl;
+
+
+	int idx;
+	//loop through the moving nodes
+	for(int i = 0; i < N; i++){
+		idx = std::distance(std::begin(mIndex), std::find(std::begin(mIndex), std::end(mIndex),movingNodes(i)));
+		if(idx!= mIndex.size()){
+//			std::cout << idx << std::endl;
+//			std::cout << mIndex(idx) << std::endl;
+//			std::cout << displacement.row(idx) << std::endl;
+			for(int dim = 0; dim < m.nDims; dim++){
+				defVec(dim*N+i) = displacement(idx,dim);
+			}
+		}
+	}
+
+
+
 //	std::cout << defVec << std::endl;
-//	std::cout << "\n" << N << std::endl;
-//	Eigen::MatrixXd intPnts(m.N_ib,m.nDims);
-	Eigen::MatrixXd intPnts(ibNodes.size(),m.nDims);
-	Eigen::MatrixXd rotDef;
-
-//	intPnts = m.coords(m.intBdryNodes,Eigen::all);
-	intPnts = m.coords(ibNodes,Eigen::all);
-
-
-	if(m.nDims == 2){
-
-		rotDef = (rotMat*(intPnts.rowwise() - params.rotPnt).transpose()).transpose().rowwise() +params.rotPnt - intPnts;
-
-	}
-	else if(m.nDims == 3){
-		rotDef = Eigen::MatrixXd::Zero(m.N_ib,m.nDims);
-
-		if(params.rotVec[0] != 0){
-			rotDef+= (rotMatX*(intPnts.rowwise() - params.rotPnt).transpose()).transpose().rowwise() +params.rotPnt - intPnts;
-		}
-		if(params.rotVec[1] != 0){
-			rotDef+= (rotMatY*(intPnts.rowwise() - params.rotPnt).transpose()).transpose().rowwise() +params.rotPnt - intPnts;
-		}
-		if(params.rotVec[2] != 0){
-			rotDef+= (rotMatZ*(intPnts.rowwise() - params.rotPnt).transpose()).transpose().rowwise() +params.rotPnt - intPnts;
-		}
-	}
-//	std::cout << "check" << std::endl;
-//	std::cout << defVec << std::endl;
-
-	for(int dim = 0; dim < m.nDims; dim++){
-//		defVec(Eigen::seqN(dim*N, m.N_ib)).array() += params.dVec(dim);
-//		defVec(Eigen::seqN(dim*N, m.N_ib)) += rotDef.col(dim);
-//		defVec(Eigen::seqN(dim*N, ibNodes.size())).array() += params.dVec(dim);
-//		defVec(Eigen::seqN(dim*N, ibNodes.size())) += rotDef.col(dim);
-		defVec(dim*N + m.ibIndices).array() += params.dVec(dim);
-		defVec(dim*N + m.ibIndices) += rotDef.col(dim);
-	}
-//	std::cout << "check" << std::endl;
-//	std::cout << m.coords << std::endl;
-
-
-//	std::exit(0);
+////	std::cout << "\n" << N << std::endl;
+////	Eigen::MatrixXd intPnts(m.N_ib,m.nDims);
+//	Eigen::MatrixXd intPnts(ibNodes.size(),m.nDims);
+//	Eigen::MatrixXd rotDef;
+//
+////	intPnts = m.coords(m.intBdryNodes,Eigen::all);
+//	intPnts = m.coords(ibNodes,Eigen::all);
+//
+//
+//	if(m.nDims == 2){
+//
+//		rotDef = (rotMat*(intPnts.rowwise() - params.rotPnt).transpose()).transpose().rowwise() +params.rotPnt - intPnts;
+//
+//	}
+//	else if(m.nDims == 3){
+//		rotDef = Eigen::MatrixXd::Zero(m.N_ib,m.nDims);
+//
+//		if(params.rotVec[0] != 0){
+//			rotDef+= (rotMatX*(intPnts.rowwise() - params.rotPnt).transpose()).transpose().rowwise() +params.rotPnt - intPnts;
+//		}
+//		if(params.rotVec[1] != 0){
+//			rotDef+= (rotMatY*(intPnts.rowwise() - params.rotPnt).transpose()).transpose().rowwise() +params.rotPnt - intPnts;
+//		}
+//		if(params.rotVec[2] != 0){
+//			rotDef+= (rotMatZ*(intPnts.rowwise() - params.rotPnt).transpose()).transpose().rowwise() +params.rotPnt - intPnts;
+//		}
+//	}
+////	std::cout << "check" << std::endl;
+////	std::cout << defVec << std::endl;
+//
+//	for(int dim = 0; dim < m.nDims; dim++){
+////		defVec(Eigen::seqN(dim*N, m.N_ib)).array() += params.dVec(dim);
+////		defVec(Eigen::seqN(dim*N, m.N_ib)) += rotDef.col(dim);
+////		defVec(Eigen::seqN(dim*N, ibNodes.size())).array() += params.dVec(dim);
+////		defVec(Eigen::seqN(dim*N, ibNodes.size())) += rotDef.col(dim);
+//		defVec(dim*N + m.ibIndices).array() += params.dVec(dim);
+//		defVec(dim*N + m.ibIndices) += rotDef.col(dim);
+//	}
+////	std::cout << "check" << std::endl;
+////	std::cout << m.coords << std::endl;
+//
+//
+////	std::exit(0);
 
 }
 
-void rbfGenFunc::getRotationalMat(){
-	if(m.nDims == 2){
-		const double theta = params.rotVec[0]/params.steps*M_PI/180;
-		rotMat << 	cos(theta), -sin(theta),
-					sin(theta),	cos(theta);
-	}
-	if(m.nDims == 3){
-		const double x_theta = params.rotVec[0]/params.steps*M_PI/180;
-		const double y_theta = params.rotVec[1]/params.steps*M_PI/180;
-		const double z_theta = params.rotVec[2]/params.steps*M_PI/180;
-		rotMatX << 	1,	0,	0,
-					0,	cos(x_theta),	-sin(x_theta),
-					0,	sin(x_theta),	cos(x_theta);
-		rotMatY << 	cos(y_theta),	0,	sin(y_theta),
-					0,	1,	0,
-					-sin(y_theta),	0,	cos(y_theta);
-		rotMatZ <<	cos(z_theta),	-sin(z_theta),	 0,
-					sin(z_theta),	cos(z_theta),	 0,
-					0,	0,	1;
+void rbfGenFunc::readDisplacementFile(){
+	std::cout << "Reading the displacement file :" << params.dispFile << std::endl;
+	std::string line;							// string containing line obtained by getline() function
+	std::ifstream file("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\defs\\" + params.dispFile);
 
-	}
+
+
+	if(file.is_open()){
+		int lineNo = 0;
+		while(getline(file, line)){
+			std::stringstream ss(line);
+			if(m.nDims == 2){
+				ss >> mIndex(lineNo) >> displacement(lineNo,0) >> displacement(lineNo,1);
+			}else if(m.nDims == 3){
+				ss >> mIndex(lineNo) >> displacement(lineNo,0) >> displacement(lineNo,1) >> displacement(lineNo,2);
+			}
+			lineNo++;
+		}
+	}else std::cout << "Unable to open the displacment file" << std::endl;
+
+//	std::cout << displacement << std::endl;
+//	std::cout << mIndex << std::endl;
 }
+
+
 
 //void rbfGenFunc::getNodeTypes(){
 //	iNodes.resize(m.N_i+m.N_p);

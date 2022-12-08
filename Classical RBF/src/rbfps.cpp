@@ -56,8 +56,8 @@ void rbf_ps::perform_rbf(getNodeType& n){
 	Eigen::ArrayXXd delta, finalDef;
 
 	if(params.dataRed){
-		n.GreedyInit();
-		n.greedyNodes(m.intBdryNodes(0),params.sMode);
+//		n.GreedyInit();
+//		n.greedyNodes(m.intBdryNodes(0),params.smode);
 
 	}
 
@@ -69,26 +69,26 @@ void rbf_ps::perform_rbf(getNodeType& n){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 		double error = 1;
 		iter = 0;
-		while(error > params.tolerance){
+		while(error > params.tol){
 			if(iter!=0){
-				n.greedyNodes(maxErrorNode,params.sMode);
+//				n.greedyNodes(maxErrorNode,params.smode);
 //				std::cout << n.N_mStd << std::endl;
 			}
 			delta.resize(m.N_se, m.nDims);
 			finalDef.resize(m.N_se,m.nDims);
 
-			getPhi(Phi_mm, m.mNodes, m.mNodes);
+//			getPhi(Phi_mm, m.mNodes, m.mNodes);
 
-			getPhi(Phi_sm, m.seNodes, m.mNodes);
-			getPhi(Phi_mmStd, m.mNodesStd, m.mNodesStd);
+//			getPhi(Phi_sm, m.seNodes, m.mNodes);
+//			getPhi(Phi_mmStd, m.mNodesStd, m.mNodesStd);
 
-			getPhi(Phi_im, m.iNodes, m.mNodesStd);
+//			getPhi(Phi_im, m.iNodes, m.mNodesStd);
 
 			std::cout << "got Phi's" << std::endl;
 
 			defVec = Eigen::VectorXd::Zero(m.N_m*m.nDims);
 			std::cout << "initialised deformation vector " << std::endl;
-			getDefVec(defVec, m.N_m,m.intBdryNodes);
+//			getDefVec(defVec, m.N_m,params.steps);
 			std::cout << "got deformation vector " << std::endl;
 
 			if(params.curved || i==0){
@@ -113,7 +113,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 					std::cout << "error zet to zero" << std::endl;
 					error = 0;
 				}else{
-					go.getError(n,m,d,exactDef,error,maxErrorNode,params.sMode);
+//					go.getError(n,m,d,error,maxErrorNode,params.smode);
 				}
 				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNode<< std::endl;
 			}else{

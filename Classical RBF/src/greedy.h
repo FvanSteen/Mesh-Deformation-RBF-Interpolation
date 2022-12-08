@@ -13,7 +13,7 @@
 class greedy {
 public:
 	greedy();
-	void getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, Eigen::VectorXd& exactDeformation, double& e, int& idxMax, std::string sMode);
+	void getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& e, int& idxMax, std::string sMode, Eigen::ArrayXi& mIndex, Eigen::ArrayXXd& displacement);
 
 };
 

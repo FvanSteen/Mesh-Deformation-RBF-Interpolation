@@ -7,9 +7,10 @@
 #include <math.h>
 using Eigen::MatrixXd;
 
-Mesh::Mesh(const std::string& inputFileName,const std::string& outputFileName,const std::vector<std::string>& Tags,const double& rFac, const int& debugLvl, const std::string& slidingMode, const std::vector<std::string>& periodicBdry, const std::string& periodicMode,const std::vector<std::string>& movingTags,const std::vector<std::string>& periodicTags)
-:ifName(inputFileName), ofName(outputFileName),Tags(Tags), nNodes(0), nDims(0),nElem(0), lvl(debugLvl), r(0), smode(slidingMode), pmode(periodicMode), perBdry(periodicBdry),mTags(movingTags),pTags(periodicTags)
-{readMeshFile();
+Mesh::Mesh(ReadConfigFile& cfg, const int& debugLvl)
+:ReadConfigFile(cfg),lvl(debugLvl)
+{
+readMeshFile();
 r = rFac*charLength();
 }
 
@@ -17,13 +18,13 @@ r = rFac*charLength();
 void Mesh::readMeshFile(){
 
 	if(lvl>=1){
-		std::cout << "Reading mesh file: " << ifName << std::endl;
+		std::cout << "Reading mesh file: " << mesh_ifName << std::endl;
 	}
 
 	int lineNo = 0;								// line number counter
 	int nBdryElems = 0;	// variables that sum the amount of marker elements
 //	bool bdry = true;		// booleans to acknowledge if on int/ext boundary
-	int markerIdx;
+	int markerIdx = -2;
 	int nBdryNodes = 0;	// counters for int/ext boundary nodes
 	int nPnts = 0;								// counter for number of points
 	int pntsIdx;								// int that stores the line where "NPOIN= " is
@@ -34,10 +35,10 @@ void Mesh::readMeshFile(){
 
 	bdryNodesMat.resize(0,3), intBdryNodesMat.resize(0,3);	// the int/ ext boundary node arrays have a minimum of 3 columns. One for the node type and at least two node indices.
 																// The array will be adjusted to appropriate size depending on the boundary element type.
-	srtdTags.resize(Tags.size());
-	nrElemsBdry.resize(Tags.size());		// Array containing the sizes of each ext boundary
+	srtdTags.resize(bdryTags.size());
+	nrElemsBdry.resize(bdryTags.size());		// Array containing the sizes of each ext boundary
 	std::string line;							// string containing line obtained by getline() function
-	std::ifstream mFile("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes\\" +ifName); 	//opening file name stored in mFile object
+	std::ifstream mFile("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes\\" + mesh_ifName); 	//opening file name stored in mFile object
 	// Check if file is opened
 	if (mFile.is_open()){
 		//Obtain line
@@ -45,38 +46,43 @@ void Mesh::readMeshFile(){
 
 			if (line.rfind("NDIME= ",0)==0){							// save number of dimensions
 				nDims = stoi(line.substr(7));
+
 			}
 			else if (line.rfind("NPOIN= ",0)==0){						// save nr of points
+
 				nNodes = stoi(line.substr(7));
 				pntsIdx = lineNo;										// save line nr.
 				coords.resize(nNodes, nDims);							// resizing the array containing the coordinates
 				std::cout << "Saving node coordinates" << std::endl;
 			}
 			else if (line.rfind("NELEM= ",0)==0){						// save nr of elements
+
 				nElem = stoi(line.substr(7));
 			}
 
 			// Checking whether provided boundary tags equals the amount in the mesh file
 			else if (line.rfind("NMARK= ",0)==0 && lvl >= 2){
+
 				try{
-					if(stoi(line.substr(7)) == int(Tags.size())){
+					if(stoi(line.substr(7)) == int(bdryTags.size())){
 						std::cout << "Number of boundary tags are matched" << std::endl;
 					} else{
 						throw(stoi(line.substr(7)));
 					}
 				}
 				catch(int nTag){
-					std::cout << "Number of tags provided (" << Tags.size() << ") does not match number of tags found in file (" << nTag << ")." << std::endl;
+					std::cout << "Number of tags provided (" << bdryTags.size() << ") does not match number of tags found in file (" << nTag << ")." << std::endl;
 					std::exit(0);
 				}
 			}
 
 			// Finding tags of the boundaries
 			else if (line.rfind("MARKER_TAG= ",0)==0){
+
 				std::string tag =  line.substr(12);
 
 				try{
-					if(std::find(std::begin(Tags), std::end(Tags), tag) != std::end(Tags)){
+					if(std::find(std::begin(bdryTags), std::end(bdryTags), tag) != std::end(bdryTags)){
 						if(lvl >=2){
 							std::cout << "Saving nodes of boundary: " << tag << std::endl;
 						}
@@ -109,7 +115,8 @@ void Mesh::readMeshFile(){
 
 				}
 
-			else if( lineNo > markerIdx+1 && lineNo <= markerIdx+1 + MarkerElems){
+			else if(markerIdx > 0 && lineNo > markerIdx+1 && lineNo <= markerIdx+1 + MarkerElems){
+
 
 				// split line by '\t' character
 				std::istringstream is(line);
@@ -165,17 +172,17 @@ void Mesh::readMeshFile(){
 	N_se = seNodes.size();
 	if(pmode == "moving"){
 		std::cout << "adjusting the sliding edge nodes by adding the static nodes" << std::endl;
-		std::cout << N_se << std::endl;
+//		std::cout << N_se << std::endl;
 		N_se += staticNodes.size();
-		std::cout << N_se << std::endl;
+//		std::cout << N_se << std::endl;
 		seNodes.conservativeResize(N_se);
-		std::cout << seNodes << std::endl;
+//		std::cout << seNodes << std::endl;
 		seNodes(Eigen::lastN(staticNodes.size())) = staticNodes;
 	}
 
-	std::cout <<"moving Nodes: \n" <<  mNodes << std::endl;
-	std::cout <<"sliding Nodes: \n" <<  seNodes << std::endl;
-	std::cout << "static Nodes: \n " << staticNodes << std::endl;
+//	std::cout <<"moving Nodes: \n" <<  mNodes << std::endl;
+//	std::cout <<"sliding Nodes: \n" <<  seNodes << std::endl;
+//	std::cout << "static Nodes: \n " << staticNodes << std::endl;
 	N_m = mNodes.size();
 
 //	std::cout << intBdryNodes << std::endl;
@@ -186,13 +193,13 @@ void Mesh::readMeshFile(){
 	for(int x=0; x< intBdryNodes.size(); x++){
 		ibIndices(x) = std::distance(std::begin(mNodes), std::find(std::begin(mNodes), std::end(mNodes),intBdryNodes(x)));
 	}
-//	std::cout << ibIndices << std::endl;
+
 
 //	std::cout << '\n' << mNodes << std::endl;
 
 
 	getIntNodes();
-	std::cout << "internal Nodes: \n" << iNodes << std::endl;
+//	std::cout << "internal Nodes: \n" << iNodes << std::endl;
 
 
 
@@ -244,14 +251,14 @@ void Mesh::readMeshFile(){
 
 	// obtaining the nodes that make up the line segments of the external boundary
 	getExtBdryEdgeSegments();
-	std::cout << extBdryEdgeSegments << std::endl;
+//	std::cout << extBdryEdgeSegments << std::endl;
 
 	if(smode != "none"){
 		N_mStd = N_m+N_se;
 		mNodesStd.resize(N_mStd);
 		mNodesStd << mNodes, seNodes;
 	}
-	std::cout << mNodesStd << std::endl;
+//	std::cout << mNodesStd << std::endl;
 	std::cout << "Mesh file read successfully" << std::endl;
 
 
@@ -350,9 +357,6 @@ void Mesh::getNodeTypes(){
 					// checking if 2 subsequent nodes are equal. If so then its a sliding edge node
 						if(i< bdryNodesArr.size()-1 && bdryNodesArr(i) == bdryNodesArr(i+1)){
 
-
-
-
 							if(smode == "none"){
 								idxMoving(cntMoving) = bdryNodesArr(i);
 								cntMoving++;
@@ -367,6 +371,7 @@ void Mesh::getNodeTypes(){
 							if(pmode == "moving"){
 //								idxSliding(cntSliding) = bdryNodesArr(i);
 //								cntSliding++;
+								// todo find a better name for this as these do slide in the periodic vector direction!
 								idxStatic(cntStatic) = bdryNodesArr(i);
 								cntStatic++;
 
@@ -426,7 +431,7 @@ void Mesh::getNodeTypes(){
 	// In case there is just a single external boundary then the final element is equal to the first element
 	// This ensures that the line segments making up the external boundary is closed.
 
-	if(int(Tags.size()-mTags.size())==1){
+	if(int(bdryTags.size()-mTags.size())==1){
 		extBdryEdgeNodes.conservativeResize(edgeNodeCnt+1);
 		extBdryEdgeNodes(edgeNodeCnt) = extBdryEdgeNodes(0);
 	}
@@ -592,10 +597,10 @@ void Mesh::writeMeshFile(){
 	outputF.precision(15);		// sets precision of the floats in the file
 
 	// opening existing or creating new output file. In its respective folder.
-	outputF.open("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes\\" + ofName, std::ios::out); // ios::out allows output to file
+	outputF.open("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes\\" + mesh_ofName, std::ios::out); // ios::out allows output to file
 
 	// Reopening the initial mesh file
-	std::ifstream inputF("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes\\" + ifName);
+	std::ifstream inputF("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes\\" + mesh_ifName);
 	// string containing the contents of each line
 	std::string line;
 	// boolean that will be set to true whenever the new coordinates have to be specified.
@@ -627,7 +632,7 @@ void Mesh::writeMeshFile(){
 	// closing both files
 	inputF.close();
 	outputF.close();
-	std::cout << "Done writing mesh file: " << ofName << std::endl;
+	std::cout << "Done writing mesh file: " << mesh_ofName << std::endl;
 }
 
 
@@ -1042,9 +1047,9 @@ void Mesh::getExtBdryEdgeSegments(){
 //	}
 // todo account for periodic Tags
 	if(pmode == "fixed" || pmode == "moving"){
-		extBdryEdgeSegments.resize(extBdryEdgeNodes.size()-Tags.size() + mTags.size() + pTags.size(),2);
+		extBdryEdgeSegments.resize(extBdryEdgeNodes.size()-bdryTags.size() + mTags.size() + pTags.size(),2);
 	}else{
-		extBdryEdgeSegments.resize(extBdryEdgeNodes.size()-Tags.size() + mTags.size(),2);
+		extBdryEdgeSegments.resize(extBdryEdgeNodes.size()-bdryTags.size() + mTags.size(),2);
 	}
 
 	// starting index and segment counter

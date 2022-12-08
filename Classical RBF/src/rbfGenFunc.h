@@ -17,15 +17,16 @@ public:
 	probParams& params;
 
 	Eigen::VectorXd pVec, pnVec;
-	Eigen::Matrix3d rotMatX, rotMatY, rotMatZ;//todo differentiate between 2 and 3d!
-	Eigen::Matrix2d rotMat;
+	Eigen::ArrayXi mIndex;
+	Eigen::ArrayXXd displacement;
 
 
 
 	rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject);
 	void getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::ArrayXi& idxSet2);
-	void getDefVec(Eigen::VectorXd& defVec, int& N, Eigen::ArrayXi& ibNodes);
-	void getRotationalMat();
+	void getDefVec(Eigen::VectorXd& defVec, int& N, int& steps, Eigen::ArrayXi& movingNodes);
+	void readDisplacementFile();
+
 	void getNodeTypes();
 	void getPeriodicParams();
 	double rbfEval(double distance);

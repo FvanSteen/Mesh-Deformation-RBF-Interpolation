@@ -1,14 +1,16 @@
+#ifndef MESH_H_
+#define MESH_H_
+#include "ReadConfigFile.h"
 #include <string>
 #include <Eigen/Dense>
 #include <vector>
-#ifndef MESH_H_
-#define MESH_H_
-
-class Mesh{
+class Mesh : public ReadConfigFile
+{
 public:
-	Mesh(const std::string& inputFileName,const std::string& outputFileName, const std::vector<std::string>& Tags,const double& rFac,const int& debugLvl, const std::string& slidingMode, const std::vector<std::string>& periodicBdry, const std::string& periodicMode,const std::vector<std::string>& movingTags, const std::vector<std::string>& periodicTags);
-	const std::string ifName, ofName;
-	const std::vector<std::string>& Tags;
+//	Mesh(const std::string& inputFileName,const std::string& outputFileName, const std::vector<std::string>& Tags,const double& rFac,const int& debugLvl, const std::string& slidingMode, const std::string& periodicMode,const std::vector<std::string>& movingTags, const std::vector<std::string>& periodicTags);
+	Mesh(ReadConfigFile& config, const int& debugLvl);
+//	const std::string ifName, ofName;
+//	const std::vector<std::string>& Tags;
 	int nNodes, nDims,nElem, lvl;
 	Eigen::ArrayXXd coords;
 	Eigen::ArrayXi extBdryNodes;
@@ -35,9 +37,9 @@ public:
 
 	double r; // support radius
 	int N_i, N_ib, N_eb, N_se, N_es, N_ss, N_p,N_m, N_mStd;
-	const std::string smode, pmode;
-	const std::vector<std::string> perBdry;
-	const std::vector<std::string> mTags,pTags;
+//	const std::string smode, pmode;
+//	const std::vector<std::string> perBdry;
+//	const std::vector<std::string> mTags,pTags;
 	std::vector<std::string> srtdTags;
 
 	double charLength();

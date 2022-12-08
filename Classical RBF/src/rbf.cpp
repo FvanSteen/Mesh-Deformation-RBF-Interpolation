@@ -15,13 +15,7 @@
 rbf::rbf(Mesh& meshObject, probParams& probParamsObject)
 :m(meshObject), params(probParamsObject)
 //:mPtr(meshPtr), dVec(displacementVector), rotPnt(rotationPnt), steps(steps), smode(slidingMode), rotVec(rVec), curved(curved), perDir(periodicDirection), dataRed(dataReduction)
-{
-	// todo specifying the periodic direction(s)
-	// todo smode is already in the mesh class -> replace all instances with m.smode
-
-//	Greedy go;
-
-}
+{}
 
 void rbf::RBFMain(){
 
@@ -35,22 +29,24 @@ void rbf::RBFMain(){
 //	std::cout << ptr << std::endl;
 
 
-//
-	getNodeType n(m);
+
+//	std::cout << "moving nodes: \n" << m.mNodes << std::endl;
+//	std::cout << "internal nodes: \n" << m.iNodes << std::endl;
+//	std::cout << "sliding edge nodes: \n" << m.seNodes << std::endl;
+//	std::cout << "static nodes: \n" << m.staticNodes << std::endl;
+//	std::cout << "internal boundary nodes: \n" << m.intBdryNodes << std::endl;
 
 
-	// make a structure with the various node types and numbers
-	// use that as function
-
+	getNodeType n(m,params.dataRed);
 
 //todo can be replaced by a switch
-	if(params.sMode=="none"){
+	if(params.smode=="none"){
 //		 initialising the rbf standard class and performing the interpolation
 		rbf_std rbf(m, params);
 		rbf.perform_rbf(n);
 
 	}
-	else if(params.sMode=="ds"){
+	else if(params.smode=="ds"){
 		rbf_ds rbf(m, params);
 		rbf.perform_rbf(n);
 //		if(m.nDims ==3){
@@ -61,7 +57,7 @@ void rbf::RBFMain(){
 ////			RBF_DS();
 //		}
 	}
-	else if(params.sMode=="ps"){
+	else if(params.smode=="ps"){
 ////		RBF_PS();
 //		rbf_ps *ptr;
 		rbf_ps rbf(m,params);

@@ -7,29 +7,16 @@
 rbf_std::rbf_std(Mesh& meshObject, struct probParams& probParamsObject)
 :rbfGenFunc(meshObject, probParamsObject)
 {
-
-//	std::cout << n.iNodes << std::endl;
-//	std::exit(0);
-//
-//	int N_i = m.N_i+m.N_p;
-//	int N_m = m.N_ib+ m.N_es + m.N_se;
-//	Eigen::ArrayXi iNodes(N_i);
-//	Eigen::ArrayXi mNodes(N_m);
-//	iNodes << m.intNodes, m.periodicNodes;
-//	mNodes << m.intBdryNodes, m.extStaticNodes, m.slidingEdgeNodes;
-
-//	perform_rbf(iNodes,mNodes,N_m);
-
 }
 
 
 void rbf_std::perform_rbf(getNodeType& n){
 	std::cout << "Performing standard rbf interpolation" << std::endl;
 
-	n.assignNodeTypes();
+//	n.assignNodeTypes();
 
-	std::cout << "moving: \n" << n.mNodes << std::endl;
-	std::cout << "int: \n" << n.iNodes << std::endl;
+//	std::cout << "moving: \n" << *n.mPtr << std::endl;
+//	std::cout << "int: \n" << *n.iPtr << std::endl;
 
 	auto start = std::chrono::high_resolution_clock::now();
 	Eigen::MatrixXd Phi_mm, Phi_im;
@@ -37,13 +24,15 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 
 
-	if(params.dataRed){
-		n.GreedyInit();
-		n.greedyNodes(m.intBdryNodes(0), params.sMode);
-	}
+//	if(params.dataRed){
+////		n.GreedyInit();
+//		n.greedyNodes(m.intBdryNodes(0), params.smode);
+//	}
 
 	// node containing max error, iter for nr of greedy iterations
 	int maxErrorNode,iter;
+	maxErrorNode = m.intBdryNodes(0);
+
 	// max error.
 	double error;
 	greedy go;
@@ -53,51 +42,68 @@ void rbf_std::perform_rbf(getNodeType& n){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 		error = 1;
 		iter = 0;
-		while(error>params.tolerance){
+		while(error>params.tol){
 
-			if(iter!=0){
-				n.greedyNodes(maxErrorNode,params.sMode);
+			if(params.dataRed){
+				n.addControlNode(maxErrorNode,params.smode);
 			}
 
 			std::cout << "Obtaining Phi_mm" << std::endl;
-			getPhi(Phi_mm, n.mNodes,n.mNodes);
+			getPhi(Phi_mm, *n.mPtr, *n.mPtr); // could simply pass the pointer here
 
 			std::cout << "Obtaining Phi_im" << std::endl;
-			getPhi(Phi_im, n.iNodes,n.mNodes);
+			getPhi(Phi_im, *n.iPtr, *n.mPtr);
 
-			std::cout << "Obtaining deformation vector" << std::endl;
-			defVec = Eigen::VectorXd::Zero(n.N_m*m.nDims);
-			getDefVec(defVec,n.N_m,n.ibNodes);
-			std::cout << defVec << std::endl;
-			std::exit(0);
+			if(i==0 || params.dataRed){
+				std::cout << "Obtaining deformation vector" << std::endl;
+				defVec = Eigen::VectorXd::Zero(n.N_m*m.nDims);
+				getDefVec(defVec,n.N_m,params.steps,*n.mPtr);
+			}
+
+
 			std::cout << "Performing RBF" << std::endl;
-			performRBF(Phi_mm, Phi_im, defVec,n.mNodes,n.iNodes, n.N_m);
+			performRBF(Phi_mm, Phi_im, defVec,*n.mPtr,*n.iPtr, n.N_m);
 
 			if(params.dataRed){
 				// exact deformation of internal boundary nodes not included in the interpolation
-				Eigen::VectorXd exactDef;
-				getExactDef(n, exactDef);
+//				Eigen::VectorXd exactDef;
+//				exactDef = Eigen::VectorXd::Zero(n.N_i*m.nDims);
+//				getDefVec(exactDef,n.N_i,params.steps,*n.iPtr);
+//				std::cout << exactDef << std::endl;
+//				getExactDef(n, exactDef);
 
+//				std::exit(0);
 				//next statement should also take into account the periodic nodes
 				if(m.N_i == n.N_i){
 					std::cout << "error zet to zero" << std::endl;
 					error = 0;
 				}else{
-					go.getError(n,m,d,exactDef,error,maxErrorNode, params.sMode);
+					go.getError(n,m,d,error,maxErrorNode, params.smode, mIndex, displacement);
 				}
 				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNode<< std::endl;
+
 			}else{
 				error = 0;
 			}
+//			if(iter == 1){
+//				std::exit(0);
+//			}
 
 			iter++;
 		}
 
+
 		if(params.dataRed){
-			defVecStd = Eigen::VectorXd::Zero(n.N_mStd*m.nDims);
-			getDefVec(defVecStd,n.N_mStd,n.ibNodes);
-			updateNodes(defVecStd,n.mNodesStd,n.iNodes,n.N_mStd);
+//			defVecStd = Eigen::VectorXd::Zero(n.N_mStd*m.nDims);
+//			getDefVec(defVecStd,n.N_mStd,params.steps);
+//			updateNodes(defVecStd,n.mNodesStd,n.iNodes,n.N_mStd);
+			std::cout << "Internal displacement: \n" << d << std::endl;
+			std::cout << "displacement of the moving nodes: \n" << defVec << std::endl;
+			// These two above make up all the boundary nodes
+			// displacement of the internal nodes still has to be computed
+			std::cout << "START HIER" << std::endl;
 		}
+		std::exit(0);
 	}
 	std::cout << "number of control nodes: " << n.N_mStd << std::endl;
 	auto stop = std::chrono::high_resolution_clock::now();
@@ -133,7 +139,7 @@ void rbf_std::performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen
 //			std::cout << (Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N)))) << std::endl;
 			m.coords(internalNodes,dim) += (Phi_im*(Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))))).array();
 			m.coords(movingNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
-			params.rotPnt(dim) += params.dVec(dim);
+//			params.rotPnt(dim) += params.dVec(dim);
 		}
 //		m.coords(internalNodes,dim) += (Phi_im*(Phi_mm.fullPivLu().solve(defVec(Eigen::seqN(dim*N,N))))).array();
 //		m.coords(internalNodes,dim) += d.col(dim);
@@ -171,7 +177,7 @@ void rbf_std::updateNodes(Eigen::VectorXd& defVec, Eigen::ArrayXi& movingNodes, 
 	for(int dim = 0; dim < m.nDims; dim++){
 		m.coords(internalNodes,dim) += d.col(dim);//(Phi_im*(Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))))).array();
 		m.coords(movingNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
-		params.rotPnt(dim) += params.dVec(dim);
+//		params.rotPnt(dim) += params.dVec(dim);
 	}
 }
 
@@ -182,6 +188,6 @@ void rbf_std::getExactDef(getNodeType& n, Eigen::VectorXd& exactDeformation){
 //	std::cout << n.iNodes(Eigen::seq(rbf.m.N_i+rbf.m.N_p, rbf.m.N_i+rbf.m.N_p+rbf.m.N_ib-n.N_ib-1)) << std::endl;
 
 	Eigen::ArrayXi ibNodes = n.iNodes(Eigen::seq(m.N_i+m.N_p, m.N_i+m.N_p+m.N_ib-n.N_ib-1));
-	getDefVec(exactDeformation, N, ibNodes);
+//	getDefVec(exactDeformation, N, params.steps);
 //	std::cout << exactDeformation << std::endl;
 }

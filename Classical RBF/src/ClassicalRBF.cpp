@@ -11,139 +11,26 @@ using namespace std;
 
 int main()
 {
+	// config file containing all information required to perform the mesh deformation
 	std::string configFile = "config_file.txt";
-	ReadConfigFile ConfigObject(configFile);
-	std::exit(0);
-	// amount of debugLvl messages
-	int debugLvl = 2;
-	// the radius of influence of the RBFs is the rFactor times the max domain length
-	const double rFactor = 2.5;
 
-	// input mesh file, output mesh file, internal and external boundary tags.
-//	string ifName = "su2mesh.su2";
-//	string ofName = "su2mesh_def_ps_ref.su2";
-//	vector<string> intBdryTags = {"wall1","wall2"};
-//	vector<string> extBdryTags = {"inflow","outflow","periodic1","periodic2"};
-
-//	string ifName = "mesh_original.su2";
-//	string ofName = "mesh_original_def.su2";
-//	vector<string> intBdryTags = {"tube1","tube2","tube3","tube4","tube5","tube6","tube7","tube8","tube9","tube10",};
-//	vector<string> extBdryTags = {"inlet","outlet","periodic_upper","periodic_lower"};
-
-
-//
-//	const string ifName = "mesh_NACA0012_inv.su2";
-//	const string ofName = "mesh_NACA0012_inv_def_ps_ref.su2";
-//	const vector<string> bdryTags = {"airfoil","farfield"};
-//	const vector<string> movingTags = {"farfield"};
-
-//	const string ifName = "5x5.su2";
-//	const string ofName = "5x5_def.su2";
-	string ifName = "25x25.su2";
-	string ofName = "25x25_def.su2";
-
-	const vector<string> bdryTags = {"block","lower","right","upper", "left"};
-	const vector<string> movingTags = {"block"};
-	const vector<string> periodicTags = {"lower", "upper"};
-//	string ifName = "5x5x5.su2";
-//	string ofName = "5x5x5_def.su2";
-//	const vector<string> intBdryTags = {"BLOCK"};
-//	const vector<string> extBdryTags = {"FRONT", "BACK", "LEFT", "RIGHT", "LOWER", "UPPER"};
-
-
-	// sliding modes:
-	// regular rbf: none
-	// pseudo sliding: ps
-	// direct sliding: ds
-	const string slidingMode = "none";
-	// periodic modes:
-	// no periodicity: none
-	// periodic rbf: periodic
-	// moving periodic boundaries with fixed vertices: fixed
-	// moving periodic boundaries with moving vertices: moving
-	const string periodicMode = "none";				// none for no periodicity, periodic for making the domain periodic in a to be specified direction ,fixed for allowing periodic boundary displacement with fixed corners, moving for periodic boundary displacement with moving corners
-
-	// periodic boundary tags
-	const vector<string> periodicBdry = {"upper","lower"};
-
-	// direction of periodicity
-	const string periodicDirection = "y";
-
-//	const bool dataReduction = false;
-
-	// initialising class object m, reads mesh input file in constructor.
-	Mesh meshOb(ifName,ofName, bdryTags, rFactor, debugLvl, slidingMode, periodicBdry, periodicMode,movingTags, periodicTags);
-
-	// constant deformation
-//	const double xDef = 0.0004, yDef = -0.0004, zDef= -0.0;
-	const double xDef = -0.2, yDef = -0.32, zDef= -0.0;
-
-	// number of deformation steps
-	int steps = 1;
+	// initliasing the structure in which the problem parameters are saved
 	struct probParams probParams;
 
-	probParams.dVec.resize(2);
-	probParams.dVec << xDef/steps,yDef/steps;
-	probParams.rotVec.resize(1);
+	// calling class to read the configuration file
+	// Variables required to read the mesh file are public variables and later on inherited by the Mesh class
+	// Variables required for performing the interpolation are saved in the probParams structure and passed on in the main rbf class.
+	ReadConfigFile config(configFile,probParams);
 
-	// rotational deformation
-	probParams.rotVec << 60;
-	probParams.steps = steps;
-	probParams.rotPnt.resize(2);
-	// point of rotation
-	probParams.rotPnt << 0.5,0.5;
-	probParams.sMode = slidingMode;
-	probParams.pMode = periodicMode;
-	// if the boundaries are curved then the normals and tangentials of the boundaries are updated
-	probParams.curved = false;
-	// periodic direction
-	probParams.pDir = periodicDirection;
-	// using data reduction techniques (greedy)
-	probParams.dataRed = false;
-	// tolerance for data reduction techniques
-	probParams.tolerance = 5e-6;
+	// lvl indicating the amount of debug messages
+	int debugLvl = 2;
 
+	// initialising class object m, reads mesh input file in constructor.
+	Mesh meshOb(config, debugLvl);
+
+	// Initialising the rbf class with the mesh data and the problem parameters
 	rbf rbf(meshOb, probParams);
+
+	// calling the main rbf function that performs the mesh deformation
 	rbf.RBFMain();
-
-
-//	const double xDef = -0.2, yDef = -0.32, zDef= -0.0;
-
-//	const int steps = 20;
-//	Eigen::VectorXd rotVec;
-//	Eigen::RowVectorXd rotationPnt(meshOb.nDims);
-//	Eigen::VectorXd displacementVector(meshOb.nDims);
-//	if(meshOb.nDims == 2){
-//		rotVec.resize(1);
-//		rotVec << 60;
-//		rotationPnt << 0.5,0.5;
-//		displacementVector << xDef/steps,yDef/steps;
-//	}else{
-//		rotationPnt << 0.5,0.5,0.5;
-//		rotVec.resize(3);
-//		rotVec << 0,0,60;
-//		displacementVector << xDef/steps,yDef/steps,zDef/steps;
-//	}
-
-
-	// todo maybe pass problem parameters as a structure later on. Needs definition of the structure in a separate header file.
-
-//	struct problemParams{
-//		Eigen::VectorXd dVec;
-//		Eigen::RowVectorXd rotPnt;
-//		Eigen::VectorXd rotVec;
-//		const int steps;
-//		const string smode;
-//		const bool curved;
-//		const string perDir;
-//	};
-
-//	struct problemParams pp = {displacementVector, rotationPnt, rotVec, steps, slidingMode, curved, periodicDirection};
-
-
-
-
-
-
-
 }

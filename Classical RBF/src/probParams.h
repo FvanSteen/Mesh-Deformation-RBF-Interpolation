@@ -1,25 +1,19 @@
-/*
- * probParams.h
- *
- *  Created on: 22 nov. 2022
- *      Author: floyd
- */
-
 #ifndef PROBPARAMS_H_
 #define PROBPARAMS_H_
 #include <Eigen/Dense>
 #include <string>
 struct probParams{
-	Eigen::VectorXd dVec;
+//	Eigen::VectorXd dVec;
 	int steps;
-	Eigen::VectorXd rotVec;
-	Eigen::RowVectorXd rotPnt;
-	std::string sMode;
-	std::string pMode;
+//	Eigen::VectorXd rotVec;
+//	Eigen::RowVectorXd rotPnt;
+	std::string smode;
+	std::string pmode;
 	bool curved;
 	std::string pDir;
 	bool dataRed;
-	double tolerance;
+	double tol;
+	std::string dispFile;
 };
 
 
