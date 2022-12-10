@@ -124,7 +124,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 		}
 		std::cout << iter << std::endl;
 		if(params.dataRed){
-			updateNodes(defVecStd,n.mNodesStd,n.iNodes,n.N_mStd);
+//			updateNodes(defVecStd,n.mNodesStd,n.iNodes,n.N_mStd);
 //			std::cout << n.mNodesStd << std::endl;
 		}
 

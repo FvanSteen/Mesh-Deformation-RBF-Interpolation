@@ -17,10 +17,10 @@ public:
 
 	Eigen::ArrayXi* mPtr;
 	Eigen::ArrayXi* iPtr;
+	Eigen::ArrayXi* iPtrGrdy;
 
 
-
-	int N_i,N_m,N_s,N_mStd,N_ib,N_es;
+	int N_i,N_m,N_s,N_mStd,N_ib,N_es,N_i_grdy;
 	getNodeType(Mesh& meshOb, bool& dataRed);
 	void assignNodeTypes();
 	void addControlNode(int& node, std::string& smode);

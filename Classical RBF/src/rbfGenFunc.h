@@ -11,6 +11,7 @@
 #include "probParams.h"
 #include "getNodeType.h"
 #include <Eigen/Dense>
+
 class rbfGenFunc {
 public:
 	Mesh& m;
@@ -30,6 +31,8 @@ public:
 	void getNodeTypes();
 	void getPeriodicParams();
 	double rbfEval(double distance);
+
+
 
 };
 

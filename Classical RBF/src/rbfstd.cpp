@@ -19,7 +19,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 //	std::cout << "int: \n" << *n.iPtr << std::endl;
 
 	auto start = std::chrono::high_resolution_clock::now();
-	Eigen::MatrixXd Phi_mm, Phi_im;
+	Eigen::MatrixXd Phi_mm, Phi_im, Phi_imGreedy;
 	Eigen::VectorXd defVec,defVecStd;
 
 
@@ -35,6 +35,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 	// max error.
 	double error;
+
 	greedy go;
 
 
@@ -85,27 +86,25 @@ void rbf_std::perform_rbf(getNodeType& n){
 			}else{
 				error = 0;
 			}
-//			if(iter == 1){
-//				std::exit(0);
-//			}
-
 			iter++;
 		}
 
 
+
+
+
 		if(params.dataRed){
-//			defVecStd = Eigen::VectorXd::Zero(n.N_mStd*m.nDims);
-//			getDefVec(defVecStd,n.N_mStd,params.steps);
-//			updateNodes(defVecStd,n.mNodesStd,n.iNodes,n.N_mStd);
-			std::cout << "Internal displacement: \n" << d << std::endl;
-			std::cout << "displacement of the moving nodes: \n" << defVec << std::endl;
-			// These two above make up all the boundary nodes
-			// displacement of the internal nodes still has to be computed
-			std::cout << "START HIER" << std::endl;
+			updateNodes(Phi_imGreedy,n, defVec);
+			go.correction(m,n);
+			std::cout << "number of control nodes: " << n.N_m << std::endl;
 		}
-		std::exit(0);
+
+
+
+
+
 	}
-	std::cout << "number of control nodes: " << n.N_mStd << std::endl;
+	std::cout << "number of control nodes: " << n.N_m << std::endl;
 	auto stop = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
 
@@ -115,6 +114,8 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 
 void rbf_std::performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVec, Eigen::ArrayXi& movingNodes, Eigen::ArrayXi& internalNodes,int& N){
+	alpha.resize(N*m.nDims);
+
 	if(params.dataRed){
 		d.resize(internalNodes.size(),m.nDims);
 	}
@@ -130,15 +131,17 @@ void rbf_std::performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen
 //	std::cout << std::endl;
 //	std::cout << movingNodes << std::endl;
 	for(int dim = 0; dim < m.nDims; dim++){
+
 		std::cout << "Solving for dimension: " << dim << std::endl;
+		alpha(Eigen::seqN(dim*N,N)) = Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N)));
 		if(params.dataRed){
-			d.col(dim) = (Phi_im*(Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))))).array();
+			d.col(dim) = Phi_im*alpha(Eigen::seqN(dim*N,N));
 //			std::cout << (Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N)))) << std::endl;
 		}else{
-//			std::cout << movingNodes << std::endl;
-//			std::cout << (Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N)))) << std::endl;
-			m.coords(internalNodes,dim) += (Phi_im*(Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))))).array();
+			m.coords(internalNodes,dim) += (Phi_im*alpha(Eigen::seqN(dim*N,N))).array();
 			m.coords(movingNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
+//			m.coords(internalNodes,dim) += (Phi_im*(Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))))).array();
+//			m.coords(movingNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
 //			params.rotPnt(dim) += params.dVec(dim);
 		}
 //		m.coords(internalNodes,dim) += (Phi_im*(Phi_mm.fullPivLu().solve(defVec(Eigen::seqN(dim*N,N))))).array();
@@ -173,12 +176,26 @@ void rbf_std::performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen
 //	std::exit(0);
 }
 
-void rbf_std::updateNodes(Eigen::VectorXd& defVec, Eigen::ArrayXi& movingNodes, Eigen::ArrayXi& internalNodes,int& N){
-	for(int dim = 0; dim < m.nDims; dim++){
-		m.coords(internalNodes,dim) += d.col(dim);//(Phi_im*(Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))))).array();
-		m.coords(movingNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
-//		params.rotPnt(dim) += params.dVec(dim);
-	}
+void rbf_std::updateNodes(Eigen::MatrixXd& Phi_imGreedy, getNodeType& n, Eigen::VectorXd& defVec){
+//	for(int dim = 0; dim < m.nDims; dim++){
+//		m.coords(internalNodes,dim) += d.col(dim);//(Phi_im*(Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))))).array();
+//		m.coords(movingNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
+////		params.rotPnt(dim) += params.dVec(dim);
+//	}
+
+	getPhi(Phi_imGreedy,*n.iPtrGrdy,*n.mPtr);
+//	std::cout << Phi_imGreedy*alpha(Eigen::seqN(0,n.N_m)) << std::endl;
+//	std::cout << Phi_imGreedy*alpha(Eigen::seqN(n.N_m,n.N_m)) << std::endl;
+
+//	std::cout << d << std::endl;
+//	std::cout << defVec << std::endl;
+	m.coords(*n.iPtr,Eigen::all) += d;
+//	m.coords(*n.mPtr,0) += defVec(Eigen::seqN(0,n.N_m)).array();
+//	m.coords(*n.mPtr,1) += defVec(Eigen::seqN(n.N_m,n.N_m)).array();
+	m.coords(*n.iPtrGrdy,0) +=  (Phi_imGreedy*alpha(Eigen::seqN(0,n.N_m))).array();
+	m.coords(*n.iPtrGrdy,1) +=  (Phi_imGreedy*alpha(Eigen::seqN(n.N_m,n.N_m))).array();
+
+
 }
 
 void rbf_std::getExactDef(getNodeType& n, Eigen::VectorXd& exactDeformation){

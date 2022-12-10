@@ -2,6 +2,7 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <iterator>
+#include <chrono>
 greedy::greedy()  {
 //
 ////	std::cout << ptr->mNodes << std::endl;
@@ -124,36 +125,34 @@ greedy::greedy()  {
 void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& e, int& idxMax, std::string sMode, Eigen::ArrayXi& mIndex, Eigen::ArrayXXd& displacement){
 //	std::cout << d << std::endl;
 //	std::cout << std::endl;
-//
 //	std::cout << displacement << std::endl;
 
-
-	Eigen::ArrayXd error;
-	error = Eigen::ArrayXd::Zero(n.N_i);
+	error = Eigen::ArrayXXd::Zero(n.N_i,meshOb.nDims);
 
 	std::cout << "obtaining error" << std::endl;
-	int idx;
-	int i,dim;
+	int idx, i, dim;
 
 	for(i = 0; i< n.N_i; i++){
 		idx = std::distance(std::begin(mIndex), std::find(std::begin(mIndex),std::end(mIndex),(*n.iPtr)(i)));
 		if(idx!=mIndex.size()){
  			for(dim = 0;dim<meshOb.nDims;dim++){
-				error(i) += pow(d(i,dim)-displacement(idx,dim),2);
+				error(i,dim) = d(i,dim)-displacement(idx,dim);
 			}
 		}
 		else{
 			for(dim = 0;dim<meshOb.nDims;dim++){
-				error(i) += pow(d(i,dim),2);
+				error(i,dim) = d(i,dim);
 			}
 		}
 	}
 
 
-	error.maxCoeff(&idxMax);
-	e = error(idxMax);
+
+	error.rowwise().norm().maxCoeff(&idxMax);
+
+	Eigen::VectorXd errorVec =  error.row(idxMax);
+	e = errorVec.norm();
 	idxMax = (*n.iPtr)(idxMax);
-//	std::cout << error << std::endl;
 
 //	Eigen::VectorXd defVec;
 //	int N = rbf.m.N_ib-n.N_ib;
@@ -256,3 +255,64 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 
 }
 
+void greedy::correction(Mesh& m, getNodeType& n){
+
+	// doing the correction for the boundary nodes
+	m.coords(*n.iPtr , Eigen::all) -= error;
+
+	// obtaining the max error
+	double maxError = getMaxError();
+
+	// dist will store the distance between an internal node and the nearest boundary node
+	double dist;
+	// factor that determines the support radius
+	double gamma = 2.5;
+
+	// integer that stores the index of the nearest boundary node
+	int idxNear;
+
+	// looping through the internal nodes
+	for (int i = 0; i < n.N_i_grdy; i++){
+
+		// obtaining the index of the nearest node and the distance to it
+		getNearestNode(m, n, (*n.iPtrGrdy)(i), idxNear, dist);
+
+		// doing the correction
+		m.coords.row((*n.iPtrGrdy)(i)) += error.row(idxNear)*rbfEval(dist,gamma*maxError);
+	}
+}
+
+void greedy::getNearestNode(Mesh& m, getNodeType& n, int& node, int& idxMin, double& dist){
+
+	// Array with the distance from the selected internal node to all the boundary nodes
+	Eigen::ArrayXXd diff;
+	diff = m.coords(*n.iPtr, Eigen::all).rowwise() - m.coords.row(node);
+
+	// identifying the index to tho node that is nearest.
+	diff.rowwise().norm().minCoeff(&idxMin);
+
+	// dist from the internal node to the nearest boundary node
+	dist = diff.row(idxMin).matrix().norm();
+}
+
+double greedy::rbfEval(double distance, double radius){
+	double xi = distance/radius;	// distance scaled by support radius
+	double f_xi;
+	if(xi > 1){
+		f_xi = 0;
+	}else{
+		f_xi = pow((1-(distance/radius)),4)*(4*(distance/radius)+1);
+	}
+	return f_xi;
+}
+
+double greedy::getMaxError(){
+	// integer for storing the index where the error is largest
+	int idxMax;
+
+	// finding the node with the highest error
+	error.rowwise().norm().maxCoeff(&idxMax);
+
+	// returning the largest error
+	return error.row(idxMax).matrix().norm();
+}

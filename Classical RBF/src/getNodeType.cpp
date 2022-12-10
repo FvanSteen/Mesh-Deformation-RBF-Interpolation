@@ -101,6 +101,9 @@ void getNodeType::assignNodeTypesGreedy(){
 	N_m = 0;
 	mPtr = &mNodes;
 
+	iPtrGrdy = &m.iNodes;
+	N_i_grdy = m.N_i;
+
 //	N_m = 0;
 //	N_s = 0;
 //	N_mStd = 0;
