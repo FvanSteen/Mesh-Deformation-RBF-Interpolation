@@ -61,7 +61,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 	std::cout << "Performing RBF DS " << std::endl;
 
 	Eigen::MatrixXd Phi_mm, Phi_ms, Phi_sm, Phi_ss, Phi_im, Phi_is, Phi;
-	Eigen::VectorXd defVec, alpha(m.nDims*(n.N_m+n.N_s));
+//	Eigen::VectorXd defVec, alpha(m.nDims*(n.N_m+n.N_s));
 
 	for (int i = 0; i < params.steps; i++){
 		auto start2 = std::chrono::high_resolution_clock::now();
@@ -109,7 +109,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 
 //		defVec = Eigen::VectorXd::Zero((N_m+N_s)*m.nDims);
 		starti = std::chrono::high_resolution_clock::now();
-		defVec = Eigen::VectorXd::Zero((n.N_m+n.N_s)*m.nDims);
+//		defVec = Eigen::VectorXd::Zero((n.N_m+n.N_s)*m.nDims);
 
 //		getDefVec(defVec,n.N_m,params.steps);
 
@@ -119,14 +119,14 @@ void rbf_ds::perform_rbf(getNodeType& n){
 
 
 		starti = std::chrono::high_resolution_clock::now();
-		getPhiDS(Phi,Phi_mm,Phi_ms, Phi_sm, Phi_ss, m.n, m.t,n.N_m,n.N_s);
+//		getPhiDS(Phi,Phi_mm,Phi_ms, Phi_sm, Phi_ss, m.n, m.t,n.N_m,n.N_s);
 		stopi = std::chrono::high_resolution_clock::now();
 		durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
 		std::cout << "assembly of Phi: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
 
 		starti = std::chrono::high_resolution_clock::now();
 		// todo check which items can be omitted
-		performRBF_DS(Phi, Phi_im, Phi_is, Phi_sm, Phi_ss,defVec, alpha, p,n.iNodes,n.mNodes,n.mNodesStd, n.sNodes, n.N_i, n.N_m, n.N_mStd, n.N_s,n.ibNodes);
+//		performRBF_DS(Phi, Phi_im, Phi_is, Phi_sm, Phi_ss,defVec, alpha, p,n.iNodes,n.mNodes,n.mNodesStd, n.sNodes, n.N_i, n.N_m, n.N_mStd, n.N_s,n.ibNodes);
 		stopi = std::chrono::high_resolution_clock::now();
 		durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
 		std::cout << "obtaining solution and updating nodes: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;

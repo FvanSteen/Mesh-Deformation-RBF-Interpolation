@@ -33,6 +33,13 @@ void getNodeType::assignNodeTypes(){
 	mPtr = &m.mNodes;
 	iPtr = &m.iNodes;
 
+	N_se = m.N_se;
+	sePtr = &m.seNodes;
+
+	N_mStd = m.N_m + m.N_se;
+	mNodesStd.resize(N_mStd);
+	mNodesStd << m.mNodes, m.seNodes;
+	mStdPtr = &mNodesStd;
 
 //todo move this to a seperate function
 //	N_ib = m.N_ib;
@@ -92,17 +99,25 @@ void getNodeType::assignNodeTypes(){
 void getNodeType::assignNodeTypesGreedy(){
 
 	// for the non sliding rbf
-	N_i = m.N_m;
+
+	N_i = m.N_m+m.N_se;
 	iNodes.resize(N_i);
-	iNodes << m.mNodes;
+	iNodes << m.mNodes, m.seNodes;
 
 	iPtr = &iNodes;
 
 	N_m = 0;
 	mPtr = &mNodes;
 
+	N_se = 0;
+	sePtr = &seNodes;
+
+
 	iPtrGrdy = &m.iNodes;
 	N_i_grdy = m.N_i;
+
+	N_mStd = 0;
+	mStdPtr = &mNodesStd;
 
 //	N_m = 0;
 //	N_s = 0;
@@ -124,9 +139,37 @@ void getNodeType::assignNodeTypesGreedy(){
 
 
 void getNodeType::addControlNode(int& node, std::string& smode){
-	N_m++;
-	mNodes.conservativeResize(N_m);
-	mNodes(N_m-1) = node;
+	std::cout << "adding control node: " << node << std::endl;
+
+
+	if (std::find(std::begin(m.mNodes),std::end(m.mNodes),node) != std::end(m.mNodes)){
+		N_m++;
+		mNodes.conservativeResize(N_m);
+		mNodes(N_m-1) = node;
+
+
+
+	}else if(std::find(std::begin(m.seNodes),std::end(m.seNodes),node) != std::end(m.seNodes)){
+		N_se++;
+		seNodes.conservativeResize(N_se);
+		seNodes(N_se-1) = node;
+//		std::cout << seNodes << std::endl;
+
+	}
+
+	if(smode != "none"){
+		N_mStd++;
+		mNodesStd.resize(N_mStd);
+//		mNodesStd(N_mStd-1) = node;
+		mNodesStd << mNodes,seNodes;
+//		std::cout << mNodesStd << std::endl;
+
+	}
+
+
+
+
+	std::cout << "control node is added " << std::endl;
 
 }
 

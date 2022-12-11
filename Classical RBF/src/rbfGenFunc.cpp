@@ -28,6 +28,8 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 }
 
 void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::ArrayXi& idxSet2){
+//	double lambda = 0.05749995;
+	double lambda = 1;
 	Phi.resize(idxSet1.size(), idxSet2.size());
 	double dist;
 	for(int i=0; i<idxSet1.size();i++){
@@ -44,7 +46,7 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::Ar
 					for(int dim = 0; dim < m.nDims; dim++){
 						if(pVec(dim)){
 							//todo change function to allow for periodic length in stead of unit length
-							dist += pow(1/M_PI*sin( (m.coords(idxSet1(i),dim)-m.coords(idxSet2(j),dim))*M_PI/1),2);
+							dist += pow(lambda/M_PI*sin( (m.coords(idxSet1(i),dim)-m.coords(idxSet2(j),dim))*M_PI/lambda),2);
 						}
 						else{
 							dist += pow(m.coords(idxSet1(i),dim)-m.coords(idxSet2(j),dim),2);

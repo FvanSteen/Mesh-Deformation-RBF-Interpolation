@@ -23,16 +23,12 @@ void rbf_std::perform_rbf(getNodeType& n){
 	Eigen::VectorXd defVec,defVecStd;
 
 
-
-//	if(params.dataRed){
-////		n.GreedyInit();
-//		n.greedyNodes(m.intBdryNodes(0), params.smode);
-//	}
-
 	// node containing max error, iter for nr of greedy iterations
 	int maxErrorNode,iter;
-	maxErrorNode = m.intBdryNodes(0);
-
+	if(params.dataRed){
+		maxErrorNode = m.intBdryNodes(0);
+		n.addControlNode(maxErrorNode,params.smode);
+	}
 	// max error.
 	double error;
 
@@ -45,7 +41,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 		iter = 0;
 		while(error>params.tol){
 
-			if(params.dataRed){
+			if(iter!=0){
 				n.addControlNode(maxErrorNode,params.smode);
 			}
 
@@ -66,20 +62,13 @@ void rbf_std::perform_rbf(getNodeType& n){
 			performRBF(Phi_mm, Phi_im, defVec,*n.mPtr,*n.iPtr, n.N_m);
 
 			if(params.dataRed){
-				// exact deformation of internal boundary nodes not included in the interpolation
-//				Eigen::VectorXd exactDef;
-//				exactDef = Eigen::VectorXd::Zero(n.N_i*m.nDims);
-//				getDefVec(exactDef,n.N_i,params.steps,*n.iPtr);
-//				std::cout << exactDef << std::endl;
-//				getExactDef(n, exactDef);
 
-//				std::exit(0);
 				//next statement should also take into account the periodic nodes
 				if(m.N_i == n.N_i){
 					std::cout << "error zet to zero" << std::endl;
 					error = 0;
 				}else{
-					go.getError(n,m,d,error,maxErrorNode, params.smode, mIndex, displacement);
+					go.getError(n,m,d,error,maxErrorNode, params.smode, mIndex, displacement,pnVec);
 				}
 				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNode<< std::endl;
 
@@ -89,19 +78,11 @@ void rbf_std::perform_rbf(getNodeType& n){
 			iter++;
 		}
 
-
-
-
-
 		if(params.dataRed){
 			updateNodes(Phi_imGreedy,n, defVec);
 			go.correction(m,n);
 			std::cout << "number of control nodes: " << n.N_m << std::endl;
 		}
-
-
-
-
 
 	}
 	std::cout << "number of control nodes: " << n.N_m << std::endl;
@@ -183,7 +164,18 @@ void rbf_std::updateNodes(Eigen::MatrixXd& Phi_imGreedy, getNodeType& n, Eigen::
 ////		params.rotPnt(dim) += params.dVec(dim);
 //	}
 
-	getPhi(Phi_imGreedy,*n.iPtrGrdy,*n.mPtr);
+	int N_m;
+	Eigen::ArrayXi* ptr;
+
+	if(m.smode == "none"){
+		ptr = n.mPtr;
+		N_m = n.N_m;
+	}else{
+		ptr = n.mStdPtr;
+		N_m = n.N_mStd;
+	}
+
+	getPhi(Phi_imGreedy,*n.iPtrGrdy,*ptr);
 //	std::cout << Phi_imGreedy*alpha(Eigen::seqN(0,n.N_m)) << std::endl;
 //	std::cout << Phi_imGreedy*alpha(Eigen::seqN(n.N_m,n.N_m)) << std::endl;
 
@@ -192,8 +184,8 @@ void rbf_std::updateNodes(Eigen::MatrixXd& Phi_imGreedy, getNodeType& n, Eigen::
 	m.coords(*n.iPtr,Eigen::all) += d;
 //	m.coords(*n.mPtr,0) += defVec(Eigen::seqN(0,n.N_m)).array();
 //	m.coords(*n.mPtr,1) += defVec(Eigen::seqN(n.N_m,n.N_m)).array();
-	m.coords(*n.iPtrGrdy,0) +=  (Phi_imGreedy*alpha(Eigen::seqN(0,n.N_m))).array();
-	m.coords(*n.iPtrGrdy,1) +=  (Phi_imGreedy*alpha(Eigen::seqN(n.N_m,n.N_m))).array();
+	m.coords(*n.iPtrGrdy,0) +=  (Phi_imGreedy*alpha(Eigen::seqN(0,N_m))).array();
+	m.coords(*n.iPtrGrdy,1) +=  (Phi_imGreedy*alpha(Eigen::seqN(N_m,N_m))).array();
 
 
 }

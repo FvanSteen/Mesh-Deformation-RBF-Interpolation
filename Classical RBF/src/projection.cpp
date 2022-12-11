@@ -17,8 +17,9 @@ void projection::project(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta
 	Eigen::ArrayXi index = Eigen::ArrayXi::LinSpaced(m.midPnts.rows(),0,m.midPnts.rows()-1);
 
 	for(int i=0; i<sNodes.size(); i++){
-		if(i<m.N_se-m.staticNodes.size()){
-
+		if(std::find(std::begin(m.staticNodes),std::end(m.staticNodes),sNodes(i))  != std::end(m.staticNodes)){
+			finalDef.row(i) = delta.row(i)*pVec.transpose().array();
+		}else{
 			// distance to all midpoints
 			dist = (m.midPnts.rowwise()-(m.coords.row(sNodes(i)) + delta.row(i))).rowwise().norm();
 
@@ -36,14 +37,8 @@ void projection::project(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta
 
 			// Final deformation is the initial displacement plus the projection to bring the node back on the boundary
 			finalDef.row(i) = delta.row(i) + projection.transpose();
-		}else{
-			std::cout << sNodes(i) << '\t' << i << std::endl;
-//			std::cout << delta.row(i) << std::endl;
-//			std::cout << pVec << std::endl;
-//			std::cout << delta.row(i)*pVec.transpose().array() << std::endl;
-			finalDef.row(i) = delta.row(i)*pVec.transpose().array();
-
 		}
+
 	}
 	std::cout << "projection is done " << std::endl;
 }

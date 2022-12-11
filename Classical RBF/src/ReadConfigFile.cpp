@@ -67,7 +67,7 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 			}
 			else if(line.rfind("DATA_REDUCTION")==0){
 				findStringBounds(first,last,line);
-				if(line.substr(first,last-first) == "YES"){
+				if(line.substr(first,last-first) == "YES" || line.substr(first,last-first) == "yes"){
 					probParamsObject.dataRed = true;
 				}else{
 					probParamsObject.dataRed = false;

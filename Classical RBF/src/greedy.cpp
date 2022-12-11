@@ -1,4 +1,5 @@
 #include "greedy.h"
+#include "projection.h"
 #include <iostream>
 #include <Eigen/Dense>
 #include <iterator>
@@ -122,24 +123,43 @@ greedy::greedy()  {
 }
 
 
-void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& e, int& idxMax, std::string sMode, Eigen::ArrayXi& mIndex, Eigen::ArrayXXd& displacement){
+void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& e, int& idxMax, std::string sMode, Eigen::ArrayXi& mIndex, Eigen::ArrayXXd& displacement,Eigen::VectorXd& pnVec){
 //	std::cout << d << std::endl;
+//	std::cout << *n.iPtr << std::endl;
 //	std::cout << std::endl;
 //	std::cout << displacement << std::endl;
 
 	error = Eigen::ArrayXXd::Zero(n.N_i,meshOb.nDims);
 
-	std::cout << "obtaining error" << std::endl;
-	int idx, i, dim;
-
+//	std::cout << "obtaining error" << std::endl;
+	int idx_m, idx_se, i, dim;
+	Eigen::ArrayXd dispRow;
 	for(i = 0; i< n.N_i; i++){
-		idx = std::distance(std::begin(mIndex), std::find(std::begin(mIndex),std::end(mIndex),(*n.iPtr)(i)));
-		if(idx!=mIndex.size()){
+		idx_m = std::distance(std::begin(mIndex), std::find(std::begin(mIndex),std::end(mIndex),(*n.iPtr)(i)));
+		idx_se = std::distance(std::begin(meshOb.seNodes), std::find(std::begin(meshOb.seNodes),std::end(meshOb.seNodes),(*n.iPtr)(i)));
+		if(idx_m!=mIndex.size()){
  			for(dim = 0;dim<meshOb.nDims;dim++){
-				error(i,dim) = d(i,dim)-displacement(idx,dim);
+				error(i,dim) = d(i,dim)-displacement(idx_m,dim);
 			}
+
+		}else if(idx_se != meshOb.N_se){
+
+//			Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta,Eigen::ArrayXXd& finalDef, Eigen::VectorXd& pVec
+			dispRow = d.row(i);
+			project(meshOb, (*n.iPtr)(i),i, d, error,pnVec);
+
+//			std::cout << (*n.iPtr)(i) << " is a sliding edge node, do something" << std::endl;
+//			std::cout << "index in the seNodes array: " << idx_se << std::endl;
+//			std::abs(meshOb.n.row(idx).matrix().dot(d.row(meshOb.N_i+meshOb.N_p + i + j + k).matrix()))
+//			std::cout << meshOb.n.row(idx_se) << std::endl;
+//			std::cout << d.row(i) << std::endl;
+//			std::cout << meshOb.n.row(idx_se)*d.row(i) << std::endl;
+//			error.row(i) = meshOb.n.row(idx_se)*d.row(i);
+
+//			std::exit(0);
 		}
 		else{
+//			std::cout << (*n.iPtr)(i) << " should be a static node" << std::endl;
 			for(dim = 0;dim<meshOb.nDims;dim++){
 				error(i,dim) = d(i,dim);
 			}
@@ -153,7 +173,7 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 	Eigen::VectorXd errorVec =  error.row(idxMax);
 	e = errorVec.norm();
 	idxMax = (*n.iPtr)(idxMax);
-
+//	std::cout << error.rowwise().norm() << std::endl;
 //	Eigen::VectorXd defVec;
 //	int N = rbf.m.N_ib-n.N_ib;
 //	defVec = Eigen::VectorXd::Zero(rbf.m.nDims*N);
@@ -260,13 +280,14 @@ void greedy::correction(Mesh& m, getNodeType& n){
 	// doing the correction for the boundary nodes
 	m.coords(*n.iPtr , Eigen::all) -= error;
 
+
 	// obtaining the max error
 	double maxError = getMaxError();
-
+//	std::cout << maxError << std::endl;
 	// dist will store the distance between an internal node and the nearest boundary node
 	double dist;
 	// factor that determines the support radius
-	double gamma = 2.5;
+	double gamma = 25;
 
 	// integer that stores the index of the nearest boundary node
 	int idxNear;
@@ -276,9 +297,11 @@ void greedy::correction(Mesh& m, getNodeType& n){
 
 		// obtaining the index of the nearest node and the distance to it
 		getNearestNode(m, n, (*n.iPtrGrdy)(i), idxNear, dist);
-
+//		std::cout << (*n.iPtrGrdy)(i) << '\t' << (*n.iPtr)(idxNear) << std::endl;
 		// doing the correction
-		m.coords.row((*n.iPtrGrdy)(i)) += error.row(idxNear)*rbfEval(dist,gamma*maxError);
+		m.coords.row((*n.iPtrGrdy)(i)) -= error.row(idxNear)*rbfEval(dist,gamma*maxError);
+//		std::cout << error.row(idxNear)*rbfEval(dist,gamma*maxError) << std::endl;
+
 	}
 }
 
@@ -316,3 +339,38 @@ double greedy::getMaxError(){
 	// returning the largest error
 	return error.row(idxMax).matrix().norm();
 }
+
+void greedy::project(Mesh& m, int& node,int& idx, Eigen::ArrayXXd& disp, Eigen::ArrayXXd& error,Eigen::VectorXd& pnVec ){
+	std::cout << node << std::endl;
+
+//	std::cout << "node in question: " << node << std::endl;
+//	std::cout << "disp: \n" << disp.row(idx) << std::endl;
+
+
+	if(std::find(std::begin(m.staticNodes),std::end(m.staticNodes),node) != std::end(m.staticNodes)){
+		std::cout << "static node: " << node << std::endl;
+		std::cout << "displacement: \n" << disp.row(idx) << std::endl;
+		std::cout << "PERIODIC VECTOR: \n" << pnVec << std::endl;
+
+		error.row(idx) = disp.row(idx)*pnVec.transpose().array();
+		std::cout << error.row(idx) << std::endl;
+
+//		error.row(idx) = disp.row(i)-disp.row(i)*pVec.transpose().array();
+	}else{
+		Eigen::RowVectorXd d;
+		Eigen::ArrayXd dist;
+		int idxMin;
+
+		dist = (m.midPnts.rowwise()-(m.coords.row(node) + disp.row(idx))).rowwise().norm();
+		dist.minCoeff(&idxMin);
+
+		d = m.midPnts.row(idxMin) - (m.coords.row(node) + disp.row(idx));
+
+		error.row(idx) = -d.dot(m.midPntNormals.row(idxMin).matrix())*m.midPntNormals.row(idxMin);
+
+	}
+
+
+}
+
+

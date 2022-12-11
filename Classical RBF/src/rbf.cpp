@@ -39,6 +39,12 @@ void rbf::RBFMain(){
 
 	getNodeType n(m,params.dataRed);
 
+//	std::cout << "after assigning the nodes" << std::endl;
+//	std::cout << "internal nodes: \n" << *n.iPtr << std::endl;
+//	std::cout << "moving nodes: \n" << *n.mPtr << std::endl;
+//	std::cout << "sliding nodes: \n" << *n.sePtr << std::endl;
+
+
 //todo can be replaced by a switch
 	if(params.smode=="none"){
 //		 initialising the rbf standard class and performing the interpolation

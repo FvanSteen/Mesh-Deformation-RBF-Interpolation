@@ -13,14 +13,17 @@
 class getNodeType {
 public:
 	Mesh& m;
-	Eigen::ArrayXi iNodes, mNodes, sNodes,mNodesStd,ibNodes,esNodes;
+	Eigen::ArrayXi iNodes, mNodes, seNodes,mNodesStd,ibNodes,esNodes;
 
 	Eigen::ArrayXi* mPtr;
 	Eigen::ArrayXi* iPtr;
 	Eigen::ArrayXi* iPtrGrdy;
+	Eigen::ArrayXi* sePtr;
+	Eigen::ArrayXi* mStdPtr;
 
 
-	int N_i,N_m,N_s,N_mStd,N_ib,N_es,N_i_grdy;
+
+	int N_i,N_m,N_se,N_mStd,N_ib,N_es,N_i_grdy;
 	getNodeType(Mesh& meshOb, bool& dataRed);
 	void assignNodeTypes();
 	void addControlNode(int& node, std::string& smode);
