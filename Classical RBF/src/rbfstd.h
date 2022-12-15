@@ -1,10 +1,3 @@
-/*
- * rbfstd.h
- *
- *  Created on: 16 nov. 2022
- *      Author: floyd
- */
-
 #ifndef RBFSTD_H_
 #define RBFSTD_H_
 #include "Mesh.h"

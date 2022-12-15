@@ -30,7 +30,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 //		n.greedyNodes(m.intBdryNodes(0),params.smode);
 
 		maxErrorNode = m.intBdryNodes(0);
-		n.addControlNode(maxErrorNode,params.smode);
+		n.addControlNode(maxErrorNode);
 	}
 
 	greedy go;
@@ -44,7 +44,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 
 			if(iter!=0){
-				n.addControlNode(maxErrorNode,params.smode);
+				n.addControlNode(maxErrorNode);
 //				std::cout << "Moving nodes: \n" << *n.mPtr << "\n internal nodes (same): \n" << *n.iPtr << "\n sliding edge Nodes: \n" << *n.sePtr << "\n mnodesStd: \n" << *n.mStdPtr << std::endl;
 			}
 			delta.resize(n.N_se, m.nDims);
@@ -86,13 +86,15 @@ void rbf_ps::perform_rbf(getNodeType& n){
 //				getExactDef(n, exactDef);
 
 				//next statement should also take into account the periodic nodes
-				if(m.N_i == n.N_i){
-					std::cout << "error zet to zero" << std::endl;
-					error = 0;
-				}else{
+
+//				if(m.N_i == n.N_i){
+//					std::cout << "error zet to zero" << std::endl;
+//					error = 0;
+//				}
+//				else{
 //					go.getError(n,m,d,error,maxErrorNode,params.smode);
-					go.getError(n,m,d,error,maxErrorNode, params.smode, mIndex, displacement,pnVec);
-				}
+				go.getError(n,m,d,error,maxErrorNode, params.smode, mIndex, displacement,pnVec);
+//				}
 				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNode<< std::endl;
 
 			}else{

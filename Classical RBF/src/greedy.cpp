@@ -133,20 +133,25 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 
 //	std::cout << "obtaining error" << std::endl;
 	int idx_m, idx_se, i, dim;
-	Eigen::ArrayXd dispRow;
+//	Eigen::ArrayXd dispRow;
 	for(i = 0; i< n.N_i; i++){
 		idx_m = std::distance(std::begin(mIndex), std::find(std::begin(mIndex),std::end(mIndex),(*n.iPtr)(i)));
 		idx_se = std::distance(std::begin(meshOb.seNodes), std::find(std::begin(meshOb.seNodes),std::end(meshOb.seNodes),(*n.iPtr)(i)));
 		if(idx_m!=mIndex.size()){
+
  			for(dim = 0;dim<meshOb.nDims;dim++){
 				error(i,dim) = d(i,dim)-displacement(idx_m,dim);
 			}
+// 			std::cout << (*n.iPtr)(i) << " is an moving node" << std::endl;
 
 		}else if(idx_se != meshOb.N_se){
-
+//			std::cout << (*n.iPtr)(i) << " is an sliding edge node" << std::endl;
 //			Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta,Eigen::ArrayXXd& finalDef, Eigen::VectorXd& pVec
+
+			/* possibly not required due to the correction step!!
 			dispRow = d.row(i);
 			project(meshOb, (*n.iPtr)(i),i, d, error,pnVec);
+			*/
 
 //			std::cout << (*n.iPtr)(i) << " is a sliding edge node, do something" << std::endl;
 //			std::cout << "index in the seNodes array: " << idx_se << std::endl;
@@ -157,6 +162,13 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 //			error.row(i) = meshOb.n.row(idx_se)*d.row(i);
 
 //			std::exit(0);
+
+
+			error.row(i) = d.row(i)*meshOb.n.row(idx_se);
+
+
+
+
 		}
 		else{
 //			std::cout << (*n.iPtr)(i) << " should be a static node" << std::endl;
@@ -166,13 +178,15 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 		}
 	}
 
-
+//	std::cout << "\n\n" <<  error << std::endl;
 
 	error.rowwise().norm().maxCoeff(&idxMax);
+	std::cout << error.rowwise().norm() << std::endl;
 
 	Eigen::VectorXd errorVec =  error.row(idxMax);
 	e = errorVec.norm();
 	idxMax = (*n.iPtr)(idxMax);
+
 //	std::cout << error.rowwise().norm() << std::endl;
 //	Eigen::VectorXd defVec;
 //	int N = rbf.m.N_ib-n.N_ib;
@@ -287,7 +301,7 @@ void greedy::correction(Mesh& m, getNodeType& n){
 	// dist will store the distance between an internal node and the nearest boundary node
 	double dist;
 	// factor that determines the support radius
-	double gamma = 25;
+	double gamma = 50;
 
 	// integer that stores the index of the nearest boundary node
 	int idxNear;
@@ -341,7 +355,7 @@ double greedy::getMaxError(){
 }
 
 void greedy::project(Mesh& m, int& node,int& idx, Eigen::ArrayXXd& disp, Eigen::ArrayXXd& error,Eigen::VectorXd& pnVec ){
-	std::cout << node << std::endl;
+//	std::cout << node << std::endl;
 
 //	std::cout << "node in question: " << node << std::endl;
 //	std::cout << "disp: \n" << disp.row(idx) << std::endl;

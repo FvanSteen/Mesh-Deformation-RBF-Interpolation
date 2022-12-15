@@ -1,10 +1,3 @@
-/*
- * rbfds.cpp
- *
- *  Created on: 17 nov. 2022
- *      Author: floyd
- */
-
 #include "rbfds.h"
 #include <iostream>
 #include <Eigen/Dense>
@@ -12,45 +5,11 @@
 rbf_ds::rbf_ds(Mesh& meshObject, struct probParams& probParamsObject)
 :rbf_std(meshObject, probParamsObject)
 {
-
-
 	std::cout << "Initialised the ds class" << std::endl;
-
-
-//	iNodes.resize(m.N_i+m.N_p);
-//	iNodes << m.intNodes, m.periodicNodes;
-//
-//	if(m.pmode == "moving"){
-//		mNodes.resize(m.N_ib);
-//		mNodes << m.intBdryNodes;
-//		sNodes.resize(m.N_se+m.N_es);
-//		sNodes << m.slidingEdgeNodes, m.extStaticNodes;
-//	}else{
-//		mNodes.resize(m.N_ib+m.N_es);
-//		mNodes << m.intBdryNodes, m.extStaticNodes;
-//		sNodes.resize(m.N_se);
-//		sNodes << m.slidingEdgeNodes;
-//	}
-//	if(curved){
-//		// todo rename to make clearer
-//		mNodesStd.resize(m.N_ib+m.N_es+m.N_se);
-//		mNodesStd << m.intBdryNodes,m.extStaticNodes, m.slidingEdgeNodes;
-//		N_mStd = mNodesStd.size();
-//	}
-//
-//	N_i = iNodes.size();
-//	N_m = mNodes.size();
-//	N_s = sNodes.size();
-//	N_mStd = mNodesStd.size();
-//
-//	// todo
-//
-//	perform_rbf_ds();
 }
 
 void rbf_ds::perform_rbf(getNodeType& n){
-//	n.assignNodeTypes();
-
+	std::cout << "Performing RBF DS " << std::endl;
 	projection* p;
 	if(params.curved){
 		projection proObject;
@@ -58,83 +17,95 @@ void rbf_ds::perform_rbf(getNodeType& n){
 	}
 
 	auto start = std::chrono::high_resolution_clock::now();
-	std::cout << "Performing RBF DS " << std::endl;
 
-	Eigen::MatrixXd Phi_mm, Phi_ms, Phi_sm, Phi_ss, Phi_im, Phi_is, Phi;
-//	Eigen::VectorXd defVec, alpha(m.nDims*(n.N_m+n.N_s));
+
+	Eigen::MatrixXd Phi_mm, Phi_ms, Phi_sm, Phi_ss, Phi_im, Phi_is, Phi,Phi_imGrdy;
+	Eigen::VectorXd defVec;
+
+	int maxErrorNode;
+
+	if(params.dataRed){
+		maxErrorNode = m.intBdryNodes(0);
+		n.addControlNode(maxErrorNode);
+	}
+	std::cout << "'internal' nodes: \n"<< *n.iPtr << "\n moving nodes: \n" << *n.mPtr << "\n sliding nodes: \n" << *n.sePtr << "\nmSTD nodes: \n" << *n.mStdPtr << std::endl;
+	greedy go;
+	int iter;
+	double error;
+
 
 	for (int i = 0; i < params.steps; i++){
-		auto start2 = std::chrono::high_resolution_clock::now();
-		std::cout << "Deformation step: " << i+1 << std::endl;
+		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
+		error = 1;
+		iter = 0;
+		while(error > params.tol){
 
-		auto starti = std::chrono::high_resolution_clock::now();
-//		getPhi(Phi_mm, n.mNodes,n.mNodes);
-//		getPhi(Phi_ms, n.mNodes, n.sNodes);
-//		getPhi(Phi_sm, n.sNodes, n.mNodes);
-//		getPhi(Phi_ss, n.sNodes, n.sNodes);
+			if(iter!=0){
+				n.addControlNode(maxErrorNode);
+			}
+			std::cout << "Moving nodes: \n " << *n.mPtr << std::endl;
+			std::cout << "sliding nodes: \n " << *n.sePtr << std::endl;
 
-		auto stopi = std::chrono::high_resolution_clock::now();
-		auto durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-		std::cout << "Obtaining phi with s and m: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+			getPhi(Phi_mm, *n.mPtr,*n.mPtr);
+			getPhi(Phi_ms, *n.mPtr, *n.sePtr);
+			getPhi(Phi_sm, *n.sePtr, *n.mPtr);
+			getPhi(Phi_ss, *n.sePtr, *n.sePtr);
 
-		starti = std::chrono::high_resolution_clock::now();
-//		getPhi(Phi_im, n.iNodes, n.mNodes);
-//		getPhi(Phi_is, n.iNodes, n.sNodes);
-		stopi = std::chrono::high_resolution_clock::now();
-		durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-		std::cout << "obtaining phi with i: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+			std::cout << Phi_sm << std::endl;
+			std::cout << Phi_ss << std::endl;
 
-
-
-		if(params.curved || i==0){
-//		if(i==0){
-			// getVecs obtains average vector at the nodes
-			starti = std::chrono::high_resolution_clock::now();
-			m.getVecs();
-			stopi = std::chrono::high_resolution_clock::now();
-			durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-			std::cout << "obtaining normals nodes: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+			getPhi(Phi_im, *n.iPtr, *n.mPtr);
+			getPhi(Phi_is, *n.iPtr, *n.sePtr);
 
 
-			// getMidPnts obtains vectors at midpoint of boundary segments
+			if(params.curved || i==0){
+		//		if(i==0){
+				// getVecs obtains average vector at the nodes
 
-			starti = std::chrono::high_resolution_clock::now();
-			m.getMidPnts();
-			stopi = std::chrono::high_resolution_clock::now();
-			durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-			std::cout << "obtaining normals segments: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+				m.getVecs();
+
+				// getMidPnts obtains vectors at midpoint of boundary segments
+
+
+				m.getMidPnts();
+			}
+
+		//		defVec = Eigen::VectorXd::Zero((N_m+N_s)*m.nDims);
+
+			defVec = Eigen::VectorXd::Zero((n.N_m+n.N_se)*m.nDims);
+
+			getDefVec(defVec,n.N_m,params.steps,*n.mPtr);
+
+			getPhiDS(Phi,Phi_mm,Phi_ms, Phi_sm, Phi_ss, m.n, m.t,n.N_m,n.N_se, *n.sePtr);
+
+			// todo check which items can be omitted
+			performRBF_DS(Phi, Phi_im, Phi_is, Phi_sm, Phi_ss, defVec, p,*n.iPtr,*n.mPtr,*n.mStdPtr, *n.sePtr, n.N_i, n.N_m, n.N_mStd, n.N_se);
+
+//			std::exit(0);
+			if(params.dataRed){
+				go.getError(n,m,d,error,maxErrorNode,params.smode,mIndex,displacement,pnVec);
+				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNode<< std::endl;
+
+			}else{
+				error = 0;
+			}
+//			if(iter == 12){
+//				m.coords(*n.iPtr, Eigen::all) += d;
+//				m.writeMeshFile();
+//				std::exit(0);
+//			}
+			iter++;
 
 
 		}
 
-//		defVec = Eigen::VectorXd::Zero((N_m+N_s)*m.nDims);
-		starti = std::chrono::high_resolution_clock::now();
-//		defVec = Eigen::VectorXd::Zero((n.N_m+n.N_s)*m.nDims);
-
-//		getDefVec(defVec,n.N_m,params.steps);
-
-		stopi = std::chrono::high_resolution_clock::now();
-		durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-		std::cout << "obtaining deformation vector: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
-
-
-		starti = std::chrono::high_resolution_clock::now();
-//		getPhiDS(Phi,Phi_mm,Phi_ms, Phi_sm, Phi_ss, m.n, m.t,n.N_m,n.N_s);
-		stopi = std::chrono::high_resolution_clock::now();
-		durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-		std::cout << "assembly of Phi: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
-
-		starti = std::chrono::high_resolution_clock::now();
-		// todo check which items can be omitted
-//		performRBF_DS(Phi, Phi_im, Phi_is, Phi_sm, Phi_ss,defVec, alpha, p,n.iNodes,n.mNodes,n.mNodesStd, n.sNodes, n.N_i, n.N_m, n.N_mStd, n.N_s,n.ibNodes);
-		stopi = std::chrono::high_resolution_clock::now();
-		durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-		std::cout << "obtaining solution and updating nodes: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
-
-
-		auto stop2 = std::chrono::high_resolution_clock::now();
-		auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(stop2-start2);
-		std::cout <<  "Runtime whole step duration: \t"<<  duration2.count()/1e6 << " seconds"<< std::endl;
+		if(params.dataRed){
+			updateNodes(Phi_imGrdy, n, defVec);
+			//todo start here with the correction
+		}
+//		m.coords(*n.iPtr, Eigen::all) += d;
+		m.writeMeshFile();
+		std::exit(0);
 	}
 	auto stop = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
@@ -142,12 +113,16 @@ void rbf_ds::perform_rbf(getNodeType& n){
 	m.writeMeshFile();
 }
 
-void rbf_ds::performRBF_DS(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_im, Eigen::MatrixXd& Phi_is, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_ss, Eigen::VectorXd& defVec, Eigen::VectorXd& alpha,projection* proPnt, Eigen::ArrayXi& iNodes, Eigen::ArrayXi& mNodes, Eigen::ArrayXi& mNodesStd, Eigen::ArrayXi& sNodes, int& N_i, int& N_m, int& N_mStd, int& N_s, Eigen::ArrayXi& ibNodes){
-	auto starti = std::chrono::high_resolution_clock::now();
+void rbf_ds::performRBF_DS(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_im, Eigen::MatrixXd& Phi_is, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_ss, Eigen::VectorXd& defVec, projection* proPnt, Eigen::ArrayXi& iNodes, Eigen::ArrayXi& mNodes, Eigen::ArrayXi& mNodesStd, Eigen::ArrayXi& sNodes, int& N_i, int& N_m, int& N_mStd, int& N_s){
+
 	alpha = Phi.fullPivLu().solve(defVec);
-	auto stopi = std::chrono::high_resolution_clock::now();
-	auto durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-	std::cout << "solving for alpha: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+
+
+	if(params.dataRed){
+		d.resize(iNodes.size(),m.nDims);
+	}
+
+
 	if(params.curved){
 		Eigen::ArrayXXd delta(N_s, m.nDims), finalDef(N_s,m.nDims);
 
@@ -161,12 +136,11 @@ void rbf_ds::performRBF_DS(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_im, Eigen:
 
 
 		// calling project function to find the final deformation after the projection
-		auto starti = std::chrono::high_resolution_clock::now();
+
 		proPnt->project(m,sNodes,delta,finalDef,pVec);
 
-		auto stopi = std::chrono::high_resolution_clock::now();
-		auto durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-		std::cout << "projection: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+
+
 //		m.coords(sNodes,Eigen::seq(0,1)) += finalDef;
 //		m.writeMeshFile();
 //
@@ -190,35 +164,36 @@ void rbf_ds::performRBF_DS(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_im, Eigen:
 //		std::cout << finalDef << std::endl;
 //		std::cout << defVec << std::endl;
 //		std::exit(0);
-		starti = std::chrono::high_resolution_clock::now();
+
 		Eigen::MatrixXd Phi_mm2, Phi_im2;
 
 //		getPhi(Phi_mm2, mNodesStd,mNodesStd);
 //		getPhi(Phi_im2,iNodes,mNodesStd);
 
 		performRBF(Phi_mm2,Phi_im2,defVec,mNodesStd,iNodes,N_mStd);
-		stopi = std::chrono::high_resolution_clock::now();
-		durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-		std::cout << "Doing second classical rbf: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
-
 	}
 	else{
-		auto start2 = std::chrono::high_resolution_clock::now();
 		for (int dim = 0; dim < m.nDims; dim++){
-			m.coords(iNodes, dim) += (Phi_im*alpha(Eigen::seqN(dim*(N_m+N_s),N_m)) + Phi_is*alpha(Eigen::seqN(dim*(N_m+N_s)+N_m, N_s))).array();
-			m.coords(sNodes, dim) += (Phi_sm*alpha(Eigen::seqN(dim*(N_m+N_s),N_m)) + Phi_ss*alpha(Eigen::seqN(dim*(N_m+N_s)+N_m, N_s))).array();
-			m.coords(mNodes, dim) += (defVec(Eigen::seqN(dim*N_m,N_m))).array();
-//			params.rotPnt(dim) += params.dVec(dim);
+			if(params.dataRed){
+				d.col(dim) = Phi_im*alpha(Eigen::seqN(dim*(N_m+N_s),N_m)) + Phi_is*alpha(Eigen::seqN(dim*(N_m+N_s)+N_m, N_s));
+			}
+			else{
+				m.coords(iNodes, dim) += (Phi_im*alpha(Eigen::seqN(dim*(N_m+N_s),N_m)) + Phi_is*alpha(Eigen::seqN(dim*(N_m+N_s)+N_m, N_s))).array();
+
+				m.coords(sNodes, dim) += (Phi_sm*alpha(Eigen::seqN(dim*(N_m+N_s),N_m)) + Phi_ss*alpha(Eigen::seqN(dim*(N_m+N_s)+N_m, N_s))).array();
+
+				m.coords(mNodes, dim) += (defVec(Eigen::seqN(dim*N_m,N_m))).array();
+
+			}
 		}
-		auto stop2 = std::chrono::high_resolution_clock::now();
-		auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(stop2-start2);
-		std::cout << "Updating Nodes: \t"<<  duration2.count()/1e6 << " seconds"<< std::endl;
+
 	}
+	std::cout << "DISPLACEMENT \n\n" << d << std::endl;
 }
 
 
 
-void rbf_ds::getPhiDS(Eigen::MatrixXd& Phi,Eigen::MatrixXd& Phi_mm,Eigen::MatrixXd& Phi_ms, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_ss, Eigen::ArrayXXd& n, Eigen::ArrayXXd& t,int& N_m, int& N_s){
+void rbf_ds::getPhiDS(Eigen::MatrixXd& Phi,Eigen::MatrixXd& Phi_mm,Eigen::MatrixXd& Phi_ms, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_ss, Eigen::ArrayXXd& n, Eigen::ArrayXXd& t,int& N_m, int& N_s, Eigen::ArrayXi& sNodes){
 
 	Phi = Eigen::MatrixXd::Zero(m.nDims*(N_m+N_s),m.nDims*(N_m+N_s));
 
@@ -231,23 +206,40 @@ void rbf_ds::getPhiDS(Eigen::MatrixXd& Phi,Eigen::MatrixXd& Phi_mm,Eigen::Matrix
 			t.row(i) = pVec;
 		}
 	}
-
-
-
-
+	Eigen::ArrayXi indices;
+	getIdxSlidingNodes(sNodes,indices);
+	std::cout << "indices \n" << indices << std::endl;
 	for(int dim = 0; dim< m.nDims; dim++){
 		// blocks related to the known displacements
 		Phi.block(dim*N_m, dim*(N_m+N_s), N_m, N_m) = Phi_mm;
 		Phi.block(dim*N_m, dim*(N_m+N_s)+N_m, N_m, N_s) = Phi_ms;
 
-		// blocks related to the zero normal displacement condition
-		Phi.block(2*N_m, dim*(N_m+N_s), N_s, N_m) = Phi_sm.array().colwise() * n.col(dim);
-		Phi.block(2*N_m, dim*(N_m+N_s)+N_m, N_s, N_s) = Phi_ss.array().colwise() * n.col(dim);
+
+		Phi.block(2*N_m, dim*(N_m+N_s), N_s, N_m) = Phi_sm.array().colwise() * n(indices, dim);
+		Phi.block(2*N_m, dim*(N_m+N_s)+N_m, N_s, N_s) = Phi_ss.array().colwise() * n(indices, dim);
+
 
 		//blocks related to the zero tangential contribution condition
-		Phi.block(2*N_m + N_s, dim*(N_m+N_s)+N_m, N_s, N_s) = Eigen::MatrixXd(t.col(dim).matrix().asDiagonal());
-	}
+		Eigen::VectorXd diag(sNodes.size());
+		diag = t(indices,dim);
 
+//		Phi.block(2*N_m + N_s, dim*(N_m+N_s)+N_m, N_s, N_s) = Eigen::MatrixXd(t.col(dim).matrix().asDiagonal());
+		Phi.block(2*N_m + N_s, dim*(N_m+N_s)+N_m, N_s, N_s) = diag.asDiagonal();
+
+	}
+	std::cout << "PHI \n\n" << Phi << std::endl;
+//	std::exit(0);
 
 }
+
+void rbf_ds::getIdxSlidingNodes(Eigen::ArrayXi& sNodes, Eigen::ArrayXi& idx){
+	//todo make some if statement in case it is not in the datareduction mode
+
+	idx.resize(sNodes.size());
+	for(int i = 0; i < sNodes.size(); i++){
+		idx(i) = std::distance(std::begin(m.seNodes),std::find(std::begin(m.seNodes),std::end(m.seNodes),sNodes(i)));
+	}
+
+}
+
 

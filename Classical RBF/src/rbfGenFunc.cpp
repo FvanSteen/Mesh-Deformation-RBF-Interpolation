@@ -1,9 +1,3 @@
-/*
- * rbfGenFunc.cpp
- *
- *  Created on: 16 nov. 2022
- *      Author: floyd
- */
 
 #include "rbfGenFunc.h"
 #include <iostream>

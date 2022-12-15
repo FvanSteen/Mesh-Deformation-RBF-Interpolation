@@ -12,6 +12,7 @@ Mesh::Mesh(ReadConfigFile& cfg, const int& debugLvl)
 {
 readMeshFile();
 r = rFac*charLength();
+std::cout << "RADIUS: " << r << std::endl;
 }
 
 // Main function for reading the .su2 mesh files

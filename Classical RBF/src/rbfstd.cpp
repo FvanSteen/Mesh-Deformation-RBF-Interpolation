@@ -27,7 +27,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 	int maxErrorNode,iter;
 	if(params.dataRed){
 		maxErrorNode = m.intBdryNodes(0);
-		n.addControlNode(maxErrorNode,params.smode);
+		n.addControlNode(maxErrorNode);
 	}
 	// max error.
 	double error;
@@ -42,7 +42,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 		while(error>params.tol){
 
 			if(iter!=0){
-				n.addControlNode(maxErrorNode,params.smode);
+				n.addControlNode(maxErrorNode);
 			}
 
 			std::cout << "Obtaining Phi_mm" << std::endl;
@@ -176,15 +176,20 @@ void rbf_std::updateNodes(Eigen::MatrixXd& Phi_imGreedy, getNodeType& n, Eigen::
 	}
 
 	getPhi(Phi_imGreedy,*n.iPtrGrdy,*ptr);
-//	std::cout << Phi_imGreedy*alpha(Eigen::seqN(0,n.N_m)) << std::endl;
+
+//	std::cout << Phi_imG reedy*alpha(Eigen::seqN(0,n.N_m)) << std::endl;
 //	std::cout << Phi_imGreedy*alpha(Eigen::seqN(n.N_m,n.N_m)) << std::endl;
 
 //	std::cout << d << std::endl;
 //	std::cout << defVec << std::endl;
 	m.coords(*n.iPtr,Eigen::all) += d;
+
 //	m.coords(*n.mPtr,0) += defVec(Eigen::seqN(0,n.N_m)).array();
 //	m.coords(*n.mPtr,1) += defVec(Eigen::seqN(n.N_m,n.N_m)).array();
+	std::cout << *n.mStdPtr << std::endl;
+
 	m.coords(*n.iPtrGrdy,0) +=  (Phi_imGreedy*alpha(Eigen::seqN(0,N_m))).array();
+	std::cout << "cghek" << std::endl;
 	m.coords(*n.iPtrGrdy,1) +=  (Phi_imGreedy*alpha(Eigen::seqN(N_m,N_m))).array();
 
 

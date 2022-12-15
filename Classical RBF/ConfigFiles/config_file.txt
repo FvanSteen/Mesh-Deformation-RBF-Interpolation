@@ -1,8 +1,8 @@
-MESH_FILENAME = 25x25.su2
+MESH_FILENAME = 5x5.su2
 %MESH_FILENAME = mesh_NACA0012_inv.su2
 %MESH_FILENAME = LS89_turbine.su2
 
-MESH_OUT_FILENAME = 25x25_def.su2
+MESH_OUT_FILENAME = 5x5_def.su2
 %MESH_OUT_FILENAME = mesh_NACA0012_inv_def.su2
 %MESH_OUT_FILENAME = LS89_turbine_def.su2
 
@@ -19,23 +19,23 @@ MARKER_PERIODIC = (upper,lower)
 %MARKER_PERIODIC = (periodic_1,periodic_2)
 
 %(none, pseudo, direct)
-SLIDING_MODE = ps
+SLIDING_MODE = ds
 
 %(none,periodic,fixed_vertices,moving_vertices)
-PERIODIC_MODE = moving
-x
+PERIODIC_MODE = none
+
 PERIODIC_DIRECTION = y
 
-STEPS = 10
+STEPS = 2
 
 INFLUENCE_FACTOR = 2.5
 
-DEFORMATION_FILENAME = 25x25_deformation.txt
+DEFORMATION_FILENAME = 5x5_deformation.txt
 %DEFORMATION_FILENAME = mesh_NACA0012_inv_deformation.txt
 %DEFORMATION_FILENAME = LS89_turbine_deformation.txt
 
 CURVED = NO
 
-DATA_REDUCTION = yes
+DATA_REDUCTION = YES
 
 DATA_RED_TOLERANCE = 1e-3

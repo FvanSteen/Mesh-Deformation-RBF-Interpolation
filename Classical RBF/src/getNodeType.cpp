@@ -138,7 +138,7 @@ void getNodeType::assignNodeTypesGreedy(){
 }
 
 
-void getNodeType::addControlNode(int& node, std::string& smode){
+void getNodeType::addControlNode(int& node){
 	std::cout << "adding control node: " << node << std::endl;
 
 
@@ -157,7 +157,7 @@ void getNodeType::addControlNode(int& node, std::string& smode){
 
 	}
 
-	if(smode != "none"){
+	if(m.smode != "none"){
 		N_mStd++;
 		mNodesStd.resize(N_mStd);
 //		mNodesStd(N_mStd-1) = node;
