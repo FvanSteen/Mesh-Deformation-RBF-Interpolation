@@ -186,10 +186,10 @@ void rbf_std::updateNodes(Eigen::MatrixXd& Phi_imGreedy, getNodeType& n, Eigen::
 
 //	m.coords(*n.mPtr,0) += defVec(Eigen::seqN(0,n.N_m)).array();
 //	m.coords(*n.mPtr,1) += defVec(Eigen::seqN(n.N_m,n.N_m)).array();
-	std::cout << *n.mStdPtr << std::endl;
+//	std::cout << *n.mStdPtr << std::endl;
 
 	m.coords(*n.iPtrGrdy,0) +=  (Phi_imGreedy*alpha(Eigen::seqN(0,N_m))).array();
-	std::cout << "cghek" << std::endl;
+
 	m.coords(*n.iPtrGrdy,1) +=  (Phi_imGreedy*alpha(Eigen::seqN(N_m,N_m))).array();
 
 

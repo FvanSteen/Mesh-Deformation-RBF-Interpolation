@@ -164,8 +164,9 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 //			std::exit(0);
 
 
-			error.row(i) = d.row(i)*meshOb.n.row(idx_se);
-
+//			error.row(i) = d.row(i)*meshOb.n.row(idx_se);
+//			std::cout << "\n\n" << "node: " << (*n.iPtr)(i) << "\n displacement\n"  << d.row(i) << "\n normal vec\n" << meshOb.n.row(idx_se) << "\nResulting error: \n" << error.row(i) << std::endl;
+			error.row(i) =  meshOb.n.row(idx_se).matrix().dot(d.row(i).matrix())*meshOb.n.row(idx_se);
 
 
 
@@ -181,7 +182,7 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 //	std::cout << "\n\n" <<  error << std::endl;
 
 	error.rowwise().norm().maxCoeff(&idxMax);
-	std::cout << error.rowwise().norm() << std::endl;
+//	std::cout << error.rowwise().norm() << std::endl;
 
 	Eigen::VectorXd errorVec =  error.row(idxMax);
 	e = errorVec.norm();
@@ -293,6 +294,7 @@ void greedy::correction(Mesh& m, getNodeType& n){
 
 	// doing the correction for the boundary nodes
 	m.coords(*n.iPtr , Eigen::all) -= error;
+
 
 
 	// obtaining the max error
