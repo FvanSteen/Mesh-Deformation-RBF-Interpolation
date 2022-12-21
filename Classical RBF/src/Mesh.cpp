@@ -79,8 +79,12 @@ void Mesh::readMeshFile(){
 
 			// Finding tags of the boundaries
 			else if (line.rfind("MARKER_TAG= ",0)==0){
+				int cnt = 12;
+				while(line[cnt] == ' '){
+					cnt++;
+				}
 
-				std::string tag =  line.substr(12);
+				std::string tag =  line.substr(cnt);
 
 				try{
 					if(std::find(std::begin(bdryTags), std::end(bdryTags), tag) != std::end(bdryTags)){

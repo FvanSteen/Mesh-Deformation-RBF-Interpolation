@@ -75,7 +75,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 
 			getPhiDS(Phi,Phi_mm,Phi_ms, Phi_sm, Phi_ss, m.n, m.t,n.N_m,n.N_se, *n.sePtr);
 
-			std::cout << "the og \n " << defVec << std::endl;
+
 			// todo check which items can be omitted
 			performRBF_DS(n, Phi, Phi_im, Phi_is, Phi_sm, Phi_ss, defVec, p,*n.iPtr, *n.iPtrGrdy,*n.mPtr,*n.mStdPtr, *n.sePtr, n.N_i, n.N_m, n.N_mStd, n.N_se);
 

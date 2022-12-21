@@ -148,10 +148,10 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 //			std::cout << (*n.iPtr)(i) << " is an sliding edge node" << std::endl;
 //			Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta,Eigen::ArrayXXd& finalDef, Eigen::VectorXd& pVec
 
-			/* possibly not required due to the correction step!!
-			dispRow = d.row(i);
+//			possibly not required due to the correction step!!
+//			dispRow = d.row(i);
 			project(meshOb, (*n.iPtr)(i),i, d, error,pnVec);
-			*/
+
 
 //			std::cout << (*n.iPtr)(i) << " is a sliding edge node, do something" << std::endl;
 //			std::cout << "index in the seNodes array: " << idx_se << std::endl;
@@ -166,7 +166,7 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 
 //			error.row(i) = d.row(i)*meshOb.n.row(idx_se);
 //			std::cout << "\n\n" << "node: " << (*n.iPtr)(i) << "\n displacement\n"  << d.row(i) << "\n normal vec\n" << meshOb.n.row(idx_se) << "\nResulting error: \n" << error.row(i) << std::endl;
-			error.row(i) =  meshOb.n.row(idx_se).matrix().dot(d.row(i).matrix())*meshOb.n.row(idx_se);
+//			error.row(i) =  meshOb.n.row(idx_se).matrix().dot(d.row(i).matrix())*meshOb.n.row(idx_se);
 
 
 
@@ -182,6 +182,8 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 //	std::cout << "\n\n" <<  error << std::endl;
 
 	error.rowwise().norm().maxCoeff(&idxMax);
+	std::cout << *n.iPtr << std::endl;
+	std::cout << error << std::endl;
 //	std::cout << error.rowwise().norm() << std::endl;
 
 	Eigen::VectorXd errorVec =  error.row(idxMax);
@@ -317,7 +319,7 @@ void greedy::correction(Mesh& m, getNodeType& n){
 		// doing the correction
 		m.coords.row((*n.iPtrGrdy)(i)) -= error.row(idxNear)*rbfEval(dist,gamma*maxError);
 //		std::cout << error.row(idxNear)*rbfEval(dist,gamma*maxError) << std::endl;
-
+		std::cout << i << '\t' << n.N_i_grdy << std::endl;
 	}
 }
 

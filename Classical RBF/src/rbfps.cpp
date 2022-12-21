@@ -100,6 +100,20 @@ void rbf_ps::perform_rbf(getNodeType& n){
 			}else{
 				error = 0;
 			}
+			// at twelve the first instance of 226 occurs
+//			if(iter == 12){
+//				std::cout << "coordinate: \t" << m.coords.row((*n.mStdPtr)(n.N_mStd-1)) << std::endl;
+//				m.coords(*n.iPtr, Eigen::all) += d;
+//				m.writeMeshFile();
+//				std::exit(0);
+//			}
+			if(iter == 14){
+				std::cout << "stopped after: " << iter << " iterations." << std::endl;
+				m.coords(*n.iPtr, Eigen::all) += d;
+				m.writeMeshFile();
+				std::exit(0);
+			}
+
 			iter++;
 		}
 
