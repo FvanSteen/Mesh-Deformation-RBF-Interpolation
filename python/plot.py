@@ -1,120 +1,100 @@
 import os
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.collections
-from colMap import colMap
+from bdryScatter import bdryScatterFuns
+from meshQualPlot import meshQualPlot
+from funs import getMeshQualParams,getPlotData
 
-def getMeshQuals(faces,vertices, alphas_0):
-    
-    [alphas,lambda_11, lambda_22] = getMeshQualParams(faces,vertices)
-    
-    tau = np.sum(alphas,axis=1)/np.sum(alphas_0, axis=1)
-    f_size = np.amin(np.array([tau,1/tau]),axis=0)
-    f_skew = 4/np.sum(np.sqrt(lambda_11*lambda_22)/alphas, axis=1)
-    f_ss = np.sqrt(f_size)*f_skew
-    return f_ss
-    
-def getMeshQualParams(faces, vertices):
-    alphas = np.zeros(faces.shape)
-    lambda_11 = np.zeros(faces.shape)
-    lambda_22 = np.zeros(faces.shape)
-    for i in range(0,faces.shape[0]):    
-        elem = v[f[i]]
-        for ii in range(0,faces.shape[1]):
-            iip1 = (ii+1)%4
-            iip3= (ii+3)%4
-            A = np.array([[elem[iip1,0]-elem[ii,0], elem[iip3,0]-elem[ii,0]], [elem[iip1,1]-elem[ii,1], elem[iip3,1]-elem[ii,1]]])
-            alphas[i,ii] = np.linalg.det(A)
-            
-            lambda_11[i,ii] = A[0,0]**2 + A[1,0]**2
-            lambda_22[i,ii] = A[1,1]**2 + A[0,1]**2
-            
-    return [alphas,lambda_11,lambda_22]
-
-def getPlotData(fileName, intBdryTag):
-    fileObj = open(x+fileName, "r") 
-
-    lines = fileObj.read().splitlines()
-    fileObj.close()
-
-    idx = 0
-    for line in lines:
-        if line.strip().startswith('NDIME= '):
-            nDim = int(line[7:])
-            nDimIdx = idx
-        elif line.strip().startswith('NELEM= '):
-            nElem = int(line[7:])
-            nElemIdx = idx
-        elif line.strip().startswith('NPOIN= '):
-            nPnt = int(line[7:])
-            nPntIdx = idx
-        elif line.strip().startswith('MARKER_TAG= '+intBdryTag):
-            intBdryIdx = idx+1
-        
-        idx += 1
-    
-
-    print("Dimensions:\t", nDim, "\nElements:\t",nElem, "\nPoints:\t\t", nPnt)
-    print(nDimIdx,nElemIdx,nPntIdx)
-    
-    nLine = lines[intBdryIdx]
-    nInElems = int(nLine[14:])
-    f_in = np.empty([1,2*nInElems],dtype=int)
-    
-    for i in range(nInElems):
-        lineData = lines[intBdryIdx+1+i].strip().split('\t')    
-        f_in[0,2*i:2*i+2] = lineData[1:3]
-    
-    # Change the 3 and 4 here to be adjustable to the type of elements used in the mesh
-    f = np.empty((nElem,4),dtype=int)
-    for i in range(nElem):
-        lineData = lines[i+nElemIdx+1].strip().split('\t')
-        f[i,:] = lineData[1:5]
-        
-        
-    
-    v = np.empty((nPnt,nDim))
-    for i in range(nPnt):
-        lineData = lines[i+nPntIdx+1].strip().split('\t')
-        v[i,:] = lineData[:nDim]
-            
-    return [f,v,f_in]
-
-# importing the default matlab colormap from colMap.py
-cmapMatlab = colMap();
  
 # Setting directory to find .su2 files
 os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes')
-x = os.getcwd()
+
+fNameInit = '/LS89_turbine.su2'
+
+[f_init,v_init,elemType,bdryPnts_init] = getPlotData(fNameInit)
+
+#[f,v,elemType,_] = getPlotData('/25x25.su2')  
+#[f_init, v_init, elemType, bdryPnts_init] = getPlotData('/mesh_NACA0012_inv.su2')
+#[f_init,v_init,elemType,bdryPnts_init] = getPlotData('/turbine_row.su2')
+#[f,v,elemType] = getPlotData('/su2mesh.su2')
+#[f,v,elemType] = getPlotData('/mesh_original.su2')
+[alphas_0,_,_,_] = getMeshQualParams(f_init,v_init,elemType)
+
+
+
+
 
 # Provide filenames of the meshes
-fileNames = ['/5x5.su2', '/5x5_def.su2']
-#fileNames = ['/TestMesh.su2', '/TestMesh_def.su2']
-intBdryTag = "block"
+#fileNames = ['/25x25_def_ps_none_noCorrect_DataRed_e1.su2','/25x25_def_ps_none_noCorrect_DataRed_e2.su2','/25x25_def_ps_none_noCorrect_DataRed_e3.su2','/25x25_def_ps_none_noCorrect_DataRed_e4.su2','/25x25_def_ps_none_correct_DataRed_e1.su2','/25x25_def_ps_none_correct_DataRed_e2.su2','/25x25_def_ps_none_correct_DataRed_e3.su2','/25x25_def_ps_none_correct_DataRed_e4.su2']
+#fileNames = ['/25x25_def.su2']
+#fileNames = ['/mesh_NACA0012_inv_def.su2']
+fileNames = ['/LS89_turbine_def.su2']
+#fileNames= ['/25x25_def_ref.su2','/25x25_def_err1.su2','/25x25_def_err2.su2','/25x25_def_err3.su2','/25x25_def_err4.su2','/25x25_def_err5.su2']
+#fileNames = ['/mesh_NACA0012_inv_def_none_ref.su2','/mesh_NACA0012_inv_def_none_greedy.su2','/mesh_NACA0012_inv_def_ps_ref.su2','/mesh_NACA0012_inv_def_ps_greedy.su2']
+#fileNames = ['/su2mesh_def_ps_ref.su2']
+#fileNames = ['/mesh_original.su2']
+#fileNames = ['/turbine_row_def.su2']
+
+#graphNames = ['non-periodic', 'periodic in y', 'periodic in y,\nmoving boundaries, fixed vertices', 'periodic in y,\nmoving boundaries, moving vertices']
+#graphNames = ['','Regular RBF', 'Greedy 1e-1', 'Greedy 1e-2', 'Greedy 1e-3', 'Greedy 1e-4', 'Greedy 1e-5']
+graphNames = ['','','','']
+
+
+#%% Mesh Quality plots
+#meshQualPlot(fileNames,fNameInit,graphNames,alphas_0)
+
+
+#%% MAKING A SCATTER PLOT OF THE BOUNDARY POINTS
+
+### with the initial mesh ###
+bdryScatterFuns.bdryScatter2(v_init,bdryPnts_init, fileNames[0])
+
+### without the initial mesh ###
+#bdryScatterFuns.bdryScatter(fileNames[0])
+
+
+#%%
 #plt.close('all')
-fig = plt.figure()
+#t = [2.2425,0.0140,0.1804,0.5408,1.6593,3.9731]
+#N = [112,1,12,25,48,74]
+#tol = [0,1,2,3,4,5]
+#plt.figure()
+#plt.plot(tol,t, '-x')
+#plt.ylabel('time [sec]')
+#plt.xlabel('Error tolerance [1e-x]')
+#
+#plt.figure()
+#plt.plot(tol,N, '-x')
+#plt.ylabel('Number of control nodes [-]')
+#plt.xlabel('Error tolerance [1e-x]')
 
 
-for i in range(0,len(fileNames)):
-    ax = fig.add_subplot(1,len(fileNames),i+1)
-    [f,v,f_in] = getPlotData(fileNames[i],intBdryTag)  
-    
-    if i==0:
-        [alphas_0,_,_] = getMeshQualParams(f,v)
-        
-    meshQual = getMeshQuals(f,v,alphas_0)
-    colors = cmapMatlab(plt.Normalize(0,1)(meshQual))
-    pc = matplotlib.collections.PolyCollection(v[f],cmap=cmapMatlab, facecolors=colors, edgecolor="black",linewidth=0.5)
-    pc_inner = matplotlib.collections.PolyCollection(v[f_in],cmap=cmapMatlab, facecolors="white", edgecolor="black",linewidth=0.5)
-    polys = ax.add_collection(pc)
-    polys = ax.add_collection(pc_inner)    
-    
-    pc.set_array(None)
-    ax.autoscale()
-    ax.set_aspect('equal')
-    polys.set_clim(0,1)
-    plt.colorbar(polys, ax=ax, shrink=0.44)
-    ax.title.set_text('Initial Mesh')
-    ax.set_ylim([-0.05, 1.05])
 
-
+#%%
+#plt.close('all')
+#init = [19.8423,2.50666]
+#new = [18.7065, 11.4972]
+#mid = [16.8532, 10.6954]
+#midx = [19.607,18.9836,18.0608,16.8532,15.3799,13.6639 ]
+#midy =[3.74023,  6.16815,   8.49878,   10.6954,   12.7233,  14.5506]
+#segmentx = [19.8423,19.3717 ,18.5955,17.5261,16.1803,14.5794]
+#segmenty = [ 2.50666,4.9738,7.36249,9.63507,11.7557,13.6909]
+#
+#vec = [0.844329, 0.535825]
+#a = 1
+#midVecx = [16.8532, 16.8532+vec[0]*a]
+#midVecy = [10.6954, 10.6954+a*vec[1]]
+#   
+#delta = [ 0.169354, -0.266861]
+#plt.figure()
+#plt.scatter(init[0],init[1])
+#plt.scatter(new[0],new[1])
+#plt.scatter(17.0226, 10.4285)
+#plt.scatter(midx,midy)
+#plt.scatter(mid[0],mid[1])
+#plt.plot(midVecx,midVecy)
+#plt.plot(segmentx,segmenty)
+#ax = plt.gca()
+#ax.set_aspect('equal')
+#plt.show()
+#
+#print(new[0]-mid[0])
+#print(new[1]-mid[1])
