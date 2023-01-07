@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <iterator>
 #include <chrono>
+#include <math.h>
 greedy::greedy()  {
 //
 ////	std::cout << ptr->mNodes << std::endl;
@@ -123,16 +124,18 @@ greedy::greedy()  {
 }
 
 
-void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& e, int& idxMax, std::string sMode, Eigen::ArrayXi& mIndex, Eigen::ArrayXXd& displacement,Eigen::VectorXd& pnVec){
+void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& e, Eigen::ArrayXi& maxErrorNodes, std::string sMode, Eigen::ArrayXi& mIndex, Eigen::ArrayXXd& displacement,Eigen::VectorXd& pnVec){
 //	std::cout << d << std::endl;
 //	std::cout << *n.iPtr << std::endl;
 //	std::cout << std::endl;
 //	std::cout << displacement << std::endl;
 
 	error = Eigen::ArrayXXd::Zero(n.N_i,meshOb.nDims);
+	Eigen::ArrayXd errorAngle(n.N_i);
 
-//	std::cout << "obtaining error" << std::endl;
-	int idx_m, idx_se, i, dim;
+
+	std::cout << "obtaining error" << std::endl;
+	int idx_m, idx_se, i, dim, idxMax;
 //	Eigen::ArrayXd dispRow;
 	for(i = 0; i< n.N_i; i++){
 		idx_m = std::distance(std::begin(mIndex), std::find(std::begin(mIndex),std::end(mIndex),(*n.iPtr)(i)));
@@ -142,6 +145,7 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
  			for(dim = 0;dim<meshOb.nDims;dim++){
 				error(i,dim) = d(i,dim)-displacement(idx_m,dim);
 			}
+
 // 			std::cout << (*n.iPtr)(i) << " is an moving node" << std::endl;
 
 		}else if(idx_se != meshOb.N_se){
@@ -177,18 +181,42 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 				error(i,dim) = d(i,dim);
 			}
 		}
+		errorAngle(i) = atan2(error(i,1),error(i,0));
 	}
-
+//	std::cout << *n.iPtr << std::endl;
 //	std::cout << "\n\n" <<  error << std::endl;
 
-	error.rowwise().norm().maxCoeff(&idxMax);
-	std::cout << *n.iPtr << std::endl;
-	std::cout << error << std::endl;
-//	std::cout << error.rowwise().norm() << std::endl;
 
-	Eigen::VectorXd errorVec =  error.row(idxMax);
-	e = errorVec.norm();
-	idxMax = (*n.iPtr)(idxMax);
+	error.rowwise().squaredNorm().maxCoeff(&idxMax);
+
+
+	e = error.row(idxMax).matrix().norm();
+
+	int doubleEdgeMax;
+	getDoubleEdgeError(error, errorAngle, idxMax , n.N_i, doubleEdgeMax);
+
+	maxErrorNodes.resize(2);
+	maxErrorNodes << (*n.iPtr)(idxMax), (*n.iPtr)(doubleEdgeMax);
+//	maxErrorNodes.resize(1);
+//	maxErrorNodes << (*n.iPtr)(idxMax);
+	std::cout << maxErrorNodes << std::endl;
+
+//	std::exit(0);
+//	std::cout << "Max error: " << e << std::endl;
+
+//	meshOb.coords(*n.iPtr, Eigen::all) +=d;
+
+//	std::cout <<  (error.col(1)/error.col(0)).atan()*180/M_PI << std::endl;
+
+
+
+
+
+
+
+
+//	meshOb.writeMeshFile();
+
 
 //	std::cout << error.rowwise().norm() << std::endl;
 //	Eigen::VectorXd defVec;
@@ -292,10 +320,54 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 
 }
 
-void greedy::correction(Mesh& m, getNodeType& n){
+void greedy::getDoubleEdgeError(Eigen::ArrayXXd& error, Eigen::ArrayXd& errorAngle, int& idxMax, int& N_i, int& doubleEdgeMax){
+//	std::cout << errorAngle*180/M_PI << std::endl;
+//	std::cout << "error angle of max error: "<< errorAngle(idxMax)*180/M_PI << std::endl;
 
+	// relative angle from max error vector
+//	std::cout << "angle from max error vector: \n" << (errorAngle-errorAngle(idxMax))*180/M_PI << std::endl;
+
+	errorAngle -= errorAngle(idxMax);
+
+
+	Eigen::ArrayXd largeAngleError(N_i);
+	Eigen::ArrayXi largeAngleIdx(N_i);
+
+
+	int cnt = 0;
+	double refAngle = M_PI/2;
+	double refAngle2 = 3*refAngle;
+	for(int i=0; i<N_i; i++){
+
+		if(abs(errorAngle(i)) > refAngle && abs(errorAngle(i)) < refAngle2){
+			largeAngleError(cnt) = error.row(i).matrix().squaredNorm();
+			largeAngleIdx(cnt) = i;
+			cnt++;
+		}
+	}
+	largeAngleError.conservativeResize(cnt);
+	largeAngleError.maxCoeff(&doubleEdgeMax);
+
+	doubleEdgeMax = largeAngleIdx(doubleEdgeMax);
+//	std::cout << doubleEdgeMax << '\t' << largeAngleIdx(doubleEdgeMax) << std::endl;
+
+}
+
+void greedy::correction(Mesh& m, getNodeType& n, double& gamma){
+
+
+//	std::cout << "All the bdry points: " << std::endl;
+//	std::cout << *n.iPtr << std::endl;
+//	std::cout << "and their respective error: \n" << error << std::endl;
+//	std::cout << m.intCorNodes << std::endl;
+//	std::cout << m.intCorNodes.size() << std::endl;
+//	std::exit(0);
 	// doing the correction for the boundary nodes
+
 	m.coords(*n.iPtr , Eigen::all) -= error;
+
+//	m.writeMeshFile();
+//	std::exit(0);
 
 
 
@@ -305,21 +377,27 @@ void greedy::correction(Mesh& m, getNodeType& n){
 	// dist will store the distance between an internal node and the nearest boundary node
 	double dist;
 	// factor that determines the support radius
-	double gamma = 50;
+//	double gamma = 5;
 
 	// integer that stores the index of the nearest boundary node
 	int idxNear;
 
 	// looping through the internal nodes
-	for (int i = 0; i < n.N_i_grdy; i++){
+//	for (int i = 0; i < n.N_i_grdy; i++){
+	for (int i = 0; i < m.intCorNodes.size(); i++){
 
 		// obtaining the index of the nearest node and the distance to it
-		getNearestNode(m, n, (*n.iPtrGrdy)(i), idxNear, dist);
+//		getNearestNode(m, n, (*n.iPtrGrdy)(i), idxNear, dist);
+		getNearestNode(m, n, m.intCorNodes(i), idxNear, dist);
+		std::cout << "node: " << m.intCorNodes(i) << "bdryNode "<< (*n.iPtr)(idxNear) << std::endl;
+		std::cout << "dist: " << dist << std::endl;
 //		std::cout << (*n.iPtrGrdy)(i) << '\t' << (*n.iPtr)(idxNear) << std::endl;
 		// doing the correction
-		m.coords.row((*n.iPtrGrdy)(i)) -= error.row(idxNear)*rbfEval(dist,gamma*maxError);
+//		m.coords.row((*n.iPtrGrdy)(i)) -= error.row(idxNear)*rbfEval(dist,gamma*maxError);
+		m.coords.row(m.intCorNodes(i)) -= error.row(idxNear)*rbfEval(dist,gamma*maxError);
 //		std::cout << error.row(idxNear)*rbfEval(dist,gamma*maxError) << std::endl;
-		std::cout << i << '\t' << n.N_i_grdy << std::endl;
+//		std::cout << i << '\t' << n.N_i_grdy << std::endl;
+		std::cout << i << '\t' << m.intCorNodes.size() << std::endl;
 	}
 }
 
@@ -376,15 +454,44 @@ void greedy::project(Mesh& m, int& node,int& idx, Eigen::ArrayXXd& disp, Eigen::
 //		error.row(idx) = disp.row(i)-disp.row(i)*pVec.transpose().array();
 	}else{
 		Eigen::RowVectorXd d;
-		Eigen::ArrayXd dist;
+		Eigen::ArrayXXd dist;
 		int idxMin;
+		int idxMinNew = -1;
+		// distance to all midpoints
+		dist = m.midPnts.rowwise()- (m.coords.row(node) + disp.row(idx));
+		// find idx of
+		dist.rowwise().norm().minCoeff(&idxMin);
 
-		dist = (m.midPnts.rowwise()-(m.coords.row(node) + disp.row(idx))).rowwise().norm();
-		dist.minCoeff(&idxMin);
+//		std::cout << "initial position: " << m.coords.row(node) << std::endl;
+//		std::cout << "new position: " << m.coords.row(node) + disp.row(idx) << std::endl;
+//		std::cout << "dist to nearest midpoint: " << dist.row(idxMin) << std::endl;
+//		std::cout << "Normal: " << m.midPntNormals.row(idxMin) << std::endl;
 
-		d = m.midPnts.row(idxMin) - (m.coords.row(node) + disp.row(idx));
+//		std::cout << "nearest midpoint: " << m.coords.row(node) + disp.row(idx) + dist.row(idxMin) << std::endl;
+		error.row(idx) = -dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix())*m.midPntNormals.row(idxMin);
+//		std::cout << error.row(idx) << std::endl;
+//		std::cout << "new position: " << m.coords.row(node) + disp.row(idx) - error.row(idx) << std::endl;
 
-		error.row(idx) = -d.dot(m.midPntNormals.row(idxMin).matrix())*m.midPntNormals.row(idxMin);
+		while(idxMin != idxMinNew){
+			dist = m.midPnts.rowwise() -(m.coords.row(node) + disp.row(idx) - error.row(idx));
+			dist.rowwise().norm().minCoeff(&idxMinNew);
+
+
+
+//			std::cout << idxMin << '\t' << idxMinNew << '\n';
+
+			if(idxMin != idxMinNew){
+
+				error.row(idx) -= dist.row(idxMinNew).matrix().dot(m.midPntNormals.row(idxMinNew).matrix())*m.midPntNormals.row(idxMinNew);
+
+
+				idxMin = idxMinNew;
+				idxMinNew = -1;
+			}
+
+		}
+
+//		std::cout << error.row(idx) << std::endl;
 
 	}
 

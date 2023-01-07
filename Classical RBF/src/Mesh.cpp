@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iterator>
 #include <math.h>
+#include <chrono>
 using Eigen::MatrixXd;
 
 Mesh::Mesh(ReadConfigFile& cfg, const int& debugLvl)
@@ -264,11 +265,18 @@ void Mesh::readMeshFile(){
 		mNodesStd << mNodes, seNodes;
 	}
 //	std::cout << mNodesStd << std::endl;
+
+	if(pmode != "none"){
+		std::cout << "obtaining characteristic length" <<std::endl;
+		getCharLength();
+		std::cout << "done" << std::endl;
+	}
+	std::exit(0);
+
+	if(dataRed){
+//		getIntCorNodes();
+	}
 	std::cout << "Mesh file read successfully" << std::endl;
-
-
-
-
 
 }
 
@@ -323,6 +331,7 @@ void Mesh::getNodeTypes(){
 		std::sort(std::begin(bdryNodesArr),std::end(bdryNodesArr));
 
 
+
 		// Set size of the arrays of the various nodes equal to the size of the bdryNodesArr.
 
 		if(idxMoving.size() != bdryNodesArr.size()){
@@ -353,6 +362,7 @@ void Mesh::getNodeTypes(){
 //			std::cout << "array: \n"<< bdryNodesArr << std::endl;
 			if (periodic == false){
 				for (int i= 0; i< bdryNodesArr.size();i++){
+
 					if(moving){
 						idxMoving(cntMoving) = bdryNodesArr(i);
 						cntMoving++;
@@ -366,6 +376,7 @@ void Mesh::getNodeTypes(){
 								idxMoving(cntMoving) = bdryNodesArr(i);
 								cntMoving++;
 							}else{
+
 								idxSliding(cntSliding) = bdryNodesArr(i);
 								cntSliding++;
 							}
@@ -386,6 +397,8 @@ void Mesh::getNodeTypes(){
 							}else{
 								idxMoving(cntMoving) = bdryNodesArr(i);
 								cntMoving++;
+
+
 							}
 						}
 						extBdryEdgeNodes(edgeNodeCnt) = bdryNodesArr(i);
@@ -420,6 +433,7 @@ void Mesh::getNodeTypes(){
 		seNodes(Eigen::lastN(cntSliding)) = idxSliding(Eigen::seqN(0,cntSliding));
 
 	}
+
 
 	// Calling a function that removes any duplicate elements from the arrays.
 	if(nDims==3){
@@ -1041,51 +1055,53 @@ void Mesh::getExtBdryEdgeSegments(){
 		std::cout << "obtaining the external boundary edge segments" << std::endl;
 	}
 
-	//todo periodic points can likely be left out, since there will not be a projection there.
-	// the amount of edge segments is equal to the total amount of external boundary nodes
-//	if(ebTags.size()==1){
-//		extBdryEdgeSegments.resize(N_se,2);
-//	}else if(pmode == "none" || pmode == "periodic"){
-//		extBdryEdgeSegments.resize(N_se+ebTags.size(),2);
-//	}else if(pmode == "fixed" || pmode == "moving"){
-//		extBdryEdgeSegments.resize(N_se+ebTags.size()-perBdry.size(),2);
-//	}
-// todo account for periodic Tags
-	if(pmode == "fixed" || pmode == "moving"){
-		extBdryEdgeSegments.resize(extBdryEdgeNodes.size()-bdryTags.size() + mTags.size() + pTags.size(),2);
-	}else{
-		extBdryEdgeSegments.resize(extBdryEdgeNodes.size()-bdryTags.size() + mTags.size(),2);
+	int nrSegments = 0;
+	Eigen::ArrayXi sTag(nrElemsBdry.size());
+
+	for(int i = 0; i<nrElemsBdry.size(); i++){
+		if(std::find(std::begin(mTags),std::end(mTags),srtdTags[i]) == std::end(mTags) && (std::find(std::begin(pTags),std::end(pTags),srtdTags[i]) == std::end(pTags) || pmode == "none" || pmode == "periodic")){
+			nrSegments += nrElemsBdry(i);
+
+			sTag(i) = 1;
+
+		}
+		else{
+			sTag(i) = 0;
+		}
 	}
+
+	extBdryEdgeSegments.resize(nrSegments,2);
+
+
+//	std::exit(0);
+//
+//	if(pmode == "fixed" || pmode == "moving"){
+//		extBdryEdgeSegments.resize(extBdryEdgeNodes.size()-bdryTags.size() + mTags.size() + pTags.size(),2);
+//	}else{
+//		extBdryEdgeSegments.resize(extBdryEdgeNodes.size()-bdryTags.size() + mTags.size(),2);
+//	}
 
 	// starting index and segment counter
 	int startIdx = 0,segment=0;
-
 	// going through each external boundary seperately
 	for(int i=0;i<nrElemsBdry.size();i++){
-
-		// checking if the boundary tag is among the specified periodic boundary tags
-//		if(std::find(std::begin(perBdry),std::end(perBdry),ebTags[i]) == std::end(perBdry) || (pmode == "none" || pmode == "periodic")){
-		if(std::find(std::begin(mTags),std::end(mTags),srtdTags[i]) == std::end(mTags) && (std::find(std::begin(pTags),std::end(pTags),srtdTags[i]) == std::end(pTags) || pmode == "none" || pmode == "periodic")){
-
+		if(sTag(i)){
 			// for all boundary elements specified for that boundary
 			// for a boundary having n elements there are n+1 nodes that make up n line segments.
 			for(int j=0;j<nrElemsBdry(i);j++){
 
 				// each row consists of the two nodes that make up a line segment
-				extBdryEdgeSegments.row(segment) << extBdryEdgeNodes(startIdx+j), extBdryEdgeNodes(startIdx+j+1);
+				extBdryEdgeSegments.row(segment) << bdryNodesMat(startIdx+j,1), bdryNodesMat(startIdx+j,2);
 
 				segment++;
 			}
-			// ensuring that the starting index is moved n+1 nodes
-			startIdx += (nrElemsBdry(i)+1);
 		}
+		startIdx += (nrElemsBdry(i));
 	}
-
 
 	// resizing the arrays containing the midpoints of the line segments and their normals
 	midPnts.resize(extBdryEdgeSegments.rows(),nDims);
 	midPntNormals.resize(extBdryEdgeSegments.rows(),nDims);
-
 
 }
 
@@ -1126,9 +1142,159 @@ void Mesh::getMidPnts(){
 	}
 
 	std::cout << "midpoints and normals are obtained" << std::endl;
-
 }
 
 
 
 
+void Mesh::getSubDomains(Eigen::ArrayXi& subDomains, Eigen::ArrayXi& subDomLen, Eigen::ArrayXi& subDomBdry, Eigen::ArrayXi& subDomBdryLen){
+//	std::cout << "dividing the subdomains" << std::endl;
+
+	double max_x = coords.col(0).maxCoeff();
+	double min_x = coords.col(0).minCoeff();
+
+	double max_y = coords.col(1).maxCoeff();
+	double min_y = coords.col(1).minCoeff();
+//	std::cout << "max x " << max_x << " min x " << min_x << std::endl;
+//	std::cout << "max y " << max_y << " min y " << min_y << std::endl;
+	Eigen::ArrayXi domain1(nNodes), domain2(nNodes), domain3(nNodes), domain4(nNodes);
+	Eigen::ArrayXi bdrydomain1(N_m+N_se), bdrydomain2(N_m+N_se), bdrydomain3(N_m+N_se), bdrydomain4(N_m+N_se);
+
+
+	for(int i = 0; i < nNodes; i++){
+//		std::cout << i << std::endl;
+		if(std::find(std::begin(bdryNodes),std::end(bdryNodes),i) == std::end(bdryNodes)){
+			if(coords(i,0) <= (max_x+min_x)/2){
+				if(coords(i,1) <= (max_y+min_y)/2){
+					domain1(subDomLen(0)) = i;
+					subDomLen(0)++;
+				}else{
+					domain3(subDomLen(2)) = i;
+					subDomLen(2)++;
+				}
+			}else{
+				if(coords(i,1) <= (max_y+min_y)/2){
+					domain2(subDomLen(1)) = i;
+
+					subDomLen(1)++;
+				}else{
+					domain4(subDomLen(3)) = i;
+					subDomLen(3)++;
+				}
+			}
+		}else{
+			if(coords(i,0) <= (max_x+min_x)/2){
+				if(coords(i,1) <= (max_y+min_y)/2){
+					bdrydomain1(subDomBdryLen(0)) = i;
+					subDomBdryLen(0)++;
+				}else{
+					bdrydomain3(subDomBdryLen(2)) = i;
+					subDomBdryLen(2)++;
+				}
+			}else{
+				if(coords(i,1) <= (max_y+min_y)/2){
+					bdrydomain2(subDomBdryLen(1)) = i;
+					subDomBdryLen(1)++;
+				}else{
+					bdrydomain4(subDomBdryLen(3)) = i;
+					subDomBdryLen(3)++;
+				}
+			}
+		}
+	}
+
+	subDomains << domain1(Eigen::seqN(0,subDomLen(0))), domain2(Eigen::seqN(0,subDomLen(1))), domain3(Eigen::seqN(0,subDomLen(2))), domain4(Eigen::seqN(0,subDomLen(3)));
+	subDomBdry << bdrydomain1(Eigen::seqN(0,subDomBdryLen(0))), bdrydomain2(Eigen::seqN(0,subDomBdryLen(1))),bdrydomain3(Eigen::seqN(0,subDomBdryLen(2))),bdrydomain4(Eigen::seqN(0,subDomBdryLen(3)));
+
+//	std::cout << "subdomains are found" << std::endl;
+}
+
+void Mesh::getIntCorNodes(){
+	std::cout << "Obtaining the internal nodes that fall within the correction tolerance" << std::endl;
+	int nDomains = 4;
+	Eigen::ArrayXi subDomains(N_i), subDomBdry(N_m+N_se);
+	Eigen::ArrayXi subDomLen, subDomBdryLen;
+
+	subDomLen = Eigen::ArrayXi::Zero(nDomains);
+	subDomBdryLen = Eigen::ArrayXi::Zero(nDomains);
+
+
+
+	getSubDomains(subDomains, subDomLen, subDomBdry, subDomBdryLen);
+
+	Eigen::ArrayXXd bdryCoords;
+
+	intCorNodes.resize(100);
+
+//	std::cout << subDomLen << std::endl;
+	int idxMin,startIdx = 0, startIdxBdry = 0, cnt=0;
+	for(int i = 0; i < nDomains; i++){
+		bdryCoords = coords(subDomBdry(Eigen::seqN(startIdxBdry,subDomBdryLen(i))), Eigen::all);
+		for(int j = startIdx; j < startIdx + subDomLen(i); j++){
+//			std::cout << j << std::endl;
+			(bdryCoords.rowwise()- coords.row(subDomains(j))).rowwise().squaredNorm().minCoeff(&idxMin);
+//			std::cout << "closest bdry node: " << bdryNodes(idxMin) << std::endl;
+			if ((bdryCoords.row(idxMin) - coords.row(subDomains(j))).matrix().norm() < tol*gamma){
+//				std::cout << "node in question: " << subDomains(j) << " cnt: " << cnt << std::endl;
+//				std::cout << "min distance: " << (bdryCoords.row(idxMin) - coords.row(subDomains(j))).matrix().norm() << std::endl;
+				intCorNodes(cnt) = subDomains(j);
+				cnt++;
+
+				if(cnt == intCorNodes.size()){
+//					std::cout << cnt << std::endl;
+					intCorNodes.conservativeResize(intCorNodes.size()+5000);
+				}
+			}
+		}
+		startIdx += subDomLen(i);
+		startIdxBdry += subDomBdryLen(i);
+
+	}
+
+
+	intCorNodes.conservativeResize(cnt);
+
+	// for debugging puposes
+//	std::cout << intCorNodes << std::endl;
+//	std::cout << intCorNodes.size() << std::endl;
+//	std::cout << "done" << std::endl;
+//	std::exit(0);
+
+
+
+
+}
+
+void Mesh::getCharLength(){
+	std::cout << "in the char length function" << std::endl;
+	int idxMin;
+
+//todo allow for other directions of periodicity instead of only in the y direction
+
+	coords.col(0).minCoeff(&idxMin);
+	std::cout << coords(idxMin,0) << std::endl;
+
+	int size = (coords.col(0)==coords(idxMin,0)).count();
+	std::cout << "size: " << size << std::endl;
+
+	Eigen::ArrayXi indices(size);
+
+	int cnt = 0;
+	for(int i = 0; i < coords.rows(); i++){
+		if(coords(i,0) == coords(idxMin,0)){
+			indices(cnt) = i;
+			cnt++;
+		}
+	}
+
+	int min, max;
+
+	Eigen::ArrayXd bdry(size);
+	bdry << coords(indices,1);
+
+	bdry.minCoeff(&min);
+	bdry.maxCoeff(&max);
+
+	double charLength = bdry(max) - bdry(min);
+	std::cout << charLength << std::endl;
+}

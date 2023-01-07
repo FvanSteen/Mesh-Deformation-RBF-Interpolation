@@ -14,6 +14,7 @@ struct probParams{
 	bool dataRed;
 	double tol;
 	std::string dispFile;
+	double gamma;
 };
 
 

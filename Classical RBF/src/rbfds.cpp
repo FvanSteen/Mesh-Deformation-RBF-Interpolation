@@ -22,11 +22,11 @@ void rbf_ds::perform_rbf(getNodeType& n){
 	Eigen::MatrixXd Phi_mm, Phi_ms, Phi_sm, Phi_ss, Phi_im, Phi_is, Phi,Phi_imGrdy;
 	Eigen::VectorXd defVec;
 
-	int maxErrorNode;
-
+//	int maxErrorNode;
+	Eigen::ArrayXi maxErrorNodes;
 	if(params.dataRed){
-		maxErrorNode = m.intBdryNodes(0);
-		n.addControlNode(maxErrorNode);
+//		maxErrorNode = ;
+		n.addControlNode(m.intBdryNodes(0));
 	}
 	std::cout << "'internal' nodes: \n"<< *n.iPtr << "\n moving nodes: \n" << *n.mPtr << "\n sliding nodes: \n" << *n.sePtr << "\nmSTD nodes: \n" << *n.mStdPtr << std::endl;
 	greedy go;
@@ -41,7 +41,9 @@ void rbf_ds::perform_rbf(getNodeType& n){
 		while(error > params.tol){
 
 			if(iter!=0){
-				n.addControlNode(maxErrorNode);
+				for(int node = 0; node < maxErrorNodes.size(); node++){
+					n.addControlNode(maxErrorNodes(node));
+				}
 			}
 			std::cout << "Moving nodes: \n " << *n.mPtr << std::endl;
 			std::cout << "sliding nodes: \n " << *n.sePtr << std::endl;
@@ -81,8 +83,8 @@ void rbf_ds::perform_rbf(getNodeType& n){
 
 //			std::exit(0);
 			if(params.dataRed){
-				go.getError(n,m,d,error,maxErrorNode,params.smode,mIndex,displacement,pnVec);
-				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNode<< std::endl;
+				go.getError(n,m,d,error,maxErrorNodes, params.smode,mIndex,displacement,pnVec);
+//				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNode<< std::endl;
 
 			}else{
 				error = 0;
@@ -102,7 +104,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 			updateNodes(Phi_imGrdy, n, defVec);
 //			std::cout << m.coords << std::endl;
 			std::cout << "DOING AN UPDATE" << std::endl;
-			go.correction(m,n);
+			go.correction(m,n, params.gamma);
 		}
 //		m.coords(*n.iPtr, Eigen::all) += d;
 //		m.writeMeshFile();

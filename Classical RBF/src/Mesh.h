@@ -34,6 +34,16 @@ public:
 	Eigen::ArrayXi ibIndices;
 	Eigen::ArrayXi mNodesStd;
 
+	Eigen::ArrayXi intCorNodes;
+//	struct Domains{
+//		Eigen::ArrayXi d1;
+//		Eigen::ArrayXi d2;
+//		Eigen::ArrayXi d3;
+//		Eigen::ArrayXi d4;
+//	};
+//
+//	struct Domains subDoms;
+
 
 	double r; // support radius
 	int N_i, N_ib, N_eb, N_se, N_es, N_ss, N_p,N_m, N_mStd;
@@ -65,6 +75,11 @@ public:
 	void getSurfNormal();
 	void getExtBdryEdgeSegments();
 	void getMidPnts();
+
+	void getSubDomains(Eigen::ArrayXi& subDomains, Eigen::ArrayXi& subDomLen, Eigen::ArrayXi& subDomBdry, Eigen::ArrayXi& subDomBdryLen);
+	void getIntCorNodes();
+	void getCharLength();
+//	void getInternalCorrectionNodes(Eigen::ArrayXi& subDomains,  Eigen::ArrayXi& subDomsLen, Eigen::ArrayXXd& bdryCoord);
 
 };
 

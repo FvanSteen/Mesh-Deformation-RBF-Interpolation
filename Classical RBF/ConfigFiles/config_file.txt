@@ -1,32 +1,32 @@
 %MESH_FILENAME = 25x25.su2
 %MESH_FILENAME = mesh_NACA0012_inv.su2
-MESH_FILENAME = LS89_turbine.su2
-%MESH_FILENAME = turbine_row.su2
+%MESH_FILENAME = LS89_turbine.su2
+MESH_FILENAME = turbine_row.su2
 
 %MESH_OUT_FILENAME = 25x25_def.su2
 %MESH_OUT_FILENAME = mesh_NACA0012_inv_def.su2
-MESH_OUT_FILENAME = LS89_turbine_def.su2
-%MESH_OUT_FILENAME = turbine_row_def.su2
+%MESH_OUT_FILENAME = LS89_turbine_def.su2
+MESH_OUT_FILENAME = turbine_row_def.su2
 
 %
 %MARKER_BDRY = (block, lower, right, upper,left)
 %MARKER_BDRY = (airfoil, farfield)
-MARKER_BDRY = (airfoil, inflow, outflow, periodic_1, periodic_2)
-%MARKER_BDRY = (inflow, outflow, wall1, periodic1, periodic2)
+%MARKER_BDRY = (airfoil, inflow, outflow, periodic_1, periodic_2)
+MARKER_BDRY = (inflow, outflow, wall1, periodic1, periodic2)
 
 %MARKER_MOVING = (block)
-MARKER_MOVING = (airfoil)
-%MARKER_MOVING = (wall1)
+%MARKER_MOVING = (airfoil)
+MARKER_MOVING = (wall1)
 
 %MARKER_PERIODIC = (upper,lower)
-MARKER_PERIODIC = (periodic_1,periodic_2)
-%MARKER_PERIODIC = (periodic1, periodic2)
+%MARKER_PERIODIC = (periodic_1,periodic_2)
+MARKER_PERIODIC = (periodic1, periodic2)
 
 %(none, pseudo, direct)
 SLIDING_MODE = ps
 
 %(none,periodic,fixed_vertices,moving_vertices)
-PERIODIC_MODE = none
+PERIODIC_MODE = periodic
 
 PERIODIC_DIRECTION = y
 
@@ -36,11 +36,10 @@ INFLUENCE_FACTOR = 2.5
 
 %DEFORMATION_FILENAME = 25x25_deformation.txt
 %DEFORMATION_FILENAME = mesh_NACA0012_inv_deformation.txt
-DEFORMATION_FILENAME = LS89_turbine_deformation.txt
-%DEFORMATION_FILENAME = turbine_row_deformation.txt
+%DEFORMATION_FILENAME = LS89_turbine_deformation.txt
+DEFORMATION_FILENAME = turbine_row_deformation.txt
 
 CURVED = YES
-
 DATA_REDUCTION = YES
-
 DATA_RED_TOLERANCE = 1e-4
+GAMMA = 25

@@ -22,8 +22,9 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 }
 
 void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::ArrayXi& idxSet2){
-	double lambda = 0.05749995;
-//	double lambda = 1;
+//	double lambda = 0.05749995;
+	double lambda = 1;
+//	double lambda = 0.045;
 	Phi.resize(idxSet1.size(), idxSet2.size());
 	double dist;
 	for(int i=0; i<idxSet1.size();i++){

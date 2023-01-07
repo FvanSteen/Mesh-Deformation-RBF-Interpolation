@@ -12,6 +12,7 @@ class projection{
 public:
 	projection();
 	void project(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta,Eigen::ArrayXXd& finalDef, Eigen::VectorXd& pVec);
+	void projectIter(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef);
 };
 
 #endif /* PROJECTION_H_ */

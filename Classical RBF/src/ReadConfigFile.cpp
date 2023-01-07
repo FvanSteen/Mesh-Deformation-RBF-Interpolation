@@ -68,18 +68,25 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 			else if(line.rfind("DATA_REDUCTION")==0){
 				findStringBounds(first,last,line);
 				if(line.substr(first,last-first) == "YES" || line.substr(first,last-first) == "yes"){
-					probParamsObject.dataRed = true;
+					dataRed = true;
 				}else{
-					probParamsObject.dataRed = false;
+					dataRed = false;
 				}
+				probParamsObject.dataRed = dataRed;
 			}
 			else if(line.rfind("DATA_RED_TOLERANCE")==0){
 				findStringBounds(first,last,line);
-				probParamsObject.tol =  stod(line.substr(first,last-first));
+				tol =  stod(line.substr(first,last-first));
+				probParamsObject.tol = tol;
 			}
 			else if(line.rfind("INFLUENCE_FACTOR")==0){
 				findStringBounds(first,last,line);
 				rFac =  stod(line.substr(first,last-first));
+			}
+			else if(line.rfind("GAMMA")==0){
+				findStringBounds(first,last,line);
+				gamma =  stod(line.substr(first,last-first));
+				probParamsObject.gamma = gamma;
 			}
 		}
 		file.close();

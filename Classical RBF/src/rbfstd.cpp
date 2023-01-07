@@ -24,10 +24,11 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 
 	// node containing max error, iter for nr of greedy iterations
-	int maxErrorNode,iter;
+	int iter;
+	Eigen::ArrayXi maxErrorNodes;
 	if(params.dataRed){
-		maxErrorNode = m.intBdryNodes(0);
-		n.addControlNode(maxErrorNode);
+//		maxErrorNode = m.intBdryNodes(0);
+		n.addControlNode(m.intBdryNodes(0));
 	}
 	// max error.
 	double error;
@@ -42,7 +43,9 @@ void rbf_std::perform_rbf(getNodeType& n){
 		while(error>params.tol){
 
 			if(iter!=0){
-				n.addControlNode(maxErrorNode);
+				for(int node = 0; node < maxErrorNodes.size(); node++){
+					n.addControlNode(maxErrorNodes(node));
+				}
 			}
 
 			std::cout << "Obtaining Phi_mm" << std::endl;
@@ -68,19 +71,27 @@ void rbf_std::perform_rbf(getNodeType& n){
 					std::cout << "error zet to zero" << std::endl;
 					error = 0;
 				}else{
-					go.getError(n,m,d,error,maxErrorNode, params.smode, mIndex, displacement,pnVec);
+					go.getError(n,m,d,error,maxErrorNodes, params.smode, mIndex, displacement,pnVec);
 				}
-				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNode<< std::endl;
+				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNodes(0)<< std::endl;
 
 			}else{
 				error = 0;
 			}
 			iter++;
 		}
+		auto stop = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
+		std::cout <<  "Runtime duration: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
+
+		std::cout << iter-1 << std::endl;
+		m.coords(*n.iPtr, Eigen::all) +=d;
+		m.writeMeshFile();
+		std::exit(0);
 
 		if(params.dataRed){
 			updateNodes(Phi_imGreedy,n, defVec);
-			go.correction(m,n);
+			go.correction(m,n, params.gamma);
 			std::cout << "number of control nodes: " << n.N_m << std::endl;
 		}
 

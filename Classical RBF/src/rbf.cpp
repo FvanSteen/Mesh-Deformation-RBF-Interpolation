@@ -19,6 +19,8 @@ rbf::rbf(Mesh& meshObject, probParams& probParamsObject)
 
 void rbf::RBFMain(){
 
+
+
 //	selectRbf<rbf_std> rbfObject(m, dVec, rotPnt, rotVec, steps, smode, curved, perDir);
 //	std::exit(0);
 	// called through the initliaser of the the rbf std class

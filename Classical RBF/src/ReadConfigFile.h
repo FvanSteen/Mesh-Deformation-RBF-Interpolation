@@ -6,10 +6,11 @@
 #include <vector>
 class ReadConfigFile {
 public:
-	std::string mesh_ifName,mesh_ofName,pDir,curved,dataRed,smode,pmode;
+	std::string mesh_ifName,mesh_ofName,pDir,curved,smode,pmode;
 	std::vector<std::string> bdryTags, mTags, pTags;
 	int steps;
-	double tol, rFac;
+	double tol, rFac, gamma;
+	bool dataRed;
 
 	ReadConfigFile(std::string& ifName, probParams& probParamsObject);
 	void findStringBounds(int& first, int& last, std::string& line);
