@@ -23,7 +23,6 @@ def getMeshQuals(faces,vertices, alphas_0, elemType):
 #    elif elementType == 9:
 #        f_skew = 4/np.sum(np.sqrt(lambda_11*lambda_22)/alphas, axis=1)
     f_ss = np.sqrt(f_size)*f_skew
-    
     return f_ss
     
 def getMeshQualParams(faces, vertices, elemType):
