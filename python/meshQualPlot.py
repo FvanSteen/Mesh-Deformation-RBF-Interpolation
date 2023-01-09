@@ -62,3 +62,5 @@ def meshQualPlot(fileNames,fNameInit, graphNames,alphas_0):
     #    ax.set_ylim([0.0, 0.25])
     #    ax.set_xlim([0.05, 0.45])
     plt.show()
+    x = np.argwhere(np.isnan(meshQual))
+    print(v[f[x]])
