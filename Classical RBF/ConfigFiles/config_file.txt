@@ -23,10 +23,10 @@ MARKER_MOVING = (wall1)
 MARKER_PERIODIC = (periodic1, periodic2)
 
 %(none, pseudo, direct)
-SLIDING_MODE = ps
+SLIDING_MODE = none
 
 %(none,periodic,fixed_vertices,moving_vertices)
-PERIODIC_MODE = periodic
+PERIODIC_MODE = fixed
 
 PERIODIC_DIRECTION = y
 
@@ -41,5 +41,5 @@ DEFORMATION_FILENAME = turbine_row_deformation.txt
 
 CURVED = YES
 DATA_REDUCTION = YES
-DATA_RED_TOLERANCE = 1e-4
+DATA_RED_TOLERANCE = 1e-5
 GAMMA = 25

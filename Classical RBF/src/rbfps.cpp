@@ -27,8 +27,6 @@ void rbf_ps::perform_rbf(getNodeType& n){
 	Eigen::ArrayXi maxErrorNodes;
 
 	if(params.dataRed){
-//		maxErrorNodes << m.intBdryNodes(0);
-//		maxErrorNode = m.intBdryNodes(0);
 		n.addControlNode(m.intBdryNodes(0));
 	}
 
@@ -75,7 +73,6 @@ void rbf_ps::perform_rbf(getNodeType& n){
 			performRBF_PS(Phi_mm, Phi_sm, Phi_mmStd, Phi_im, defVec, delta, finalDef, defVecStd, n);
 
 
-
 			if(params.dataRed){
 				go.getError(n,m,d,error, maxErrorNodes, params.smode, mIndex, displacement,pnVec);
 				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNodes(0)<< std::endl;
@@ -91,14 +88,14 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 			iter++;
 		}
-		auto stop = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
-		std::cout <<  "Runtime duration: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
+//		auto stop = std::chrono::high_resolution_clock::now();
+//		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
+//		std::cout <<  "Runtime duration: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
 
-		std::cout << iter-1 << std::endl;
-		m.coords(*n.iPtr, Eigen::all) +=d;
-		m.writeMeshFile();
-		std::exit(0);
+//		std::cout << iter-1 << std::endl;
+//		m.coords(*n.iPtr, Eigen::all) +=d;
+//		m.writeMeshFile();
+//		std::exit(0);
 //		std::cout << iter << std::endl;
 		if(params.dataRed){
 			updateNodes(Phi_imGrdy, n, defVec);
@@ -130,7 +127,7 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 
 	auto stopi = std::chrono::high_resolution_clock::now();
 	auto durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-	std::cout <<  "obtaining solution sliding nodes: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+//	std::cout <<  "obtaining solution sliding nodes: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
 //	m.coords(*n.sePtr,Eigen::all) += delta;
 //	m.writeMeshFile();
 //	std::exit(0);
@@ -162,7 +159,7 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 //	std::exit(0);
 	stopi = std::chrono::high_resolution_clock::now();
 	durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-	std::cout <<  "projection: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+//	std::cout <<  "projection: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
 //	std::cout << finalDef << std::endl;
 
 
@@ -184,7 +181,7 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 //	m.coords(m.extStaticNodes,1) += delta(Eigen::seq(Eigen::last+1-4,Eigen::last), 1);
 //	m.coords(sNodes,Eigen::all) = m.coords(sNodes,Eigen::all) + finalDef;
 //	m.writeMeshFile();
-	std::cout << "obtaining defVecStd" << std::endl;
+//	std::cout << "obtaining defVecStd" << std::endl;
 //	std::cout << n.N_mStd << std::endl;
 //	std::cout << n.N_m << std::endl;
 //	std::cout << n.N_s << std::endl;
@@ -219,7 +216,7 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 	performRBF(Phi_mmStd,Phi_im,defVecStd,*n.mStdPtr,*n.iPtr,n.N_mStd);
 	stopi = std::chrono::high_resolution_clock::now();
 	durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
-	std::cout <<  "performing classical rbf: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+//	std::cout <<  "performing classical rbf: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
 }
 
 

@@ -134,7 +134,7 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 	Eigen::ArrayXd errorAngle(n.N_i);
 
 
-	std::cout << "obtaining error" << std::endl;
+//	std::cout << "obtaining error" << std::endl;
 	int idx_m, idx_se, i, dim, idxMax;
 //	Eigen::ArrayXd dispRow;
 	for(i = 0; i< n.N_i; i++){

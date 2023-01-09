@@ -84,10 +84,10 @@ void rbf_std::perform_rbf(getNodeType& n){
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
 		std::cout <<  "Runtime duration: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
 
-		std::cout << iter-1 << std::endl;
-		m.coords(*n.iPtr, Eigen::all) +=d;
-		m.writeMeshFile();
-		std::exit(0);
+//		std::cout << iter-1 << std::endl;
+//		m.coords(*n.iPtr, Eigen::all) +=d;
+//		m.writeMeshFile();
+//		std::exit(0);
 
 		if(params.dataRed){
 			updateNodes(Phi_imGreedy,n, defVec);
@@ -96,7 +96,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 		}
 
 	}
-	std::cout << "number of control nodes: " << n.N_m << std::endl;
+//	std::cout << "number of control nodes: " << n.N_m << std::endl;
 	auto stop = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
 
@@ -124,7 +124,7 @@ void rbf_std::performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen
 //	std::cout << movingNodes << std::endl;
 	for(int dim = 0; dim < m.nDims; dim++){
 
-		std::cout << "Solving for dimension: " << dim << std::endl;
+//		std::cout << "Solving for dimension: " << dim << std::endl;
 		alpha(Eigen::seqN(dim*N,N)) = Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N)));
 		if(params.dataRed){
 			d.col(dim) = Phi_im*alpha(Eigen::seqN(dim*N,N));

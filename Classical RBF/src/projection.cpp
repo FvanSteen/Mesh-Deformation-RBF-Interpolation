@@ -10,7 +10,7 @@ projection::projection() {
 }
 
 void projection::project(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta,Eigen::ArrayXXd& finalDef, Eigen::VectorXd& pVec){
-	std::cout << "Doing Projection" << std::endl;
+//	std::cout << "Doing Projection" << std::endl;
 
 	Eigen::RowVectorXd d;
 	Eigen::ArrayXd dist, projection;
@@ -40,11 +40,11 @@ void projection::project(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta
 		}
 
 	}
-	std::cout << "projection is done " << std::endl;
+//	std::cout << "projection is done " << std::endl;
 }
 
 void projection::projectIter(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef){
-	std::cout << "in the projection iteration function" << std::endl;
+//	std::cout << "in the projection iteration function" << std::endl;
 
 	Eigen::ArrayXXd dist;
 	Eigen::ArrayXd projection;

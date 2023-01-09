@@ -50,7 +50,8 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 			}
 			else if(line.rfind("PERIODIC_DIRECTION")==0){
 				findStringBounds(first,last,line);
-				probParamsObject.pDir = line.substr(first,last-first);
+				pDir = line.substr(first,last-first);
+				probParamsObject.pDir = pDir;
 
 			}
 			else if(line.rfind("STEPS")==0){

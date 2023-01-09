@@ -51,6 +51,7 @@ public:
 //	const std::vector<std::string> perBdry;
 //	const std::vector<std::string> mTags,pTags;
 	std::vector<std::string> srtdTags;
+	double lambda;
 
 	double charLength();
 	void removeDuplicates(Eigen::ArrayXi& arr);

@@ -18,20 +18,6 @@ rbf::rbf(Mesh& meshObject, probParams& probParamsObject)
 {}
 
 void rbf::RBFMain(){
-
-
-
-//	selectRbf<rbf_std> rbfObject(m, dVec, rotPnt, rotVec, steps, smode, curved, perDir);
-//	std::exit(0);
-	// called through the initliaser of the the rbf std class
-
-//	rbfGenFunc genFuns(m,params);
-
-
-//	std::cout << ptr << std::endl;
-
-
-
 //	std::cout << "moving nodes: \n" << m.mNodes << std::endl;
 //	std::cout << "internal nodes: \n" << m.iNodes << std::endl;
 //	std::cout << "sliding edge nodes: \n" << m.seNodes << std::endl;
@@ -57,36 +43,12 @@ void rbf::RBFMain(){
 	else if(params.smode=="ds"){
 		rbf_ds rbf(m, params);
 		rbf.perform_rbf(n);
-//		if(m.nDims ==3){
-////			RBF_DS_3D();
-//		}else if(m.nDims ==2){
-//			rbf_ds rbf(m, dVec, rotPnt, rotVec, steps, smode, curved, perDir);
-//			rbf.perform_rbf(n.iNodes,n.mNodes,n.mNodesStd,n.sNodes,n.N_i,n.N_m,n.N_mStd,n.N_s);
-////			RBF_DS();
-//		}
 	}
 	else if(params.smode=="ps"){
-////		RBF_PS();
-//		rbf_ps *ptr;
-		rbf_ps rbf(m,params);
 
-		if(params.dataRed){
-			std::cout << "perform Greedy" << std::endl;
-//			greedy go(n,rbf);
-			rbf.perform_rbf(n);
-		}else{
-			rbf.perform_rbf(n);
-		}
-////		rbf.perform_rbf();
-//		ptr = &rbf;
-//
-//		greedy go(ptr);
-//
-//
-////		std::cout << ptr << std::endl;
-////		greedy go(rbf);
-//
-//
+		rbf_ps rbf(m,params);
+		rbf.perform_rbf(n);
+
 	}
 
 

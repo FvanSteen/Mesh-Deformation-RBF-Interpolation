@@ -267,14 +267,14 @@ void Mesh::readMeshFile(){
 //	std::cout << mNodesStd << std::endl;
 
 	if(pmode != "none"){
-		std::cout << "obtaining characteristic length" <<std::endl;
+//		std::cout << "obtaining characteristic length" <<std::endl;
 		getCharLength();
-		std::cout << "done" << std::endl;
+//		std::cout << "done" << std::endl;
 	}
-	std::exit(0);
+
 
 	if(dataRed){
-//		getIntCorNodes();
+		getIntCorNodes();
 	}
 	std::cout << "Mesh file read successfully" << std::endl;
 
@@ -829,7 +829,7 @@ void Mesh::getSurfConnectivity(){
 
 void Mesh::getVecs(){
 	if(lvl>=1){
-		std::cout << "Obtaining normal and tangential vectors " << std::endl;
+//		std::cout << "Obtaining normal and tangential vectors " << std::endl;
 	}
 
 	// string that contains the type of element that is considered
@@ -884,7 +884,7 @@ void Mesh::getVecs(){
 
 void Mesh::getEdgeTan(Eigen::ArrayXXd& t){
 	if(lvl>=2){
-		std::cout << "Obtaining edge tangential vectors" << std::endl;
+//		std::cout << "Obtaining edge tangential vectors" << std::endl;
 	}
 
 	// initialising vectors to store intermediate results.
@@ -1052,7 +1052,7 @@ void Mesh::getPerpVecs(std::string& type){
 
 void Mesh::getExtBdryEdgeSegments(){
 	if(lvl>=2){
-		std::cout << "obtaining the external boundary edge segments" << std::endl;
+//		std::cout << "obtaining the external boundary edge segments" << std::endl;
 	}
 
 	int nrSegments = 0;
@@ -1116,7 +1116,7 @@ void Mesh::getExtBdryEdgeSegments(){
 
 void Mesh::getMidPnts(){
 	if(lvl>=2){
-		std::cout << "obtaining the midpoints and normals of the external boundary edge segments" << std::endl;
+//		std::cout << "obtaining the midpoints and normals of the external boundary edge segments" << std::endl;
 	}
 
 
@@ -1141,7 +1141,7 @@ void Mesh::getMidPnts(){
 
 	}
 
-	std::cout << "midpoints and normals are obtained" << std::endl;
+//	std::cout << "midpoints and normals are obtained" << std::endl;
 }
 
 
@@ -1266,22 +1266,33 @@ void Mesh::getIntCorNodes(){
 }
 
 void Mesh::getCharLength(){
-	std::cout << "in the char length function" << std::endl;
+//	std::cout << "in the char length function" << std::endl;
 	int idxMin;
 
-//todo allow for other directions of periodicity instead of only in the y direction
+	int minCoordDir, perDir;
+	// only for 2D applications
+	if(pDir == "x"){
+		minCoordDir = 1;
+		perDir = 0;
+	}
+	else{
+		minCoordDir = 0;
+		perDir = 1;
+	}
 
-	coords.col(0).minCoeff(&idxMin);
-	std::cout << coords(idxMin,0) << std::endl;
 
-	int size = (coords.col(0)==coords(idxMin,0)).count();
-	std::cout << "size: " << size << std::endl;
+
+	coords.col(minCoordDir).minCoeff(&idxMin);
+//	std::cout << coords(idxMin,minCoordDir) << std::endl;
+
+	int size = (coords.col(minCoordDir)==coords(idxMin,minCoordDir)).count();
+//	std::cout << "size: " << size << std::endl;
 
 	Eigen::ArrayXi indices(size);
 
 	int cnt = 0;
 	for(int i = 0; i < coords.rows(); i++){
-		if(coords(i,0) == coords(idxMin,0)){
+		if(coords(i,minCoordDir) == coords(idxMin,minCoordDir)){
 			indices(cnt) = i;
 			cnt++;
 		}
@@ -1290,11 +1301,10 @@ void Mesh::getCharLength(){
 	int min, max;
 
 	Eigen::ArrayXd bdry(size);
-	bdry << coords(indices,1);
+	bdry << coords(indices,perDir);
 
 	bdry.minCoeff(&min);
 	bdry.maxCoeff(&max);
 
-	double charLength = bdry(max) - bdry(min);
-	std::cout << charLength << std::endl;
+	lambda = bdry(max) - bdry(min);
 }
