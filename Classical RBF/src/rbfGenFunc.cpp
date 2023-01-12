@@ -257,3 +257,37 @@ double rbfGenFunc::rbfEval(double distance){
 }
 
 
+
+void rbfGenFunc::getDefVecMultiGreedy(Eigen::VectorXd& defVec, getNodeType& n, Eigen::ArrayXXd& errors){
+//	std::cout << "testing" << std::endl;
+//	std::cout << *n.mPtr << std::endl;
+//	std::cout << '\n' << *n.iPtr << std::endl;
+	int idx;
+	for(int i = 0; i < n.N_m;i++){
+		std::cout << i << '\t' << (*n.mPtr)(i) << std::endl;
+		idx = std::distance(std::begin(*n.iPtr), std::find(std::begin(*n.iPtr), std::end(*n.iPtr),(*n.mPtr)(i)));
+//		std::cout << errors.row(idx) << std::endl;
+		std::cout << "index: " << idx << std::endl;
+		for(int j = 0; j < errors.cols();j++){
+			defVec(n.N_m*j+i) = errors(idx,j);
+		}
+
+	}
+
+//	std::cout << defVec << std::endl;
+
+
+
+
+//	int idx;
+//	//loop through the moving nodes
+//	for(int i = 0; i < N; i++){
+//		idx = std::distance(std::begin(mIndex), std::find(std::begin(mIndex), std::end(mIndex),movingNodes(i)));
+//		if(idx!= mIndex.size()){
+//
+//			for(int dim = 0; dim < m.nDims; dim++){
+//				defVec(dim*N+i) = displacement(idx,dim);
+//			}
+//		}
+//	}
+}

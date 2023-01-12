@@ -33,6 +33,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 	greedy go;
 	int iter;
 	double error;
+	Eigen::ArrayXXd errors;
 	for(int i = 0; i < params.steps; i++){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 		error = 1;
@@ -71,42 +72,52 @@ void rbf_ps::perform_rbf(getNodeType& n){
 			}
 
 			performRBF_PS(Phi_mm, Phi_sm, Phi_mmStd, Phi_im, defVec, delta, finalDef, defVecStd, n);
-
+//			if(iter == 1){
+//				m.coords(*n.iPtr,Eigen::all) +=d;
+//				m.writeMeshFile();
+//				std::cout << "meshcheck" << std::endl;
+//			}
 
 			if(params.dataRed){
-				go.getError(n,m,d,error, maxErrorNodes, params.smode, mIndex, displacement,pnVec);
+				go.getError(n,m,d,error, maxErrorNodes, params.smode, mIndex, displacement,pnVec,errors);
 				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNodes(0)<< std::endl;
 			}else{
 				error = 0;
 			}
-//			if(iter == 5){
+			if(iter == 2){
+				m.coords(*n.iPtr, Eigen::all) +=d;
+				m.writeMeshFile();
+				std::cout << "control Nodes: " << *n.mStdPtr<< std::endl;
+				std::exit(0);
+			}
+
+//			if(n.N_se >= 1){
 //				m.coords(*n.iPtr, Eigen::all) +=d;
 //				m.writeMeshFile();
 //				std::exit(0);
 //			}
 
-
 			iter++;
+
 		}
+
 //		auto stop = std::chrono::high_resolution_clock::now();
 //		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
 //		std::cout <<  "Runtime duration: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
 
 //		std::cout << iter-1 << std::endl;
-//		m.coords(*n.iPtr, Eigen::all) +=d;
-//		m.writeMeshFile();
-//		std::exit(0);
+
 //		std::cout << iter << std::endl;
 		if(params.dataRed){
 			updateNodes(Phi_imGrdy, n, defVec);
 //			m.writeMeshFile();
 //			std::exit(0);
-//			std::cout << "DOING AN UPDATE" << std::endl;
-			go.correction(m,n, params.gamma);
+			std::cout << "DOING AN UPDATE" << std::endl;
+			go.correction(m,n, params.gamma,errors);
 		}
 //		m.writeMeshFile();
 //		std::exit(0);
-
+		std::cout << "number of control nodes: " << n.N_m << std::endl;
 
 	}
 	auto stop = std::chrono::high_resolution_clock::now();
@@ -128,9 +139,13 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 	auto stopi = std::chrono::high_resolution_clock::now();
 	auto durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
 //	std::cout <<  "obtaining solution sliding nodes: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;
+//	std::cout << *n.sePtr << std::endl;
+//	std::cout << delta << std::endl;
+//	if(n.N_se >= 1){
 //	m.coords(*n.sePtr,Eigen::all) += delta;
 //	m.writeMeshFile();
 //	std::exit(0);
+//	}
 
 //
 //	std::cout << *n.sePtr << std::endl;
@@ -148,10 +163,12 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 //	std::cout << delta << std::endl;
 	starti = std::chrono::high_resolution_clock::now();
 
-	/* This is the old projection function
-	p->project(m, *n.sePtr, delta, finalDef, pVec);
-	*/
+
+//	p->project(m, *n.sePtr, delta, finalDef, pVec);
+
 	p->projectIter(m, *n.sePtr, delta, finalDef);
+
+
 //	std::cout << finalDef << std::endl;
 //	m.coords(*n.sePtr,Eigen::all) += finalDef;
 //	m.writeMeshFile();

@@ -32,7 +32,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 	greedy go;
 	int iter;
 	double error;
-
+	Eigen::ArrayXXd errors;
 
 	for (int i = 0; i < params.steps; i++){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
@@ -83,7 +83,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 
 //			std::exit(0);
 			if(params.dataRed){
-				go.getError(n,m,d,error,maxErrorNodes, params.smode,mIndex,displacement,pnVec);
+				go.getError(n,m,d,error,maxErrorNodes, params.smode,mIndex,displacement,pnVec,errors);
 //				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNode<< std::endl;
 
 			}else{
@@ -104,7 +104,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 			updateNodes(Phi_imGrdy, n, defVec);
 //			std::cout << m.coords << std::endl;
 			std::cout << "DOING AN UPDATE" << std::endl;
-			go.correction(m,n, params.gamma);
+			go.correction(m,n, params.gamma,errors);
 		}
 //		m.coords(*n.iPtr, Eigen::all) += d;
 //		m.writeMeshFile();

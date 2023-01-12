@@ -29,13 +29,17 @@ void rbf_std::perform_rbf(getNodeType& n){
 	if(params.dataRed){
 //		maxErrorNode = m.intBdryNodes(0);
 		n.addControlNode(m.intBdryNodes(0));
+		n.addControlNode(m.intBdryNodes(m.intBdryNodes.size()-1));
 	}
 	// max error.
 	double error;
 
 	greedy go;
 
-
+	int lvlSize = 10;
+	int lvl = 0;
+	bool multiLvl = true;
+	Eigen::ArrayXXd errors, errorsPreviousLvl;
 	for(int i=0; i<params.steps; i++){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 		error = 1;
@@ -48,41 +52,91 @@ void rbf_std::perform_rbf(getNodeType& n){
 				}
 			}
 
-			std::cout << "Obtaining Phi_mm" << std::endl;
+//			std::cout << "Obtaining Phi_mm" << std::endl;
 			getPhi(Phi_mm, *n.mPtr, *n.mPtr); // could simply pass the pointer here
 
-			std::cout << "Obtaining Phi_im" << std::endl;
+//			std::cout << "Obtaining Phi_im" << std::endl;
 			getPhi(Phi_im, *n.iPtr, *n.mPtr);
 
 			if(i==0 || params.dataRed){
-				std::cout << "Obtaining deformation vector" << std::endl;
+//				std::cout << "Obtaining deformation vector" << std::endl;
 				defVec = Eigen::VectorXd::Zero(n.N_m*m.nDims);
-				getDefVec(defVec,n.N_m,params.steps,*n.mPtr);
+//				std::cout << displacement << std::endl;
+
+
+
+				if(multiLvl && lvl!=0){
+					getDefVecMultiGreedy(defVec, n, errorsPreviousLvl);
+				}else{
+					getDefVec(defVec,n.N_m,params.steps,*n.mPtr);
+				}
 			}
 
 
-			std::cout << "Performing RBF" << std::endl;
-			performRBF(Phi_mm, Phi_im, defVec,*n.mPtr,*n.iPtr, n.N_m);
 
+//			std::cout << "Performing RBF" << std::endl;
+			performRBF(Phi_mm, Phi_im, defVec,*n.mPtr,*n.iPtr, n.N_m);
+//			if(lvl == 1){
+//
+//				std::cout << errors << std::endl;
+//				std::cout << std::endl;
+//				std::cout << d << std::endl;
+//				std::cout << "\n\n\n\n displacement: " << d(111,Eigen::all) << "and: " << d(72,Eigen::all) << std::endl;
+//				std::cout << defVec << std::endl;
+//				std::exit(0);
+//			}
 			if(params.dataRed){
 
 				//next statement should also take into account the periodic nodes
-				if(m.N_i == n.N_i){
-					std::cout << "error zet to zero" << std::endl;
-					error = 0;
+//				if(m.N_i == n.N_i){
+//					std::cout << "error zet to zero" << std::endl;
+//					error = 0;
+//				}else{
+				if(multiLvl && lvl != 0){
+					//todo some arguments are not required
+					go.getErrorMultiLvl(n,m,d,error,maxErrorNodes,params.smode,mIndex,errorsPreviousLvl,pnVec, errors);
+
+
 				}else{
-					go.getError(n,m,d,error,maxErrorNodes, params.smode, mIndex, displacement,pnVec);
+					go.getError(n,m,d,error,maxErrorNodes, params.smode, mIndex, displacement,pnVec, errors);
 				}
+
+//				}
 				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNodes(0)<< std::endl;
 
 			}else{
 				error = 0;
 			}
+
+			if(multiLvl && n.N_m >= lvlSize){
+//				updateNodes(Phi_imGreedy,n, defVec);
+//				m.writeMeshFile();
+//				std::exit(0);
+				std::cout << (*n.mPtr) << std::endl;
+				std::cout << "nr of control nodes: " << n.N_m << std::endl;
+				std::cout << d << std::endl;
+				std::cout << (*n.iPtr) << std::endl;
+				errorsPreviousLvl = -errors;
+				go.setLevelParams(lvl,lvlSize, n, m, d, alpha);
+
+				if(lvl==1){
+					performMultiLvlDeformation(n,  lvl, lvlSize, Phi_imGreedy, go.delta, go.mNodesHist, go.alphaHist);
+					std::exit(0);
+				}
+
+				lvl++;
+
+				n.assignNodeTypesGreedy();
+//				std::cout << "moving nodes: " << (*n.mPtr) << std::endl;
+
+//				std::exit(0);
+			}
 			iter++;
+
 		}
-		auto stop = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
-		std::cout <<  "Runtime duration: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
+//		auto stop = std::chrono::high_resolution_clock::now();
+//		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
+//		std::cout <<  "Runtime duration: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
 
 //		std::cout << iter-1 << std::endl;
 //		m.coords(*n.iPtr, Eigen::all) +=d;
@@ -91,8 +145,8 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 		if(params.dataRed){
 			updateNodes(Phi_imGreedy,n, defVec);
-			go.correction(m,n, params.gamma);
-			std::cout << "number of control nodes: " << n.N_m << std::endl;
+			go.correction(m,n, params.gamma,errors);
+//			std::cout << "number of control nodes: " << n.N_m << std::endl;
 		}
 
 	}
@@ -188,6 +242,10 @@ void rbf_std::updateNodes(Eigen::MatrixXd& Phi_imGreedy, getNodeType& n, Eigen::
 
 	getPhi(Phi_imGreedy,*n.iPtrGrdy,*ptr);
 
+//	std::cout << *n.iPtrGrdy << std::endl;
+//
+//	std::cout << "\n\n\n" << *ptr << std::endl;
+
 //	std::cout << Phi_imG reedy*alpha(Eigen::seqN(0,n.N_m)) << std::endl;
 //	std::cout << Phi_imGreedy*alpha(Eigen::seqN(n.N_m,n.N_m)) << std::endl;
 
@@ -202,6 +260,13 @@ void rbf_std::updateNodes(Eigen::MatrixXd& Phi_imGreedy, getNodeType& n, Eigen::
 	m.coords(*n.iPtrGrdy,0) +=  (Phi_imGreedy*alpha(Eigen::seqN(0,N_m))).array();
 
 	m.coords(*n.iPtrGrdy,1) +=  (Phi_imGreedy*alpha(Eigen::seqN(N_m,N_m))).array();
+//	std::cout << "done" << std::endl;
+
+//	std::cout << "mNodes \n: "<< *ptr <<"\nalpha: \n" << alpha << std::endl;
+//	std::cout << Phi_imGreedy << std::endl;
+//	std::cout << *n.iPtrGrdy << std::endl;
+//	std::cout << (Phi_imGreedy*alpha(Eigen::seqN(0,N_m))).array() << std::endl;
+
 
 
 }
@@ -215,4 +280,56 @@ void rbf_std::getExactDef(getNodeType& n, Eigen::VectorXd& exactDeformation){
 	Eigen::ArrayXi ibNodes = n.iNodes(Eigen::seq(m.N_i+m.N_p, m.N_i+m.N_p+m.N_ib-n.N_ib-1));
 //	getDefVec(exactDeformation, N, params.steps);
 //	std::cout << exactDeformation << std::endl;
+}
+
+void rbf_std::performMultiLvlDeformation(getNodeType& n,int& lvl, int& lvlSize, Eigen::MatrixXd& Phi_imGreedy, Eigen::ArrayXXd& delta, Eigen::ArrayXXi& mNodesHist, Eigen::ArrayXXd& alphaHist){
+	std::cout << "applying multi-level deformation" << std::endl;
+//	std::cout << delta.rows() << '\t' << delta.cols() << std::endl;
+//	std::cout << n.N_i << '\t' << m.coords.cols() << std::endl;
+
+
+
+
+	/*
+	 * Er gwn één lange alpha van maken bij alphaHist en één lange mNodesHist, dan de dubbele indices eruit halen. Dan kan je de mNodesHist gebruiken als array van indexen om een array met alleen de nonzero
+	 * alphas te krijgen die je vervolgens gebruikt als found solution.
+	 * om Phi_imGreedy te krijgen gebruk je de gefilterde lijst van mNodesHist, om te voorkomen dat je een onnodig grote matrix krijgt.
+	 */
+	std::cout << alphaHist << std::endl;
+	std::cout << "\n\n\n\n\n" << mNodesHist << std::endl;
+	std::exit(0);
+	Eigen::ArrayXi* ptr;
+
+	Eigen::ArrayXi mNodes;
+	mNodes = mNodesHist.col(0);
+	ptr = &mNodes;
+
+	getPhi(Phi_imGreedy,*n.iPtrGrdy,*ptr);
+
+	m.coords(*n.iPtr, Eigen::all) += delta(Eigen::all, Eigen::seqN(0,m.nDims));
+
+
+
+//	std::cout << mNodes << std::endl;
+
+	Eigen::VectorXd alphaNew(lvlSize*m.nDims);
+	alphaNew = alphaHist.col(0);
+
+//	std::cout << alpha << std::endl;
+
+
+
+//
+	for(int dim = 0; dim < m.nDims; dim++){
+		m.coords(*n.iPtrGrdy,dim) +=  (Phi_imGreedy*alphaNew(Eigen::seqN(dim*lvlSize,lvlSize))).array();
+	}
+
+//	std::cout << "mNodes \n: "<< mNodes <<"\nalpha: \n" << alphaNew << std::endl;
+//	std::cout << Phi_imGreedy << std::endl;
+//	m.coords(*n.iPtr, Eigen::all) += delta(Eigen::all, Eigen::seqN(2,m.nDims));
+//	std::cout << *n.iPtrGrdy << std::endl;
+//	std::cout << (Phi_imGreedy*alphaNew(Eigen::seqN(0,lvlSize))).array() << std::endl;
+	m.writeMeshFile();
+
+
 }

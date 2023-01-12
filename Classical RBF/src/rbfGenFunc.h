@@ -31,6 +31,7 @@ public:
 	void getNodeTypes();
 	void getPeriodicParams();
 	double rbfEval(double distance);
+	void getDefVecMultiGreedy(Eigen::VectorXd& defVec, getNodeType& n, Eigen::ArrayXXd& errors);
 
 
 

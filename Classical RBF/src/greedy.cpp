@@ -124,13 +124,15 @@ greedy::greedy()  {
 }
 
 
-void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& e, Eigen::ArrayXi& maxErrorNodes, std::string sMode, Eigen::ArrayXi& mIndex, Eigen::ArrayXXd& displacement,Eigen::VectorXd& pnVec){
+void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& e, Eigen::ArrayXi& maxErrorNodes, std::string sMode, Eigen::ArrayXi& mIndex, Eigen::ArrayXXd& displacement,Eigen::VectorXd& pnVec, Eigen::ArrayXXd& errors){
 //	std::cout << d << std::endl;
-//	std::cout << *n.iPtr << std::endl;
+//	std::cout << *n.mPtr << std::endl;
 //	std::cout << std::endl;
 //	std::cout << displacement << std::endl;
+//	std::cout << "here" << std::endl;
 
-	error = Eigen::ArrayXXd::Zero(n.N_i,meshOb.nDims);
+
+	errors = Eigen::ArrayXXd::Zero(n.N_i,meshOb.nDims);
 	Eigen::ArrayXd errorAngle(n.N_i);
 
 
@@ -142,8 +144,9 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 		idx_se = std::distance(std::begin(meshOb.seNodes), std::find(std::begin(meshOb.seNodes),std::end(meshOb.seNodes),(*n.iPtr)(i)));
 		if(idx_m!=mIndex.size()){
 
+
  			for(dim = 0;dim<meshOb.nDims;dim++){
-				error(i,dim) = d(i,dim)-displacement(idx_m,dim);
+				errors(i,dim) = d(i,dim)-displacement(idx_m,dim);
 			}
 
 // 			std::cout << (*n.iPtr)(i) << " is an moving node" << std::endl;
@@ -154,8 +157,13 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 
 //			possibly not required due to the correction step!!
 //			dispRow = d.row(i);
-			project(meshOb, (*n.iPtr)(i),i, d, error,pnVec);
+			project(meshOb, (*n.iPtr)(i),i, d, errors,pnVec);
 
+
+//			if((*n.iPtr)(i) == 15476 && n.N_mStd >2){
+//				std::cout << "check" << std::endl;
+//				std::exit(0);
+//			}
 
 //			std::cout << (*n.iPtr)(i) << " is a sliding edge node, do something" << std::endl;
 //			std::cout << "index in the seNodes array: " << idx_se << std::endl;
@@ -178,28 +186,30 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 		else{
 //			std::cout << (*n.iPtr)(i) << " should be a static node" << std::endl;
 			for(dim = 0;dim<meshOb.nDims;dim++){
-				error(i,dim) = d(i,dim);
+				errors(i,dim) = d(i,dim);
 			}
 		}
-		errorAngle(i) = atan2(error(i,1),error(i,0));
+		errorAngle(i) = atan2(errors(i,1),errors(i,0));
 	}
+
 //	std::cout << *n.iPtr << std::endl;
 //	std::cout << "\n\n" <<  error << std::endl;
 
 
-	error.rowwise().squaredNorm().maxCoeff(&idxMax);
+	errors.rowwise().squaredNorm().maxCoeff(&idxMax);
 
 
-	e = error.row(idxMax).matrix().norm();
+	e = errors.row(idxMax).matrix().norm();
 
 	int doubleEdgeMax;
-	getDoubleEdgeError(error, errorAngle, idxMax , n.N_i, doubleEdgeMax);
+	getDoubleEdgeError(errors, errorAngle, idxMax , n.N_i, doubleEdgeMax);
 
 	maxErrorNodes.resize(2);
 	maxErrorNodes << (*n.iPtr)(idxMax), (*n.iPtr)(doubleEdgeMax);
 //	maxErrorNodes.resize(1);
 //	maxErrorNodes << (*n.iPtr)(idxMax);
 	std::cout << maxErrorNodes << std::endl;
+//	std::cout << errors << std::endl;
 
 //	std::exit(0);
 //	std::cout << "Max error: " << e << std::endl;
@@ -320,6 +330,54 @@ void greedy::getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& 
 
 }
 
+void greedy::getErrorMultiLvl(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& e, Eigen::ArrayXi& maxErrorNodes, std::string sMode, Eigen::ArrayXi& mIndex, Eigen::ArrayXXd& displacement,Eigen::VectorXd& pnVec, Eigen::ArrayXXd& errors){
+	std::cout << "getting multi level error" << std::endl;
+//	std::cout << displacement << std::endl;
+//	std::cout << "\n" << displacement.rows() << '\t' << n.N_i << std::endl;
+
+//	std::cout << "found delta: \n" << d << std::endl;
+
+//	std::cout << displacement.row(111) - d.row(111) << '\n' << displacement.row(72) - d.row(72) << std::endl;
+
+
+	Eigen::ArrayXd errorAngle(n.N_i);
+
+
+	// differenece between actual displacement (displacement) and the found displacement (d)
+	errors = d - displacement;
+//	std::cout << "errors: \n\n" << std::endl;
+//	std::cout << errorss << std::endl;
+
+	// finding angle of the error directions
+	for(int i = 0; i < n.N_i; i++){
+		errorAngle(i) = atan2(errors(i,1),errors(i,0));
+	}
+
+
+	//identifying max error index
+	int idxMax;
+	errors.rowwise().squaredNorm().maxCoeff(&idxMax);
+
+	// value of max error
+	e = errors.row(idxMax).matrix().norm();
+//	std::cout << errs.rowwise().norm() << std::endl;
+
+//	std::cout << e << '\t' << idxMax << std::endl;
+
+	// obtaining the double edge greedy maximum error
+	int doubleEdgeMax;
+	getDoubleEdgeError(errors, errorAngle, idxMax , n.N_i, doubleEdgeMax);
+
+	maxErrorNodes.resize(2);
+	maxErrorNodes << (*n.iPtr)(idxMax), (*n.iPtr)(doubleEdgeMax);
+//	maxErrorNodes.resize(1);
+//	maxErrorNodes << (*n.iPtr)(idxMax);
+	std::cout << maxErrorNodes << std::endl;
+
+
+
+}
+
 void greedy::getDoubleEdgeError(Eigen::ArrayXXd& error, Eigen::ArrayXd& errorAngle, int& idxMax, int& N_i, int& doubleEdgeMax){
 //	std::cout << errorAngle*180/M_PI << std::endl;
 //	std::cout << "error angle of max error: "<< errorAngle(idxMax)*180/M_PI << std::endl;
@@ -353,7 +411,7 @@ void greedy::getDoubleEdgeError(Eigen::ArrayXXd& error, Eigen::ArrayXd& errorAng
 
 }
 
-void greedy::correction(Mesh& m, getNodeType& n, double& gamma){
+void greedy::correction(Mesh& m, getNodeType& n, double& gamma, Eigen::ArrayXXd& error){
 
 
 //	std::cout << "All the bdry points: " << std::endl;
@@ -372,7 +430,7 @@ void greedy::correction(Mesh& m, getNodeType& n, double& gamma){
 
 
 	// obtaining the max error
-	double maxError = getMaxError();
+	double maxError = getMaxError(error);
 //	std::cout << maxError << std::endl;
 	// dist will store the distance between an internal node and the nearest boundary node
 	double dist;
@@ -425,7 +483,7 @@ double greedy::rbfEval(double distance, double radius){
 	return f_xi;
 }
 
-double greedy::getMaxError(){
+double greedy::getMaxError(Eigen::ArrayXXd& error){
 	// integer for storing the index where the error is largest
 	int idxMax;
 
@@ -436,11 +494,11 @@ double greedy::getMaxError(){
 	return error.row(idxMax).matrix().norm();
 }
 
-void greedy::project(Mesh& m, int& node,int& idx, Eigen::ArrayXXd& disp, Eigen::ArrayXXd& error,Eigen::VectorXd& pnVec ){
+void greedy::project(Mesh& m, int& node, int& idx, Eigen::ArrayXXd& disp, Eigen::ArrayXXd& finalError,Eigen::VectorXd& pnVec ){
 //	std::cout << node << std::endl;
 
-//	std::cout << "node in question: " << node << std::endl;
-//	std::cout << "disp: \n" << disp.row(idx) << std::endl;
+//	std::cout << "\n\n\n"  << "node in question: " << node << std::endl;
+//	std::cout << "disp: \n" << disp.row(idx)  << std::endl;
 
 
 	if(std::find(std::begin(m.staticNodes),std::end(m.staticNodes),node) != std::end(m.staticNodes)){
@@ -448,54 +506,55 @@ void greedy::project(Mesh& m, int& node,int& idx, Eigen::ArrayXXd& disp, Eigen::
 		std::cout << "displacement: \n" << disp.row(idx) << std::endl;
 		std::cout << "PERIODIC VECTOR: \n" << pnVec << std::endl;
 
-		error.row(idx) = disp.row(idx)*pnVec.transpose().array();
-		std::cout << error.row(idx) << std::endl;
+		finalError.row(idx) = disp.row(idx)*pnVec.transpose().array();
+		std::cout << finalError.row(idx) << std::endl;
 
 //		error.row(idx) = disp.row(i)-disp.row(i)*pVec.transpose().array();
 	}else{
-		Eigen::RowVectorXd d;
+		Eigen::ArrayXd error;
 		Eigen::ArrayXXd dist;
 		int idxMin;
-		int idxMinNew = -1;
-		// distance to all midpoints
-		dist = m.midPnts.rowwise()- (m.coords.row(node) + disp.row(idx));
-		// find idx of
+
+		finalError.row(idx) = Eigen::ArrayXd::Zero(m.nDims);
+
+		dist = m.midPnts.rowwise() - (m.coords.row(node) + disp.row(idx));
 		dist.rowwise().norm().minCoeff(&idxMin);
 
-//		std::cout << "initial position: " << m.coords.row(node) << std::endl;
-//		std::cout << "new position: " << m.coords.row(node) + disp.row(idx) << std::endl;
-//		std::cout << "dist to nearest midpoint: " << dist.row(idxMin) << std::endl;
-//		std::cout << "Normal: " << m.midPntNormals.row(idxMin) << std::endl;
 
-//		std::cout << "nearest midpoint: " << m.coords.row(node) + disp.row(idx) + dist.row(idxMin) << std::endl;
-		error.row(idx) = -dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix())*m.midPntNormals.row(idxMin);
-//		std::cout << error.row(idx) << std::endl;
-//		std::cout << "new position: " << m.coords.row(node) + disp.row(idx) - error.row(idx) << std::endl;
+		double residual = 1;
+		double tol = 1e-12;
 
-		while(idxMin != idxMinNew){
-			dist = m.midPnts.rowwise() -(m.coords.row(node) + disp.row(idx) - error.row(idx));
-			dist.rowwise().norm().minCoeff(&idxMinNew);
+		while(fabs(residual)>tol){
+			error = dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix())*m.midPntNormals.row(idxMin);
+			finalError.row(idx) += error;
 
+//			std::cout << "error: " <<  finalError.row(idx) << std::endl;
+//			std::cout << "new position: " << m.coords.row(node) + disp.row(idx) + error.row(idx) << std::endl;
 
+			dist.rowwise() -= error.transpose();
+			dist.rowwise().norm().minCoeff(&idxMin);
 
-//			std::cout << idxMin << '\t' << idxMinNew << '\n';
-
-			if(idxMin != idxMinNew){
-
-				error.row(idx) -= dist.row(idxMinNew).matrix().dot(m.midPntNormals.row(idxMinNew).matrix())*m.midPntNormals.row(idxMinNew);
-
-
-				idxMin = idxMinNew;
-				idxMinNew = -1;
-			}
+			residual = dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix());
 
 		}
-
-//		std::cout << error.row(idx) << std::endl;
-
 	}
+}
 
 
+void greedy::setLevelParams(int& lvl, int& lvlSize, getNodeType& n, Mesh& m, Eigen::ArrayXXd& d, Eigen::VectorXd& alpha){
+	delta.conservativeResize(n.N_i,m.nDims*(lvl+1));
+	delta(Eigen::all, Eigen::seqN(lvl*m.nDims,m.nDims)) = d;
+
+
+	mNodesHist.conservativeResize(lvlSize,lvl+1);
+	mNodesHist.col(lvl) = *n.mPtr;
+//	std::cout << mNodesHist << std::endl;
+	//todo might be better to switch to a matrix because of the multiplication later on
+	alphaHist.conservativeResize(lvlSize*m.nDims, lvl+1);
+	alphaHist.col(lvl) = alpha;
+	std::cout << alphaHist << std::endl;
+
+//	std::cout << alphaHist << std::endl;
 }
 
 

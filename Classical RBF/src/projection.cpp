@@ -4,6 +4,7 @@
 
 #include <Eigen/Dense>
 #include <iostream>
+#include <chrono>
 
 projection::projection() {
 
@@ -47,68 +48,74 @@ void projection::projectIter(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& d
 //	std::cout << "in the projection iteration function" << std::endl;
 
 	Eigen::ArrayXXd dist;
-	Eigen::ArrayXd projection;
-	int idxMin,idxMinNew;
+	Eigen::ArrayXd projection,finalProjection;
+	int idxMin;
 	for(int i = 0; i<sNodes.size(); i++){
-//		idxMin = -1;
-		idxMinNew = -1;
-//
-//		projection << 0,0;
+
+//		std::cout << "Node in question: " << sNodes(i) << std::endl;
+
+
+
+		finalProjection = Eigen::ArrayXd::Zero(m.nDims);
+//		std::cout << "initial position: " << m.coords.row(sNodes(i)) << std::endl;
+//		std::cout << "displaced position: " << m.coords.row(sNodes(i)) + delta.row(i) << std::endl;
 
 		dist = m.midPnts.rowwise() - (m.coords.row(sNodes(i)) + delta.row(i));
+		projectFun(m,delta,finalProjection, dist);
+		std::cout << delta.row(i) + finalProjection.transpose() << std::endl;
+		std::cout << "done" << std::endl;
+		std::exit(0);
+
+
+		dist.rowwise().norm().minCoeff(&idxMin);
+//		std::cout << dist << std::endl;
+//		std::cout << "nearest midPoint: " << m.midPnts.row(idxMin) << std::endl;
+
+		double residual = 1;
+		double tol = 1e-12;
+
+		while(fabs(residual) > tol){
+			projection = dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix()) * m.midPntNormals.row(idxMin);
+
+			finalProjection += projection;
+
+			dist.rowwise() -= projection.transpose();
+
+			dist.rowwise().norm().minCoeff(&idxMin);
+
+			residual = dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix());
+//			std::cout <<"residual: " << residual << std::endl;
+
+		}
+
+		finalDef.row(i) = delta.row(i) + finalProjection.transpose();
+		std::cout << finalDef.row(i) << std::endl;
+
+		std::cout << "done" << std::endl;
+		std::exit(0);
+//		m.coords.row(sNodes(i)) += finalDef.row(i);
+	}
+}
+
+void projection::projectFun(Mesh& m, Eigen::ArrayXXd& delta, Eigen::ArrayXd& projection, Eigen::ArrayXXd& dist){
+	int idxMin;
+	Eigen::ArrayXd project_i;
+
+	projection = Eigen::ArrayXd::Zero(m.nDims);
+	dist.rowwise().norm().minCoeff(&idxMin);
+
+	double residual = 1;
+	double tol = 1e-12;
+	while(fabs(residual) > tol){
+		project_i = dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix()) * m.midPntNormals.row(idxMin);
+
+		projection += project_i;
+
+		dist.rowwise() -= project_i.transpose();
 		dist.rowwise().norm().minCoeff(&idxMin);
 
-		projection = dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix()) * m.midPntNormals.row(idxMin);
-
-//		int iter = 0;
-		while(idxMin != idxMinNew){
-			dist = m.midPnts.rowwise() - (m.coords.row(sNodes(i)) + delta.row(i) + projection.transpose());
-			dist.rowwise().norm().minCoeff(&idxMinNew);
-
-			projection += dist.row(idxMinNew).matrix().dot(m.midPntNormals.row(idxMinNew).matrix()) * m.midPntNormals.row(idxMinNew);
-			idxMin = idxMinNew;
-//			iter++;
-//			std::cout << iter << std::endl;
-		}
-		finalDef.row(i) = delta.row(i) + projection.transpose();
-//		std::cout << "Node: " << sNodes(i) << std::endl;
-//		std::cout << (m.coords.row(sNodes(i)) + delta.row(i)) << std::endl;
-
-//		std::cout << dist << std::endl;
-
-
-
-
-
-
-
-//		std::cout << dist.row(idxMin) << std::endl;
-//		std::cout << m.midPntNormals.row(idxMin) << std::endl;
-//		std::cout << "midpoint: "  <<  m.midPnts.row(idxMin) << std::endl;
-//		std::cout << std::endl;
-//		std::cout << projection << std::endl;
-
-//		finalDef.row(i) = delta.row(i);
-//		std::cout << idxMin << std::endl;
-
-//		std::cout << dist(idxMin) << std::endl;
-
-//		dist = m.midPnts.rowwise() - (m.coords.row(sNodes(i)) + delta.row(i) + projection.transpose());
-//		int idxMin2;
-//		dist.rowwise().norm().minCoeff(&idxMin2);
-//		if (idxMin2 != idxMin){
-////			std::cout << "these nodes are not the same" << std::endl;
-//			std::cout << sNodes(i) << ", ";
-//		}
-
-
-//		m.coords.row(sNodes(i)) += finalDef.row(i);
-
+		residual = dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix());
 	}
-//	std::cout << std::endl;
-
-//	m.writeMeshFile();
-//	std::exit(0);
 }
 
 

@@ -107,9 +107,11 @@ void getNodeType::assignNodeTypesGreedy(){
 	iPtr = &iNodes;
 
 	N_m = 0;
+	mNodes.resize(N_m);
 	mPtr = &mNodes;
 
 	N_se = 0;
+	seNodes.resize(N_se);
 	sePtr = &seNodes;
 
 
@@ -117,6 +119,7 @@ void getNodeType::assignNodeTypesGreedy(){
 	N_i_grdy = m.N_i;
 
 	N_mStd = 0;
+	mNodesStd.resize(N_mStd);
 	mStdPtr = &mNodesStd;
 
 //	N_m = 0;

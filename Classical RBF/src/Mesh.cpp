@@ -274,9 +274,10 @@ void Mesh::readMeshFile(){
 
 
 	if(dataRed){
-		getIntCorNodes();
+//		getIntCorNodes();
 	}
 	std::cout << "Mesh file read successfully" << std::endl;
+
 
 }
 
