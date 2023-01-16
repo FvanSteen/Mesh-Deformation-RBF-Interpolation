@@ -48,60 +48,23 @@ void projection::projectIter(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& d
 //	std::cout << "in the projection iteration function" << std::endl;
 
 	Eigen::ArrayXXd dist;
-	Eigen::ArrayXd projection,finalProjection;
-	int idxMin;
+	Eigen::RowVectorXd finalProjection;
+
 	for(int i = 0; i<sNodes.size(); i++){
-
-//		std::cout << "Node in question: " << sNodes(i) << std::endl;
-
-
-
-		finalProjection = Eigen::ArrayXd::Zero(m.nDims);
-//		std::cout << "initial position: " << m.coords.row(sNodes(i)) << std::endl;
-//		std::cout << "displaced position: " << m.coords.row(sNodes(i)) + delta.row(i) << std::endl;
 
 		dist = m.midPnts.rowwise() - (m.coords.row(sNodes(i)) + delta.row(i));
 		projectFun(m,delta,finalProjection, dist);
-		std::cout << delta.row(i) + finalProjection.transpose() << std::endl;
-		std::cout << "done" << std::endl;
-		std::exit(0);
 
-
-		dist.rowwise().norm().minCoeff(&idxMin);
-//		std::cout << dist << std::endl;
-//		std::cout << "nearest midPoint: " << m.midPnts.row(idxMin) << std::endl;
-
-		double residual = 1;
-		double tol = 1e-12;
-
-		while(fabs(residual) > tol){
-			projection = dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix()) * m.midPntNormals.row(idxMin);
-
-			finalProjection += projection;
-
-			dist.rowwise() -= projection.transpose();
-
-			dist.rowwise().norm().minCoeff(&idxMin);
-
-			residual = dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix());
-//			std::cout <<"residual: " << residual << std::endl;
-
-		}
-
-		finalDef.row(i) = delta.row(i) + finalProjection.transpose();
-		std::cout << finalDef.row(i) << std::endl;
-
-		std::cout << "done" << std::endl;
-		std::exit(0);
-//		m.coords.row(sNodes(i)) += finalDef.row(i);
+		finalDef.row(i) = delta.row(i) + finalProjection.array();
 	}
 }
 
-void projection::projectFun(Mesh& m, Eigen::ArrayXXd& delta, Eigen::ArrayXd& projection, Eigen::ArrayXXd& dist){
-	int idxMin;
-	Eigen::ArrayXd project_i;
+void projection::projectFun(Mesh& m, Eigen::ArrayXXd& delta, Eigen::RowVectorXd& projection, Eigen::ArrayXXd& dist){
 
-	projection = Eigen::ArrayXd::Zero(m.nDims);
+	int idxMin;
+	Eigen::RowVectorXd project_i;
+
+	projection = Eigen::RowVectorXd::Zero(m.nDims);
 	dist.rowwise().norm().minCoeff(&idxMin);
 
 	double residual = 1;
@@ -111,11 +74,12 @@ void projection::projectFun(Mesh& m, Eigen::ArrayXXd& delta, Eigen::ArrayXd& pro
 
 		projection += project_i;
 
-		dist.rowwise() -= project_i.transpose();
+		dist.rowwise() -= project_i.array();
 		dist.rowwise().norm().minCoeff(&idxMin);
 
 		residual = dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix());
 	}
+
 }
 
 

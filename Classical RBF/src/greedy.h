@@ -10,22 +10,28 @@
 #include "rbfps.h"
 #include "getNodeType.h"
 #include "Mesh.h"
+#include "projection.h"
 class greedy {
 public:
 //	Eigen::ArrayXXd error;
 	Eigen::ArrayXXd delta;
 	Eigen::ArrayXXi mNodesHist;
 	Eigen::ArrayXXd alphaHist;
+	Eigen::ArrayXXd error;
+
+
 	greedy();
-	void getError(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& e, Eigen::ArrayXi& maxErrorNodes, std::string sMode, Eigen::ArrayXi& mIndex, Eigen::ArrayXXd& displacement,Eigen::VectorXd& pnVec, Eigen::ArrayXXd& errors);
-	void getErrorMultiLvl(getNodeType& n, Mesh& meshOb, Eigen::ArrayXXd& d, double& e, Eigen::ArrayXi& maxErrorNodes, std::string sMode, Eigen::ArrayXi& mIndex, Eigen::ArrayXXd& displacement,Eigen::VectorXd& pnVec, Eigen::ArrayXXd& errors);
-	void correction(Mesh& m, getNodeType& n, double& gamma, Eigen::ArrayXXd& error);
-	void getNearestNode(Mesh& m, getNodeType& n, int& node, int& idxMin, double& dist);
+	void getError(Mesh& m, getNodeType& n, Eigen::ArrayXXd& d, double& maxError, Eigen::ArrayXi& maxErrorNodes,  Eigen::ArrayXi& movingIndices, Eigen::ArrayXXd& exactDisp,Eigen::VectorXd& pnVec, projection* projPtr);
+	void getErrorMultiLvl( getNodeType& n,  Eigen::ArrayXXd& d, double& e, Eigen::ArrayXi& maxErrorNodes,  Eigen::ArrayXi& mIndex, Eigen::ArrayXXd& displacement,Eigen::VectorXd& pnVec);
+	void correction(Mesh& m, getNodeType& n, double& gamma);
+	void getNearestNode(Mesh& m, getNodeType& n,  int& node, int& idxMin, double& dist);
 	double rbfEval(double distance, double radius);
-	double getMaxError(Eigen::ArrayXXd& error);
-	void project(Mesh& m, int& node, int& index, Eigen::ArrayXXd& disp,Eigen::ArrayXXd& finalError,Eigen::VectorXd& pnVec);
-	void getDoubleEdgeError(Eigen::ArrayXXd& error, Eigen::ArrayXd& errorAngle, int& idxMax, int& N_i, int& doubleEdgeMax);
-	void setLevelParams(int& lvl, int& lvlSize, getNodeType& n, Mesh& m,  Eigen::ArrayXXd& d, Eigen::VectorXd& alpha);
+
+	void project(Mesh& m, int& node, int& index, Eigen::ArrayXXd& disp, Eigen::VectorXd& pnVec, projection* projPtr);
+	int getDoubleEdgeError(Eigen::ArrayXd& errorAngle, int idxMax, int N_i);
+	void setLevelParams(Mesh& m, getNodeType& n, int& lvl, int& lvlSize, Eigen::ArrayXXd& d, Eigen::VectorXd& alpha);
+
+	void getErrorSingleLvl(Mesh& m, getNodeType& n, Eigen::ArrayXd& errorAngle, Eigen::ArrayXXd& d, double& maxError, Eigen::ArrayXi& maxErrorNodes, Eigen::ArrayXi& movingIndices, Eigen::ArrayXXd& exactDisp, Eigen::VectorXd& pnVec, projection* projPtr);
 
 };
 

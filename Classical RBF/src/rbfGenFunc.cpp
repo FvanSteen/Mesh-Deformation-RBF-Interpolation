@@ -11,11 +11,11 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 {
 
 	std::cout << "Initialised the rbfGenFunc class" << std::endl;
-	mIndex.resize(m.ibIndices.size());
-	displacement.resize(m.ibIndices.size(),m.nDims);
+	movingIndices.resize(m.ibIndices.size());
+	exactDisp.resize(m.ibIndices.size(),m.nDims);
 	readDisplacementFile();
 
-	displacement = displacement/params.steps; // deformation per step is more usefull then the total deformation.
+	exactDisp = exactDisp/params.steps; // deformation per step is more usefull then the total deformation.
 	getPeriodicParams();
 
 
@@ -81,13 +81,13 @@ void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, int& N, int& steps, Eigen::A
 	int idx;
 	//loop through the moving nodes
 	for(int i = 0; i < N; i++){
-		idx = std::distance(std::begin(mIndex), std::find(std::begin(mIndex), std::end(mIndex),movingNodes(i)));
-		if(idx!= mIndex.size()){
+		idx = std::distance(std::begin(movingIndices), std::find(std::begin(movingIndices), std::end(movingIndices),movingNodes(i)));
+		if(idx!= movingIndices.size()){
 //			std::cout << idx << std::endl;
 //			std::cout << mIndex(idx) << std::endl;
 //			std::cout << displacement.row(idx) << std::endl;
 			for(int dim = 0; dim < m.nDims; dim++){
-				defVec(dim*N+i) = displacement(idx,dim);
+				defVec(dim*N+i) = exactDisp(idx,dim);
 			}
 		}
 	}
@@ -153,9 +153,9 @@ void rbfGenFunc::readDisplacementFile(){
 		while(getline(file, line)){
 			std::stringstream ss(line);
 			if(m.nDims == 2){
-				ss >> mIndex(lineNo) >> displacement(lineNo,0) >> displacement(lineNo,1);
+				ss >> movingIndices(lineNo) >> exactDisp(lineNo,0) >> exactDisp(lineNo,1);
 			}else if(m.nDims == 3){
-				ss >> mIndex(lineNo) >> displacement(lineNo,0) >> displacement(lineNo,1) >> displacement(lineNo,2);
+				ss >> movingIndices(lineNo) >> exactDisp(lineNo,0) >> exactDisp(lineNo,1) >> exactDisp(lineNo,2);
 			}
 			lineNo++;
 		}

@@ -12,6 +12,10 @@ rbf_std::rbf_std(Mesh& meshObject, struct probParams& probParamsObject)
 
 void rbf_std::perform_rbf(getNodeType& n){
 	std::cout << "Performing standard rbf interpolation" << std::endl;
+	projection* p;
+
+	projection proObject;
+	p = &proObject;
 
 //	n.assignNodeTypes();
 
@@ -39,7 +43,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 	int lvlSize = 10;
 	int lvl = 0;
 	bool multiLvl = true;
-	Eigen::ArrayXXd errors, errorsPreviousLvl;
+	Eigen::ArrayXXd errorsPreviousLvl;
 	for(int i=0; i<params.steps; i++){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 		error = 1;
@@ -94,11 +98,11 @@ void rbf_std::perform_rbf(getNodeType& n){
 //				}else{
 				if(multiLvl && lvl != 0){
 					//todo some arguments are not required
-					go.getErrorMultiLvl(n,m,d,error,maxErrorNodes,params.smode,mIndex,errorsPreviousLvl,pnVec, errors);
+					go.getErrorMultiLvl(n,d,error,maxErrorNodes,movingIndices,errorsPreviousLvl,pnVec);
 
 
 				}else{
-					go.getError(n,m,d,error,maxErrorNodes, params.smode, mIndex, displacement,pnVec, errors);
+					go.getError(m,n, d,error,maxErrorNodes, movingIndices, exactDisp,pnVec,p);
 				}
 
 //				}
@@ -116,8 +120,8 @@ void rbf_std::perform_rbf(getNodeType& n){
 				std::cout << "nr of control nodes: " << n.N_m << std::endl;
 				std::cout << d << std::endl;
 				std::cout << (*n.iPtr) << std::endl;
-				errorsPreviousLvl = -errors;
-				go.setLevelParams(lvl,lvlSize, n, m, d, alpha);
+				errorsPreviousLvl = -go.error;
+				go.setLevelParams(m,n,lvl,lvlSize, d, alpha);
 
 				if(lvl==1){
 					performMultiLvlDeformation(n,  lvl, lvlSize, Phi_imGreedy, go.delta, go.mNodesHist, go.alphaHist);
@@ -145,7 +149,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 		if(params.dataRed){
 			updateNodes(Phi_imGreedy,n, defVec);
-			go.correction(m,n, params.gamma,errors);
+			go.correction(m,n,params.gamma);
 //			std::cout << "number of control nodes: " << n.N_m << std::endl;
 		}
 
@@ -252,6 +256,7 @@ void rbf_std::updateNodes(Eigen::MatrixXd& Phi_imGreedy, getNodeType& n, Eigen::
 //	std::cout << d << std::endl;
 //	std::cout << defVec << std::endl;
 	m.coords(*n.iPtr,Eigen::all) += d;
+
 
 //	m.coords(*n.mPtr,0) += defVec(Eigen::seqN(0,n.N_m)).array();
 //	m.coords(*n.mPtr,1) += defVec(Eigen::seqN(n.N_m,n.N_m)).array();

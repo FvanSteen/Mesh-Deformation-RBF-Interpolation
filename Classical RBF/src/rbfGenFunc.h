@@ -18,8 +18,8 @@ public:
 	probParams& params;
 
 	Eigen::VectorXd pVec, pnVec;
-	Eigen::ArrayXi mIndex;
-	Eigen::ArrayXXd displacement;
+	Eigen::ArrayXi movingIndices;
+	Eigen::ArrayXXd exactDisp;
 
 
 

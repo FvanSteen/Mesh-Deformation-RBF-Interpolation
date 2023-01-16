@@ -26,19 +26,24 @@ void rbf_ps::perform_rbf(getNodeType& n){
 //	int maxErrorNode;
 	Eigen::ArrayXi maxErrorNodes;
 
+
+	greedy go;
+
+
 	if(params.dataRed){
 		n.addControlNode(m.intBdryNodes(0));
 	}
 
-	greedy go;
+
+
 	int iter;
-	double error;
-	Eigen::ArrayXXd errors;
+	double maxError;
+
 	for(int i = 0; i < params.steps; i++){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
-		error = 1;
+		maxError = 1;
 		iter = 0;
-		while(error > params.tol){
+		while(maxError > params.tol){
 
 
 			if(iter!=0){
@@ -71,25 +76,28 @@ void rbf_ps::perform_rbf(getNodeType& n){
 				m.getVecs();
 			}
 
+
 			performRBF_PS(Phi_mm, Phi_sm, Phi_mmStd, Phi_im, defVec, delta, finalDef, defVecStd, n);
-//			if(iter == 1){
+//			if(iter == 0){
 //				m.coords(*n.iPtr,Eigen::all) +=d;
 //				m.writeMeshFile();
 //				std::cout << "meshcheck" << std::endl;
+//				std::exit(0);
 //			}
 
 			if(params.dataRed){
-				go.getError(n,m,d,error, maxErrorNodes, params.smode, mIndex, displacement,pnVec,errors);
-				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNodes(0)<< std::endl;
+				go.getError(m,n,d, maxError, maxErrorNodes, movingIndices, exactDisp ,pnVec, p);
+				std::cout << "error: \t"<< maxError <<" at node: \t" << maxErrorNodes(0)<< std::endl;
+
 			}else{
-				error = 0;
+				maxError = 0;
 			}
-			if(iter == 2){
-				m.coords(*n.iPtr, Eigen::all) +=d;
-				m.writeMeshFile();
-				std::cout << "control Nodes: " << *n.mStdPtr<< std::endl;
-				std::exit(0);
-			}
+//			if(iter == 2){
+//				m.coords(*n.iPtr, Eigen::all) +=d;
+//				m.writeMeshFile();
+//				std::cout << "control Nodes: " << *n.mStdPtr<< std::endl;
+//				std::exit(0);
+//			}
 
 //			if(n.N_se >= 1){
 //				m.coords(*n.iPtr, Eigen::all) +=d;
@@ -110,10 +118,11 @@ void rbf_ps::perform_rbf(getNodeType& n){
 //		std::cout << iter << std::endl;
 		if(params.dataRed){
 			updateNodes(Phi_imGrdy, n, defVec);
+			std::cout << "DOING AN UPDATE" << std::endl;
 //			m.writeMeshFile();
 //			std::exit(0);
-			std::cout << "DOING AN UPDATE" << std::endl;
-			go.correction(m,n, params.gamma,errors);
+
+			go.correction(m,n, params.gamma);
 		}
 //		m.writeMeshFile();
 //		std::exit(0);
@@ -124,6 +133,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
 	std::cout <<  "Runtime duration: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
 	m.writeMeshFile();
+	std::cout << "DONE" << std::endl;
 }
 
 void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_mmStd, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVec,Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef, Eigen::VectorXd& defVecStd,getNodeType& n){
@@ -173,7 +183,7 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 //	m.coords(*n.sePtr,Eigen::all) += finalDef;
 //	m.writeMeshFile();
 //	std::exit(0);
-//	std::exit(0);
+
 	stopi = std::chrono::high_resolution_clock::now();
 	durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
 //	std::cout <<  "projection: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;

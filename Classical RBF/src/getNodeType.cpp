@@ -120,6 +120,7 @@ void getNodeType::assignNodeTypesGreedy(){
 
 	N_mStd = 0;
 	mNodesStd.resize(N_mStd);
+
 	mStdPtr = &mNodesStd;
 
 //	N_m = 0;

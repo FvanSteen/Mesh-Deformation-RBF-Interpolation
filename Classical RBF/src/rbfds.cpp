@@ -11,10 +11,10 @@ rbf_ds::rbf_ds(Mesh& meshObject, struct probParams& probParamsObject)
 void rbf_ds::perform_rbf(getNodeType& n){
 	std::cout << "Performing RBF DS " << std::endl;
 	projection* p;
-	if(params.curved){
-		projection proObject;
-		p = &proObject;
-	}
+
+	projection proObject;
+	p = &proObject;
+
 
 	auto start = std::chrono::high_resolution_clock::now();
 
@@ -32,7 +32,6 @@ void rbf_ds::perform_rbf(getNodeType& n){
 	greedy go;
 	int iter;
 	double error;
-	Eigen::ArrayXXd errors;
 
 	for (int i = 0; i < params.steps; i++){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
@@ -83,7 +82,8 @@ void rbf_ds::perform_rbf(getNodeType& n){
 
 //			std::exit(0);
 			if(params.dataRed){
-				go.getError(n,m,d,error,maxErrorNodes, params.smode,mIndex,displacement,pnVec,errors);
+
+				go.getError(m,n, d,error,maxErrorNodes,movingIndices, exactDisp,pnVec,p);
 //				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNode<< std::endl;
 
 			}else{
@@ -104,7 +104,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 			updateNodes(Phi_imGrdy, n, defVec);
 //			std::cout << m.coords << std::endl;
 			std::cout << "DOING AN UPDATE" << std::endl;
-			go.correction(m,n, params.gamma,errors);
+			go.correction( m,n,params.gamma);
 		}
 //		m.coords(*n.iPtr, Eigen::all) += d;
 //		m.writeMeshFile();
