@@ -9,13 +9,21 @@ greedy::greedy()
 {}
 
 
-void greedy::getError(Mesh& m, getNodeType& n, Eigen::ArrayXXd& d, double& maxError, Eigen::ArrayXi& maxErrorNodes, Eigen::ArrayXi& movingIndices, Eigen::ArrayXXd& exactDisp, Eigen::VectorXd& pnVec, projection* projPtr){
+void greedy::getError(Mesh& m, getNodeType& n, Eigen::ArrayXXd& d, double& maxError, Eigen::ArrayXi& maxErrorNodes, Eigen::ArrayXi& movingIndices, Eigen::ArrayXXd& exactDisp, Eigen::VectorXd& pnVec, projection* projPtr, bool multiLvl, int lvl){
+//	std::cout << "in the main getError function" << std::endl;
 
-	// global array with error is set to zero each time the error is determined
-	error = Eigen::ArrayXXd::Zero(n.N_i,m.nDims);
+	if(error.rows() == 0){
+		error.resize(n.N_i,m.nDims);
+	}
+	// defining array for the error directions
 	Eigen::ArrayXd errorAngle(n.N_i);
 
-	getErrorSingleLvl(m,n,errorAngle,d,maxError, maxErrorNodes,movingIndices,exactDisp,pnVec, projPtr);
+	if(multiLvl && lvl>0){
+		getErrorMultiLvl(n,errorAngle,d,m,movingIndices,pnVec,projPtr);
+	}else{
+		getErrorSingleLvl(m,n,errorAngle,d,movingIndices,exactDisp,pnVec, projPtr);
+	}
+
 
 	// find index of largest error
 	int idxMax;
@@ -30,9 +38,19 @@ void greedy::getError(Mesh& m, getNodeType& n, Eigen::ArrayXXd& d, double& maxEr
 	// making array with the max error indices
 	maxErrorNodes.resize(2);
 	maxErrorNodes << (*n.iPtr)(idxMax), (*n.iPtr)(idxMaxAngle);
+
+//	if(lvl==1 && n.N_mStd == 8){
+//		std::cout << maxErrorNodes << std::endl;
+//		m.coords(*n.iPtr,Eigen::all) += d;
+//		m.writeMeshFile();
+//		std::exit(0);
+//	}
+
+
+
 }
 
-void greedy::getErrorSingleLvl(Mesh& m, getNodeType& n, Eigen::ArrayXd& errorAngle, Eigen::ArrayXXd& d, double& maxError, Eigen::ArrayXi& maxErrorNodes, Eigen::ArrayXi& movingIndices, Eigen::ArrayXXd& exactDisp, Eigen::VectorXd& pnVec, projection* projPtr){
+void greedy::getErrorSingleLvl(Mesh& m, getNodeType& n, Eigen::ArrayXd& errorAngle, Eigen::ArrayXXd& d, Eigen::ArrayXi& movingIndices, Eigen::ArrayXXd& exactDisp, Eigen::VectorXd& pnVec, projection* projPtr){
 
 	int idx_m, idx_se, i;
 
@@ -71,8 +89,8 @@ void greedy::getErrorSingleLvl(Mesh& m, getNodeType& n, Eigen::ArrayXd& errorAng
 
 }
 
-void greedy::getErrorMultiLvl(getNodeType& n, Eigen::ArrayXXd& d, double& e, Eigen::ArrayXi& maxErrorNodes, Eigen::ArrayXi& mIndex, Eigen::ArrayXXd& displacement,Eigen::VectorXd& pnVec){
-	std::cout << "getting multi level error" << std::endl;
+void greedy::getErrorMultiLvl(getNodeType& n, Eigen::ArrayXd& errorAngle,  Eigen::ArrayXXd& d, Mesh& m, Eigen::ArrayXi& movingIndices, Eigen::VectorXd& pnVec, projection* projPtr){
+//	std::cout << "getting multi level error" << std::endl;
 //	std::cout << displacement << std::endl;
 //	std::cout << "\n" << displacement.rows() << '\t' << n.N_i << std::endl;
 
@@ -81,11 +99,57 @@ void greedy::getErrorMultiLvl(getNodeType& n, Eigen::ArrayXXd& d, double& e, Eig
 //	std::cout << displacement.row(111) - d.row(111) << '\n' << displacement.row(72) - d.row(72) << std::endl;
 
 
-	Eigen::ArrayXd errorAngle(n.N_i);
-
-
+//	Eigen::ArrayXd errorAngle(n.N_i);
+//	m.coords((*n.iPtr)(Eigen::seq(m.N_m,Eigen::last)), Eigen::all) += errorPrevLvl(Eigen::seq(m.N_m,Eigen::last),Eigen::all);
+//	m.getMidPnts();
+//	m.getVecs();
+//
+//
+//	int idx_m, idx_se, i;
+//
+//	// for all of the boundary nodes the error will be determined
+//	for(i = 0; i< n.N_i; i++){
+//
+//		// finding index of the node in consideration among the nodes with predescribed displacement
+//		idx_m = std::distance(std::begin(movingIndices), std::find(std::begin(movingIndices),std::end(movingIndices),(*n.iPtr)(i)));
+//
+//		// finding index of the node in consideration among the sliding edge nodes
+//		idx_se = std::distance(std::begin(m.seNodes), std::find(std::begin(m.seNodes),std::end(m.seNodes),(*n.iPtr)(i)));
+//
+//		// if the node is part of the nodes with a prescribed displacement
+//		if(idx_m != movingIndices.size()){
+//
+//			// the error is equal to the difference between the displacement and the prescribed (exact) displacement
+//			error.row(i) = d.row(i) - errorPrevLvl.row(i);
+//
+//
+//		// if the node is part of the sliding edge nodes
+//		}else if(idx_se != m.N_se){
+//
+//			// projection is performed in which the projection itself is the error indication
+//			project(m, (*n.iPtr)(i),i, d, pnVec, projPtr);
+//		}
+//
+//		// if not the two above then the node is a static node with zero displacement. Therefore, its error is equal to the found displacement
+//		else{
+//			error.row(i) = d.row(i);
+//		}
+//		// finding the direction of the error.
+//		errorAngle(i) = atan2(error(i,1),error(i,0));
+//	}
+//	m.coords((*n.iPtr)(Eigen::seq(m.N_m,Eigen::last)), Eigen::all) -= errorPrevLvl(Eigen::seq(m.N_m,Eigen::last),Eigen::all);
 	// differenece between actual displacement (displacement) and the found displacement (d)
-	error = d - displacement;
+
+//	m.coords(*n.iPtr,Eigen::all) += (d-error);
+//	m.writeMeshFile();
+
+	error = d - errorPrevLvl;
+//	std::cout << d.row(67) << std::endl;
+//	std::cout << errorPrevLvl.row(67) << std::endl;
+//	std::cout << error.row(67) << std::endl;
+//
+//	m.writeMeshFile();
+
 //	std::cout << "errors: \n\n" << std::endl;
 //	std::cout << errorss << std::endl;
 
@@ -94,8 +158,7 @@ void greedy::getErrorMultiLvl(getNodeType& n, Eigen::ArrayXXd& d, double& e, Eig
 		errorAngle(i) = atan2(error(i,1),error(i,0));
 	}
 
-
-	//identifying max error index
+	/*//identifying max error index
 	int idxMax;
 	error.rowwise().squaredNorm().maxCoeff(&idxMax);
 
@@ -110,7 +173,7 @@ void greedy::getErrorMultiLvl(getNodeType& n, Eigen::ArrayXXd& d, double& e, Eig
 	int doubleEdgeMax = getDoubleEdgeError(errorAngle, idxMax ,  n.N_i);
 
 	maxErrorNodes.resize(2);
-	maxErrorNodes << (*n.iPtr)(idxMax), (*n.iPtr)(doubleEdgeMax);
+	maxErrorNodes <<(*n.iPtr)(idxMax), (*n.iPtr)(doubleEdgeMax);*/
 //	maxErrorNodes.resize(1);
 //	maxErrorNodes << (*n.iPtr)(idxMax);
 //	std::cout << maxErrorNodes << std::endl;
@@ -146,6 +209,7 @@ int greedy::getDoubleEdgeError(Eigen::ArrayXd& errorAngle, int idxMax, int N_i){
 			cnt++;
 		}
 	}
+
 	// resizing the largeAngleError array to only include the values included in the for-loop
 	largeAngleError.conservativeResize(cnt);
 
@@ -250,20 +314,29 @@ void greedy::project(Mesh& m, int& node, int& idx, Eigen::ArrayXXd& disp,Eigen::
 }
 
 
-void greedy::setLevelParams(Mesh& m, getNodeType& n, int& lvl, int& lvlSize, Eigen::ArrayXXd& d, Eigen::VectorXd& alpha){
-	delta.conservativeResize(n.N_i,m.nDims*(lvl+1));
-	delta(Eigen::all, Eigen::seqN(lvl*m.nDims,m.nDims)) = d;
+void greedy::setLevelParams(Mesh& m, getNodeType& n, int& lvl, int& lvlSize, Eigen::ArrayXXd& d, Eigen::VectorXd& alpha, Eigen::MatrixXd& Phi_imGreedy){
+//	mNodesHist.conservativeResize(lvlSize,lvl+1);
+//	mNodesHist.col(lvl) = *n.mPtr;
+
+//	alphaHist.conservativeResize(lvlSize*m.nDims, lvl+1);
+//	alphaHist.col(lvl) = alpha;
 
 
-	mNodesHist.conservativeResize(lvlSize,lvl+1);
-	mNodesHist.col(lvl) = *n.mPtr;
-//	std::cout << mNodesHist << std::endl;
-	//todo might be better to switch to a matrix because of the multiplication later on
-	alphaHist.conservativeResize(lvlSize*m.nDims, lvl+1);
-	alphaHist.col(lvl) = alpha;
-	std::cout << alphaHist << std::endl;
 
-//	std::cout << alphaHist << std::endl;
+	if(lvl == 0){
+		deltaInternal = Eigen::ArrayXXd::Zero(m.N_i, m.nDims);
+		delta = Eigen::ArrayXXd::Zero(n.N_i, m.nDims);
+	}
+
+	delta += d;
+
+	for(int dim = 0; dim < m.nDims; dim++){
+		deltaInternal.col(dim) += (Phi_imGreedy*alpha(Eigen::seqN(dim*lvlSize,lvlSize))).array();
+	}
+
+	errorPrevLvl = -error;
+
+
 }
 
 

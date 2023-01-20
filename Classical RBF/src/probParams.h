@@ -15,6 +15,8 @@ struct probParams{
 	double tol;
 	std::string dispFile;
 	double gamma;
+	bool multiLvl;
+	int lvlSize;
 };
 
 

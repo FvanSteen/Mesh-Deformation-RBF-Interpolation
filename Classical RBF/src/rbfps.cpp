@@ -25,25 +25,31 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 //	int maxErrorNode;
 	Eigen::ArrayXi maxErrorNodes;
-
-
 	greedy go;
-
 
 	if(params.dataRed){
 		n.addControlNode(m.intBdryNodes(0));
+		n.addControlNode(m.intBdryNodes(m.intBdryNodes.size()-1));
 	}
 
 
 
-	int iter;
+	int iter, lvl;
 	double maxError;
+	bool iterating;
 
 	for(int i = 0; i < params.steps; i++){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 		maxError = 1;
 		iter = 0;
-		while(maxError > params.tol){
+		lvl = 0;
+		if(params.multiLvl && i != 0){
+			n.addControlNode(m.intBdryNodes(0));
+			n.addControlNode(m.intBdryNodes(m.intBdryNodes.size()-1));
+		}
+		iterating = true;
+
+		while(iterating){
 
 
 			if(iter!=0){
@@ -53,8 +59,9 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 //				std::cout << "Moving nodes: \n" << *n.mPtr << "\n internal nodes (same): \n" << *n.iPtr << "\n sliding edge Nodes: \n" << *n.sePtr << "\n mnodesStd: \n" << *n.mStdPtr << std::endl;
 			}
-			delta.resize(n.N_se, m.nDims);
-			finalDef.resize(n.N_se,m.nDims);
+
+//			delta.resize(n.N_se, m.nDims);
+//			finalDef.resize(n.N_se,m.nDims);
 
 			getPhi(Phi_mm, *n.mPtr, *n.mPtr);
 
@@ -66,10 +73,9 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 
 			if(i==0 || params.dataRed){
-				defVec = Eigen::VectorXd::Zero(n.N_m*m.nDims);
-				getDefVec(defVec,n.N_m,params.steps,*n.mPtr);
+				getDefVec(defVec, n, lvl, go.errorPrevLvl);
 			}
-
+			std::cout << defVec << std::endl;
 
 			if(params.curved || i==0){
 				m.getMidPnts();
@@ -77,55 +83,55 @@ void rbf_ps::perform_rbf(getNodeType& n){
 			}
 
 
-			performRBF_PS(Phi_mm, Phi_sm, Phi_mmStd, Phi_im, defVec, delta, finalDef, defVecStd, n);
-//			if(iter == 0){
-//				m.coords(*n.iPtr,Eigen::all) +=d;
-//				m.writeMeshFile();
-//				std::cout << "meshcheck" << std::endl;
-//				std::exit(0);
-//			}
+			if(lvl!=0){
+				performRBF(Phi_mmStd, Phi_im, defVec,*n.mStdPtr,*n.iPtr, n.N_mStd);
+			}else{
+				performRBF_PS(Phi_mm, Phi_sm, Phi_mmStd, Phi_im, defVec, delta, finalDef, defVecStd, n);
+			}
 
 			if(params.dataRed){
-				go.getError(m,n,d, maxError, maxErrorNodes, movingIndices, exactDisp ,pnVec, p);
+
+				go.getError(m,n,d, maxError, maxErrorNodes, movingIndices, exactDisp ,pnVec, p, params.multiLvl, lvl);
 				std::cout << "error: \t"<< maxError <<" at node: \t" << maxErrorNodes(0)<< std::endl;
 
-			}else{
-				maxError = 0;
-			}
-//			if(iter == 2){
-//				m.coords(*n.iPtr, Eigen::all) +=d;
-//				m.writeMeshFile();
-//				std::cout << "control Nodes: " << *n.mStdPtr<< std::endl;
-//				std::exit(0);
-//			}
+				if(params.multiLvl == false && maxError < params.tol){
 
-//			if(n.N_se >= 1){
-//				m.coords(*n.iPtr, Eigen::all) +=d;
-//				m.writeMeshFile();
-//				std::exit(0);
-//			}
+					iterating = false;
+				}
+
+			}else{
+
+//				maxError = 0;
+				iterating = false;
+			}
+
+			if(params.multiLvl && n.N_mStd >= params.lvlSize){
+//				std::cout << *n.mStdPtr << std::endl;
+				getPhi(Phi_imGrdy, *n.iPtrGrdy, *n.mStdPtr);
+				go.setLevelParams(m,n,lvl,params.lvlSize, d, alpha, Phi_imGrdy);
+
+				std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" << std::endl;
+				lvl++;
+
+				n.assignNodeTypesGreedy();
+
+				if(maxError < params.tol){
+					iterating = false;
+				}
+
+			}
 
 			iter++;
 
 		}
 
-//		auto stop = std::chrono::high_resolution_clock::now();
-//		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
-//		std::cout <<  "Runtime duration: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
 
-//		std::cout << iter-1 << std::endl;
-
-//		std::cout << iter << std::endl;
 		if(params.dataRed){
-			updateNodes(Phi_imGrdy, n, defVec);
+			updateNodes(Phi_imGrdy, n, defVec ,go.delta, go.deltaInternal);
 			std::cout << "DOING AN UPDATE" << std::endl;
-//			m.writeMeshFile();
-//			std::exit(0);
-
 			go.correction(m,n, params.gamma);
 		}
-//		m.writeMeshFile();
-//		std::exit(0);
+
 		std::cout << "number of control nodes: " << n.N_m << std::endl;
 
 	}
@@ -137,6 +143,9 @@ void rbf_ps::perform_rbf(getNodeType& n){
 }
 
 void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_mmStd, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVec,Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef, Eigen::VectorXd& defVecStd,getNodeType& n){
+
+	delta.resize(n.N_se, m.nDims);
+	finalDef.resize(n.N_se,m.nDims);
 	auto starti = std::chrono::high_resolution_clock::now();
 
 
@@ -144,7 +153,6 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 	for(int dim = 0; dim < m.nDims; dim++){
 		delta.col(dim) = (Phi_sm*(Phi_mm.fullPivLu().solve(defVec(Eigen::seqN(dim*n.N_m,n.N_m))))).array();
 	}
-
 
 	auto stopi = std::chrono::high_resolution_clock::now();
 	auto durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);

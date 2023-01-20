@@ -4,7 +4,7 @@
 #include "rbfstd.h"
 #include "rbfps.h"
 #include "rbfds.h"
-#include "greedy.h"
+//#include "greedy.h"
 //#include "selectRbf.h"
 #include <iostream>
 #include <fstream>

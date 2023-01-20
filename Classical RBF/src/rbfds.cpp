@@ -2,6 +2,7 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <chrono>
+
 rbf_ds::rbf_ds(Mesh& meshObject, struct probParams& probParamsObject)
 :rbf_std(meshObject, probParamsObject)
 {
@@ -32,7 +33,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 	greedy go;
 	int iter;
 	double error;
-
+	int lvl = 0;
 	for (int i = 0; i < params.steps; i++){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 		error = 1;
@@ -70,9 +71,10 @@ void rbf_ds::perform_rbf(getNodeType& n){
 
 		//		defVec = Eigen::VectorXd::Zero((N_m+N_s)*m.nDims);
 
-			defVec = Eigen::VectorXd::Zero((n.N_m+n.N_se)*m.nDims);
 
-			getDefVec(defVec,n.N_m,params.steps,*n.mPtr);
+
+//			getDefVec(defVec,n.N_m,params.steps,*n.mPtr);
+			getDefVec(defVec, n, lvl, go.errorPrevLvl);
 
 			getPhiDS(Phi,Phi_mm,Phi_ms, Phi_sm, Phi_ss, m.n, m.t,n.N_m,n.N_se, *n.sePtr);
 
@@ -83,7 +85,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 //			std::exit(0);
 			if(params.dataRed){
 
-				go.getError(m,n, d,error,maxErrorNodes,movingIndices, exactDisp,pnVec,p);
+				go.getError(m,n, d,error,maxErrorNodes,movingIndices, exactDisp,pnVec,p, params.multiLvl, lvl);
 //				std::cout << "error: \t"<< error <<" at node: \t" << maxErrorNode<< std::endl;
 
 			}else{
@@ -101,7 +103,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 
 		if(params.dataRed){
 //			std::cout << *n.mStdPtr << std::endl;
-			updateNodes(Phi_imGrdy, n, defVec);
+			updateNodes(Phi_imGrdy, n, defVec,go.delta, go.deltaInternal);
 //			std::cout << m.coords << std::endl;
 			std::cout << "DOING AN UPDATE" << std::endl;
 			go.correction( m,n,params.gamma);

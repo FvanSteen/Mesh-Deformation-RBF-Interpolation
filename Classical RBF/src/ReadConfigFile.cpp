@@ -89,6 +89,19 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 				gamma =  stod(line.substr(first,last-first));
 				probParamsObject.gamma = gamma;
 			}
+			else if(line.rfind("MULTILEVEL")==0){
+				findStringBounds(first,last,line);
+				if(line.substr(first,last-first) == "YES"){
+					probParamsObject.multiLvl = true;
+				}else{
+					probParamsObject.multiLvl = false;
+				}
+			}
+			else if(line.rfind("LEVELSIZE")==0){
+				findStringBounds(first,last,line);
+				probParamsObject.lvlSize = stoi(line.substr(first,last-first));
+
+			}
 		}
 		file.close();
 	}else{std::cout << "Unable to open the configuration file: " << ifName << std::endl;}

@@ -175,6 +175,16 @@ void Mesh::readMeshFile(){
 	else std::cout << "Not able to open input mesh file";
 
 	getNodeTypes();
+//	std::cout <<"moving Nodes: \n" <<  mNodes.size() << std::endl;
+//	std::cout <<"sliding edge Nodes: \n" <<  seNodes.size() << std::endl;
+//	std::cout <<"sliding surf Nodes: \n" <<  ssNodes.size() << std::endl;
+//	std::cout << "static Nodes: \n " << staticNodes << std::endl;
+
+
+
+
+
+	N_ss = ssNodes.size();
 	N_se = seNodes.size();
 	if(pmode == "moving"){
 		std::cout << "adjusting the sliding edge nodes by adding the static nodes" << std::endl;
@@ -191,7 +201,6 @@ void Mesh::readMeshFile(){
 //	std::cout << "static Nodes: \n " << staticNodes << std::endl;
 	N_m = mNodes.size();
 
-//	std::cout << intBdryNodes << std::endl;
 
 
 	ibIndices.resize(intBdryNodes.size());
@@ -210,6 +219,7 @@ void Mesh::readMeshFile(){
 
 
 
+
 //	N_ss = slidingSurfNodes.size();
 //	N_es = extStaticNodes.size();
 //	N_p = periodicNodes.size();
@@ -223,7 +233,7 @@ void Mesh::readMeshFile(){
 	getEdgeConnectivity();
 //	std::cout << edgeConnectivity << std::endl;
 	if(nDims == 3){
-		getSurfConnectivity();
+//		getSurfConnectivity();
 	}
 //	}
 
@@ -256,7 +266,7 @@ void Mesh::readMeshFile(){
 
 
 	// obtaining the nodes that make up the line segments of the external boundary
-	getExtBdryEdgeSegments();
+//	getExtBdryEdgeSegments();
 //	std::cout << extBdryEdgeSegments << std::endl;
 
 	if(smode != "none"){
@@ -296,8 +306,8 @@ void Mesh::getNodeTypes(){
 	}
 
 	Eigen::ArrayXi bdryNodesArr; 						// 1D array that will contain the all nodes for each respective boundary
-	Eigen::ArrayXi idxMoving, idxSliding, idxStatic;		// Arrays containing specific type of nodes
-	int cntMoving, cntSliding, cntStatic;								// counters for the number of sliding surface (SS) sliding edge (SE), static (Stat) and periodic (Per) nodes
+	Eigen::ArrayXi idxMoving, idxSlidingEdge, idxStatic, idxSlidingSurf;		// Arrays containing specific type of nodes
+	int cntMoving, cntSlidingEdge, cntStatic, cntSlidingSurf;								// counters for the number of sliding surface (SS) sliding edge (SE), static (Stat) and periodic (Per) nodes
 
 
 	// array that will contain the external edge boundary nodes in the order of the meshing file.
@@ -309,7 +319,8 @@ void Mesh::getNodeTypes(){
 		}
 	}
 
-	extBdryEdgeNodes.resize(nrSegments);
+
+	extBdryEdgeNodes.resize(4*nrSegments);
 
 	int edgeNodeCnt = 0;
 	bool periodic, moving;										// boolean that is set based on whether its a periodic boundary element or not.
@@ -317,7 +328,7 @@ void Mesh::getNodeTypes(){
 
 	// for each external boundary the sliding edge, sliding surface and static nodes are identified
 	for(int elem = 0; elem < nrElemsBdry.size(); elem++){
-
+		std::cout << "MARKER: " << srtdTags[elem] << std::endl;
 		// resizing the array that will contain all the boundary nodes of that boundary
 		bdryNodesArr.resize(nrElemsBdry(elem)*(bdryNodesMat.cols()-1));
 
@@ -337,17 +348,20 @@ void Mesh::getNodeTypes(){
 
 		if(idxMoving.size() != bdryNodesArr.size()){
 			idxMoving.resize(bdryNodesArr.size());
-			idxSliding.resize(bdryNodesArr.size());
+			idxSlidingEdge.resize(bdryNodesArr.size());
+			idxSlidingSurf.resize(bdryNodesArr.size());
 			idxStatic.resize(bdryNodesArr.size());
 		}
 
 		// setting counters to zero
-		cntMoving = 0, cntSliding = 0, cntStatic = 0;
+		cntMoving = 0, cntSlidingEdge = 0, cntStatic = 0, cntSlidingSurf = 0;
 
 
 
 		// In 2D only sliding edge and static nodes have to be considered for the sliding algorithms
 		if(nDims ==2){
+			std::cout << "2D" << std::endl;
+
 			moving = false;
 			periodic = false;
 
@@ -378,10 +392,10 @@ void Mesh::getNodeTypes(){
 								cntMoving++;
 							}else{
 
-								idxSliding(cntSliding) = bdryNodesArr(i);
-								cntSliding++;
+								idxSlidingEdge(cntSlidingEdge) = bdryNodesArr(i);
+								cntSlidingEdge++;
 							}
-
+							// skipping a node
 							i++;
 						// else its a static node
 						}else{
@@ -411,7 +425,76 @@ void Mesh::getNodeTypes(){
 
 				}
 			}
+
+		}else if(nDims == 3){
+			std::cout << bdryNodesArr << std::endl;
+			std::cout << "3D " << std::endl;
+
+			moving = false;
+			periodic = false;
+			std::cout << pTags[0] << '\t' << pTags[1] << std::endl;
+			std::cout << pmode << std::endl;
+			std::cout << srtdTags[elem] << std::endl;
+
+			if(std::find(std::begin(mTags),std::end(mTags),srtdTags[elem]) != std::end(mTags)){
+				std::cout << srtdTags[elem] << " is a moving boundary" << std::endl;
+				moving = true;
+
+			}else if((pmode == "moving" || pmode == "fixed") && std::find(std::begin(pTags),std::end(pTags),srtdTags[elem]) != std::end(pTags)){
+				std::cout << srtdTags[elem] << " is periodic boundary" << std::endl;
+				periodic = true;
+			}
+
+			if (periodic == false){
+				for (int i= 0; i< bdryNodesArr.size();i++){
+
+					// in case of moving boundary all nodes are added to the moving nodes array
+					if(moving){
+						idxMoving(cntMoving) = bdryNodesArr(i);
+						cntMoving++;
+					}else{
+						if(i< bdryNodesArr.size()-3 && bdryNodesArr(i) == bdryNodesArr(i+3)){
+							if(smode == "none"){
+								idxMoving(cntMoving) = bdryNodesArr(i);
+								cntMoving++;
+							}else{
+								idxSlidingSurf(cntSlidingSurf) = bdryNodesArr(i);
+								cntSlidingSurf++;
+							}
+							i +=3;
+						}else if(i< bdryNodesArr.size()-1 && bdryNodesArr(i) == bdryNodesArr(i+1)){
+							if(smode == "none"){
+								idxMoving(cntMoving) = bdryNodesArr(i);
+								cntMoving++;
+							}else{
+								idxSlidingEdge(cntSlidingEdge) = bdryNodesArr(i);
+								cntSlidingEdge++;
+							}
+							i++;
+						}else{
+							if(pmode == "moving"){
+								// todo find a better name for this as these do slide in the periodic vector direction!
+								idxStatic(cntStatic) = bdryNodesArr(i);
+								cntStatic++;
+
+							}else{
+								idxMoving(cntMoving) = bdryNodesArr(i);
+								cntMoving++;
+							}
+						}
+						extBdryEdgeNodes(edgeNodeCnt) = bdryNodesArr(i);
+						edgeNodeCnt++;
+					}
+				}
+			}
+//			std::cout << "moving nodes: \n" << idxMoving(Eigen::seqN(0,cntMoving)) << std::endl;
+//			std::cout << "slidingEdge: \n" << idxSlidingEdge(Eigen::seqN(0,cntSlidingEdge)) << std::endl;
+//			std::cout << "sliding surf: \n" << idxSlidingSurf(Eigen::seqN(0,cntSlidingSurf)) << std::endl;
+//			std::cout << "static: \n" << idxStatic(Eigen::seqN(0,cntStatic)) << std::endl;
 		}
+
+
+
 		// Resize the arrays containing the different type of nodes according to how many are found in this boundary
 		// And assigning last n-elements to the found nodes.
 
@@ -419,32 +502,40 @@ void Mesh::getNodeTypes(){
 		if(moving){
 			intBdryNodes.conservativeResize(intBdryNodes.size()+cntMoving);
 			intBdryNodes(Eigen::lastN(cntMoving)) = idxMoving(Eigen::seqN(0,cntMoving));
+
 		}
 
 		if(cntStatic != 0){
 			staticNodes.conservativeResize(staticNodes.size()+cntStatic);
 			staticNodes(Eigen::lastN(cntStatic)) = idxStatic(Eigen::seqN(0,cntStatic));
-
 		}
 
 		mNodes.conservativeResize(mNodes.size()+cntMoving);
 		mNodes(Eigen::lastN(cntMoving)) = idxMoving(Eigen::seqN(0,cntMoving));
 
-		seNodes.conservativeResize(seNodes.size()+cntSliding);
-		seNodes(Eigen::lastN(cntSliding)) = idxSliding(Eigen::seqN(0,cntSliding));
+		seNodes.conservativeResize(seNodes.size()+cntSlidingEdge);
+		seNodes(Eigen::lastN(cntSlidingEdge)) = idxSlidingEdge(Eigen::seqN(0,cntSlidingEdge));
+
+		ssNodes.conservativeResize(ssNodes.size()+cntSlidingSurf);
+		ssNodes(Eigen::lastN(cntSlidingSurf)) = idxSlidingSurf(Eigen::seqN(0,cntSlidingSurf));
 
 	}
 
 
 	// Calling a function that removes any duplicate elements from the arrays.
-	if(nDims==3){
-		removeDuplicates(slidingSurfNodes);
+	if(ssNodes.size() != 0){
+		removeDuplicates(ssNodes);
 	}
 
 	removeDuplicates(mNodes);
 	removeDuplicates(intBdryNodes);
+
 	if(seNodes.size() != 0 ){
 		removeDuplicates(seNodes);
+	}
+
+	if(staticNodes.size() !=0){
+		removeDuplicates(staticNodes);
 	}
 
 
@@ -455,12 +546,6 @@ void Mesh::getNodeTypes(){
 		extBdryEdgeNodes.conservativeResize(edgeNodeCnt+1);
 		extBdryEdgeNodes(edgeNodeCnt) = extBdryEdgeNodes(0);
 	}
-
-
-
-
-
-
 }
 
 
@@ -549,8 +634,8 @@ void Mesh::getIntNodes(){
 	}
 
 	// resize the array containing all boundary nodes and assign the int + ext boundary nodes to it.
-	bdryNodes.resize(mNodes.size()+seNodes.size());
-	bdryNodes << mNodes, seNodes;
+	bdryNodes.resize(mNodes.size()+seNodes.size()+ssNodes.size());
+	bdryNodes << mNodes, seNodes, ssNodes;
 
 	std::sort(std::begin(bdryNodes), std::end(bdryNodes));		// bdryNodes need to be sorted for this algorithm to work
 	iNodes.resize(nNodes-bdryNodes.size());						// Resizing iNodes accordingly
@@ -581,7 +666,7 @@ void Mesh::getIntNodes(){
 //		std::cout << cnt << std::endl;
 
 	}
-	bdryNodes << mNodes,seNodes;	// Elsewhere, the code requires bdryNodes to be unsorted so intBdryNodes and extBdryNodes are assigned again
+	bdryNodes << mNodes,seNodes, ssNodes;	// Elsewhere, the code requires bdryNodes to be unsorted so intBdryNodes and extBdryNodes are assigned again
 
 }
 

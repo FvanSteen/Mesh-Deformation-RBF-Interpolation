@@ -143,7 +143,7 @@ void getNodeType::assignNodeTypesGreedy(){
 
 
 void getNodeType::addControlNode(int& node){
-	std::cout << "adding control node: " << node << std::endl;
+
 
 
 	if (std::find(std::begin(m.mNodes),std::end(m.mNodes),node) != std::end(m.mNodes)){
@@ -171,9 +171,8 @@ void getNodeType::addControlNode(int& node){
 	}
 
 
-
-
-	std::cout << "control node is added " << std::endl;
+	std::cout << "control node: " << node << " is added"<< std::endl;
+//	std::cout << "control node is added " << std::endl;
 
 }
 

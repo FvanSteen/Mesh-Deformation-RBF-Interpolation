@@ -25,13 +25,15 @@ public:
 
 	rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject);
 	void getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::ArrayXi& idxSet2);
-	void getDefVec(Eigen::VectorXd& defVec, int& N, int& steps, Eigen::ArrayXi& movingNodes);
+//	void getDefVec(Eigen::VectorXd& defVec, int& N, int& steps, Eigen::ArrayXi& movingNodes);
+	void getDefVec(Eigen::VectorXd& defVec, getNodeType& n, int lvl, Eigen::ArrayXXd& errorPrevLvl);
+	void getDefVecStd(getNodeType& n, Eigen::VectorXd& defVec);
 	void readDisplacementFile();
 
 	void getNodeTypes();
 	void getPeriodicParams();
 	double rbfEval(double distance);
-	void getDefVecMultiGreedy(Eigen::VectorXd& defVec, getNodeType& n, Eigen::ArrayXXd& errors);
+	void getDefVecMultiGreedy(Eigen::VectorXd& defVec, getNodeType& n, Eigen::ArrayXXd& errors, int N, Eigen::ArrayXi*& mPtr);
 
 
 

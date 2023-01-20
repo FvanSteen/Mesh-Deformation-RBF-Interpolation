@@ -69,76 +69,63 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::Ar
 	}
 //	std::exit(0);
 }
+
+
+void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, getNodeType& n, int lvl, Eigen::ArrayXXd& errorPrevLvl){
+
+	int N;
+	Eigen::ArrayXi* mPtr;
+	if(params.smode == "ds" || (params.smode == "ps" && lvl > 0)){
+		N = n.N_mStd;
+		mPtr = n.mStdPtr;
+	}else{
+		N = n.N_m;
+		mPtr = n.mPtr;
+	}
+
+	defVec = Eigen::VectorXd::Zero(N*m.nDims);
 //
-void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, int& N, int& steps, Eigen::ArrayXi& movingNodes){
-	//todo in this function the N_m from the getNodeType.cpp class should be taken instead of the one from the mesh.cpp
+//	if(params.smode == "ds"){
+//		defVec = Eigen::VectorXd::Zero((n.N_m+n.N_se)*m.nDims);
+//	}else{
+//		defVec = Eigen::VectorXd::Zero(n.N_m*m.nDims);
+////		defVec = Eigen::VectorXd::Zero(n.N_mStd*m.nDims);
+//	}
 
 
+
+	if(params.multiLvl && lvl > 0){
+		getDefVecMultiGreedy(defVec,n, errorPrevLvl,N, mPtr);
+	}else{
+		getDefVecStd(n, defVec);
+	}
 
 //	std::cout << '\n' << defVec.size() << '\t' << m.N_m << std::endl;
 
 
+
+}
+
+void rbfGenFunc::getDefVecStd(getNodeType& n, Eigen::VectorXd& defVec){
+	std::cout << "determinging std defvec"  << std::endl;
+
+	std::cout << exactDisp << std::endl;
+	std::cout << *n.mPtr << std::endl;
+	std::cout << movingIndices << std::endl;
+
 	int idx;
 	//loop through the moving nodes
-	for(int i = 0; i < N; i++){
-		idx = std::distance(std::begin(movingIndices), std::find(std::begin(movingIndices), std::end(movingIndices),movingNodes(i)));
+	for(int i = 0; i < n.N_m; i++){
+		idx = std::distance(std::begin(movingIndices), std::find(std::begin(movingIndices), std::end(movingIndices),(*n.mPtr)(i)));
 		if(idx!= movingIndices.size()){
 //			std::cout << idx << std::endl;
 //			std::cout << mIndex(idx) << std::endl;
 //			std::cout << displacement.row(idx) << std::endl;
 			for(int dim = 0; dim < m.nDims; dim++){
-				defVec(dim*N+i) = exactDisp(idx,dim);
+				defVec(dim*n.N_m+i) = exactDisp(idx,dim);
 			}
 		}
 	}
-
-
-
-//	std::cout << defVec << std::endl;
-////	std::cout << "\n" << N << std::endl;
-////	Eigen::MatrixXd intPnts(m.N_ib,m.nDims);
-//	Eigen::MatrixXd intPnts(ibNodes.size(),m.nDims);
-//	Eigen::MatrixXd rotDef;
-//
-////	intPnts = m.coords(m.intBdryNodes,Eigen::all);
-//	intPnts = m.coords(ibNodes,Eigen::all);
-//
-//
-//	if(m.nDims == 2){
-//
-//		rotDef = (rotMat*(intPnts.rowwise() - params.rotPnt).transpose()).transpose().rowwise() +params.rotPnt - intPnts;
-//
-//	}
-//	else if(m.nDims == 3){
-//		rotDef = Eigen::MatrixXd::Zero(m.N_ib,m.nDims);
-//
-//		if(params.rotVec[0] != 0){
-//			rotDef+= (rotMatX*(intPnts.rowwise() - params.rotPnt).transpose()).transpose().rowwise() +params.rotPnt - intPnts;
-//		}
-//		if(params.rotVec[1] != 0){
-//			rotDef+= (rotMatY*(intPnts.rowwise() - params.rotPnt).transpose()).transpose().rowwise() +params.rotPnt - intPnts;
-//		}
-//		if(params.rotVec[2] != 0){
-//			rotDef+= (rotMatZ*(intPnts.rowwise() - params.rotPnt).transpose()).transpose().rowwise() +params.rotPnt - intPnts;
-//		}
-//	}
-////	std::cout << "check" << std::endl;
-////	std::cout << defVec << std::endl;
-//
-//	for(int dim = 0; dim < m.nDims; dim++){
-////		defVec(Eigen::seqN(dim*N, m.N_ib)).array() += params.dVec(dim);
-////		defVec(Eigen::seqN(dim*N, m.N_ib)) += rotDef.col(dim);
-////		defVec(Eigen::seqN(dim*N, ibNodes.size())).array() += params.dVec(dim);
-////		defVec(Eigen::seqN(dim*N, ibNodes.size())) += rotDef.col(dim);
-//		defVec(dim*N + m.ibIndices).array() += params.dVec(dim);
-//		defVec(dim*N + m.ibIndices) += rotDef.col(dim);
-//	}
-////	std::cout << "check" << std::endl;
-////	std::cout << m.coords << std::endl;
-//
-//
-////	std::exit(0);
-
 }
 
 void rbfGenFunc::readDisplacementFile(){
@@ -166,59 +153,6 @@ void rbfGenFunc::readDisplacementFile(){
 }
 
 
-
-//void rbfGenFunc::getNodeTypes(){
-//	iNodes.resize(m.N_i+m.N_p);
-//	iNodes << m.intNodes, m.periodicNodes;
-//
-//	if(m.smode== "none" || smode == "ps"){
-//		mNodes.resize(m.N_ib + m.N_es + m.N_se);
-//		mNodes << m.intBdryNodes, m.extStaticNodes, m.slidingEdgeNodes;
-//
-//		if(m.smode == "ps" && m.pmode == "moving"){
-//			mNodesPro.resize(m.N_ib);
-//			mNodesPro << m.intBdryNodes;
-//
-//			sNodes.resize(m.N_se + m.N_es);
-//			sNodes << m.slidingEdgeNodes, m.extStaticNodes;
-//
-//		}else{
-//			mNodesPro.resize(m.N_ib+m.N_es);
-//			mNodesPro << m.intBdryNodes, m.extStaticNodes;
-//
-//			sNodes.resize(m.N_se); // sNodes is always the sliding nodes in 2D
-//			sNodes << m.slidingEdgeNodes;
-//		}
-//		N_s = sNodes.size();
-//		N_mPro = mNodesPro.size();
-//
-//	}else if(m.smode=="ds"){
-//
-//		if(m.pmode == "moving"){
-//			mNodes.resize(m.N_ib);
-//			mNodes << m.intBdryNodes;
-//			sNodes.resize(m.N_se+m.N_es);
-//			sNodes << m.slidingEdgeNodes, m.extStaticNodes;
-//		}else{
-//			mNodes.resize(m.N_ib+m.N_es);
-//			mNodes << m.intBdryNodes, m.extStaticNodes;
-//			sNodes.resize(m.N_se);
-//			sNodes << m.slidingEdgeNodes;
-//		}
-//		if(curved){
-//			// todo rename to make clearer
-//			mNodes2.resize(m.N_ib+m.N_es+m.N_se);
-//			mNodes2 << m.intBdryNodes,m.extStaticNodes, m.slidingEdgeNodes;
-//			N_m2 = mNodes2.size();
-//
-//		}
-//	}
-//	N_i = iNodes.size();
-//	N_s = sNodes.size();
-//	N_m = mNodes.size();
-//
-//
-//}
 
 
 void rbfGenFunc::getPeriodicParams(){
@@ -258,18 +192,20 @@ double rbfGenFunc::rbfEval(double distance){
 
 
 
-void rbfGenFunc::getDefVecMultiGreedy(Eigen::VectorXd& defVec, getNodeType& n, Eigen::ArrayXXd& errors){
+void rbfGenFunc::getDefVecMultiGreedy(Eigen::VectorXd& defVec, getNodeType& n, Eigen::ArrayXXd& errors, int N, Eigen::ArrayXi*& mPtr){
 //	std::cout << "testing" << std::endl;
 //	std::cout << *n.mPtr << std::endl;
 //	std::cout << '\n' << *n.iPtr << std::endl;
+
+	//todo check difference for pointers *n.mPtr/*n.mStdPtr for none/ps sliding and in the for loop
 	int idx;
-	for(int i = 0; i < n.N_m;i++){
-		std::cout << i << '\t' << (*n.mPtr)(i) << std::endl;
-		idx = std::distance(std::begin(*n.iPtr), std::find(std::begin(*n.iPtr), std::end(*n.iPtr),(*n.mPtr)(i)));
+	for(int i = 0; i < N ;i++){
+//		std::cout << i << '\t' << (*n.mPtr)(i) << std::endl;
+		idx = std::distance(std::begin(*n.iPtr), std::find(std::begin(*n.iPtr), std::end(*n.iPtr),(*mPtr)(i)));
 //		std::cout << errors.row(idx) << std::endl;
-		std::cout << "index: " << idx << std::endl;
+//		std::cout << "index: " << idx << std::endl;
 		for(int j = 0; j < errors.cols();j++){
-			defVec(n.N_m*j+i) = errors(idx,j);
+			defVec(N*j+i) = errors(idx,j);
 		}
 
 	}
