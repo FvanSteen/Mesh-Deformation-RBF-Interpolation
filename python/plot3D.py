@@ -152,7 +152,7 @@ os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical R
 #fileNames = ['/TestMesh.su2', '/TestMesh_def.su2']
 intBdryTag = "BLOCK"
 #fileNames = ["/25x25x5_def_rbf.su2"] 
-fileNames = ["/5x5x5_def.su2"]
+fileNames = ["/5x5x5.su2"]
 gt = 'RBF'
 
 # Obtaining mesh quality parameters from the initial mesh

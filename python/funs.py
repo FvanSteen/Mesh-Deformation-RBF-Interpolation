@@ -37,6 +37,8 @@ def getMeshQualParams(faces, vertices, elemType):
             size = 3
         elif elemType[i] == 9:
             size = 4
+        elif elemType[i] == 12:
+            size = 8
             
         elem = vertices[faces[i,0:size+1]]
         
@@ -108,7 +110,7 @@ def getPlotData(fileName):
 #    elif elementType == 12:
 #        nNodesElem = 8
     
-    nNodesElem = 4
+    nNodesElem = 8
     
     f = np.empty((nElem,nNodesElem),dtype=int)
     f[:] = -1
@@ -118,17 +120,16 @@ def getPlotData(fileName):
 #    print(f[0,:])
     for i in range(nElem):
         lineData = lines[i+nElemIdx+1].strip().split()
-#        print(lineData)
-#        print(lineData[1:nNodesElem+1])
-#        print(lineData[1:4])
-#        print(f[0,:])
-#        print(lineData[0])
+
         if lineData[0] == '5':
             f[i,0:3] = lineData[1:4]
             elemType[i] = 5
         elif lineData[0] == '9':
             f[i,0:4] = lineData[1:5]
             elemType[i] = 9
+        elif lineData[0] == "12":
+            f[i,0:8] = lineData[1:9]
+            elemType[i] = 12
 #        f[i,:] = lineData[1:nNodesElem+1]
 #        print(f[i,:])
         
