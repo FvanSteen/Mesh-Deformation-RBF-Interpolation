@@ -63,7 +63,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 			if(i==0 || params.dataRed){
 				getDefVec(defVec, n, lvl, go.errorPrevLvl);
 			}
-			std::cout << defVec << std::endl;
+
 
 
 			performRBF(Phi_mm, Phi_im, defVec,*n.mPtr,*n.iPtr, n.N_m);
@@ -129,7 +129,7 @@ void rbf_std::performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen
 	}
 
 	for(int dim = 0; dim < m.nDims; dim++){
-//		std::cout << "Solving for dimension: " << dim << std::endl;
+		std::cout << "Solving for dimension: " << dim << std::endl;
 		alpha(Eigen::seqN(dim*N,N)) = Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N)));
 		if(params.dataRed){
 			d.col(dim) = Phi_im*alpha(Eigen::seqN(dim*N,N));

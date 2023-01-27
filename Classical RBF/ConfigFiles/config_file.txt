@@ -2,20 +2,23 @@
 %MESH_FILENAME = mesh_NACA0012_inv.su2
 %MESH_FILENAME = LS89_turbine.su2
 %MESH_FILENAME = turbine_row.su2
-MESH_FILENAME = 5x5x5.su2
+%MESH_FILENAME = 5x5.su2
+MESH_FILENAME = 9x9.su2
 
 %MESH_OUT_FILENAME = 25x25_def.su2
 %MESH_OUT_FILENAME = mesh_NACA0012_inv_def.su2
 %MESH_OUT_FILENAME = LS89_turbine_def.su2
 %MESH_OUT_FILENAME = turbine_row_def.su2
-MESH_OUT_FILENAME = 5x5x5_def.su2
+MESH_OUT_FILENAME = 9x9_def.su2
+%MESH_OUT_FILENAME = 5x5_def.su2
 
 %
 %MARKER_BDRY = (block, lower, right, upper,left)
 %MARKER_BDRY = (airfoil, farfield)
 %MARKER_BDRY = (airfoil, inflow, outflow, periodic_1, periodic_2)
 %MARKER_BDRY = (inflow, outflow, wall1, periodic1, periodic2)
-MARKER_BDRY = (FRONT, BACK, LEFT, RIGHT, LOWER, UPPER, BLOCK)
+%MARKER_BDRY = (FRONT, BACK, LEFT, RIGHT, LOWER, UPPER, BLOCK)
+MARKER_BDRY = (LEFT, RIGHT, UPPER, LOWER, BLOCK)
 
 %MARKER_MOVING = (block)
 %MARKER_MOVING = (airfoil)
@@ -43,7 +46,8 @@ INFLUENCE_FACTOR = 2.5
 %DEFORMATION_FILENAME = mesh_NACA0012_inv_deformation.txt
 %DEFORMATION_FILENAME = LS89_turbine_deformation.txt
 %DEFORMATION_FILENAME = turbine_row_deformation.txt
-DEFORMATION_FILENAME = 5x5x5_deformation.txt
+DEFORMATION_FILENAME = 9x9_deformation.txt
+%DEFORMATION_FILENAME = 5x5_deformation.txt
 
 CURVED = NO
 DATA_REDUCTION = NO

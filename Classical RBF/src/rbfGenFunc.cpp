@@ -109,9 +109,9 @@ void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, getNodeType& n, int lvl, Eig
 void rbfGenFunc::getDefVecStd(getNodeType& n, Eigen::VectorXd& defVec){
 	std::cout << "determinging std defvec"  << std::endl;
 
-	std::cout << exactDisp << std::endl;
-	std::cout << *n.mPtr << std::endl;
-	std::cout << movingIndices << std::endl;
+//	std::cout << exactDisp << std::endl;
+//	std::cout << *n.mPtr << std::endl;
+//	std::cout << movingIndices << std::endl;
 
 	int idx;
 	//loop through the moving nodes
