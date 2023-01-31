@@ -32,7 +32,14 @@ void rbf_ps::perform_rbf(getNodeType& n){
 		n.addControlNode(m.intBdryNodes(m.intBdryNodes.size()-1));
 	}
 
-
+//
+//	std::cout <<"moving nodes: "<< *n.mPtr << std::endl;
+//	std::cout <<"Internal nodes: "<< *n.iPtr << std::endl;
+//	std::cout << "sliding Nodes: " << *n.sPtr << std::endl;
+//	std::cout << "sliding edge nodes: " << n.seNodes << std::endl;
+//	std::cout << "sliding surf nodes: " << n.ssNodes << std::endl;
+//	std::cout << "std rbf nodes: " << *n.mStdPtr << std::endl;
+//	std::exit(0);
 
 	int iter, lvl;
 	double maxError;
@@ -51,7 +58,6 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 		while(iterating){
 
-
 			if(iter!=0){
 				for(int node = 0; node < maxErrorNodes.size(); node++){
 					n.addControlNode(maxErrorNodes(node));
@@ -59,28 +65,34 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 //				std::cout << "Moving nodes: \n" << *n.mPtr << "\n internal nodes (same): \n" << *n.iPtr << "\n sliding edge Nodes: \n" << *n.sePtr << "\n mnodesStd: \n" << *n.mStdPtr << std::endl;
 			}
-
+//			std::cout <<"moving nodes: "<< *n.mPtr << std::endl;
+//			std::cout << "sliding edge Nodes: " << n.seNodes << std::endl;
+//			std::cout << "sliding surf Nodes: " << n.ssNodes << std::endl;
+//			std::cout << "std rbf nodes: " << *n.mStdPtr << std::endl;
 //			delta.resize(n.N_se, m.nDims);
 //			finalDef.resize(n.N_se,m.nDims);
 
 			getPhi(Phi_mm, *n.mPtr, *n.mPtr);
 
-			getPhi(Phi_sm, *n.sePtr, *n.mPtr);
+//			getPhi(Phi_sm, *n.sePtr, *n.mPtr); 	FOR 2D
+			getPhi(Phi_sm, *n.sPtr, *n.mPtr);
+
 			getPhi(Phi_mmStd, *n.mStdPtr, *n.mStdPtr);
 
-			getPhi(Phi_im, *n.iPtr, *n.mStdPtr);
 
+			getPhi(Phi_im, *n.iPtr, *n.mStdPtr);
 
 
 			if(i==0 || params.dataRed){
 				getDefVec(defVec, n, lvl, go.errorPrevLvl);
 			}
-			std::cout << defVec << std::endl;
+
 
 			if(params.curved || i==0){
 				m.getMidPnts();
 				m.getVecs();
 			}
+
 
 
 			if(lvl!=0){
@@ -89,13 +101,26 @@ void rbf_ps::perform_rbf(getNodeType& n){
 				performRBF_PS(Phi_mm, Phi_sm, Phi_mmStd, Phi_im, defVec, delta, finalDef, defVecStd, n);
 			}
 
+
 			if(params.dataRed){
 
 				go.getError(m,n,d, maxError, maxErrorNodes, movingIndices, exactDisp ,pnVec, p, params.multiLvl, lvl);
 				std::cout << "error: \t"<< maxError <<" at node: \t" << maxErrorNodes(0)<< std::endl;
 
-				if(params.multiLvl == false && maxError < params.tol){
+//				std::cout << *n.iPtr << std::endl;
+//				std::cout << d << std::endl;
+//				std::cout << go.error << std::endl;
+//
 
+//				if(iter == 2){
+////					m.coords(*n.iPtr, Eigen::all) += (d-go.error);
+//
+//					m.coords(*n.iPtr, Eigen::all) += (d);
+//					m.writeMeshFile();
+//					std::exit(0);
+//				}
+
+				if(params.multiLvl == false && maxError < params.tol){
 					iterating = false;
 				}
 
@@ -144,15 +169,21 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_mmStd, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVec,Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef, Eigen::VectorXd& defVecStd,getNodeType& n){
 
-	delta.resize(n.N_se, m.nDims);
-	finalDef.resize(n.N_se,m.nDims);
+//	delta.resize(n.N_se, m.nDims); FOR 2D
+//	finalDef.resize(n.N_se,m.nDims);
+
+	delta.resize(n.N_s, m.nDims);
+	finalDef.resize(n.N_s,m.nDims);
+
 	auto starti = std::chrono::high_resolution_clock::now();
-
-
 
 	for(int dim = 0; dim < m.nDims; dim++){
 		delta.col(dim) = (Phi_sm*(Phi_mm.fullPivLu().solve(defVec(Eigen::seqN(dim*n.N_m,n.N_m))))).array();
 	}
+//	m.coords(*n.sPtr,Eigen::all) += delta;
+//	m.writeMeshFile();
+//	std::cout << "done" << std::endl;
+//	std::exit(0);
 
 	auto stopi = std::chrono::high_resolution_clock::now();
 	auto durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
@@ -184,11 +215,12 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 
 //	p->project(m, *n.sePtr, delta, finalDef, pVec);
 
-	p->projectIter(m, *n.sePtr, delta, finalDef);
+//	p->projectIter(m, *n.sePtr, delta, finalDef); FOR 2D
+	p->projectIter(m, *n.sPtr, delta, finalDef, n.N_se);
 
 
 //	std::cout << finalDef << std::endl;
-//	m.coords(*n.sePtr,Eigen::all) += finalDef;
+//	m.coords(*n.sPtr,Eigen::all) += finalDef;
 //	m.writeMeshFile();
 //	std::exit(0);
 
@@ -228,7 +260,8 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 		defVecStd(Eigen::seqN(dim*n.N_mStd,n.N_m)) = defVec(Eigen::seqN(dim*n.N_m,n.N_m));
 
 //		defVec(Eigen::seqN(dim*N_m+N_mPro,m.N_se)) = finalDef.col(dim);
-		defVecStd(Eigen::seqN(dim*n.N_mStd+n.N_m,n.N_se)) = finalDef.col(dim);
+//		defVecStd(Eigen::seqN(dim*n.N_mStd+n.N_m,n.N_se)) = finalDef.col(dim); FOR 2D
+		defVecStd(Eigen::seqN(dim*n.N_mStd+n.N_m,n.N_s)) = finalDef.col(dim);
 
 	}
 

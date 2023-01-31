@@ -34,6 +34,16 @@ void rbf_std::perform_rbf(getNodeType& n){
 		n.addControlNode(m.intBdryNodes(m.intBdryNodes.size()-1));
 	}
 
+//	std::cout <<"moving nodes: "<< *n.mPtr << std::endl;
+//	std::cout <<"Internal nodes: "<< *n.iPtrGrdy << std::endl;
+
+//	std::cout << "sliding Nodes: " << *n.sPtr << std::endl;
+//	std::cout << "sliding edge nodes: " << n.seNodes << std::endl;
+//	std::cout << "sliding surf nodes: " << n.ssNodes << std::endl;
+//	std::cout << "std rbf nodes: " << *n.mStdPtr << std::endl;
+//	std::exit(0);
+
+
 	greedy go;
 
 	for(int i=0; i<params.steps; i++){
@@ -53,16 +63,18 @@ void rbf_std::perform_rbf(getNodeType& n){
 					n.addControlNode(maxErrorNodes(node));
 				}
 			}
-
+//			std::cout <<"moving nodes: "<< *n.mPtr << std::endl;
+//			std::cout << "int nodes\n" << *n.iPtr << std::endl;
 //			std::cout << "Obtaining Phi_mm" << std::endl;
 			getPhi(Phi_mm, *n.mPtr, *n.mPtr);
-
+//			std::cout << Phi_mm << std::endl;
 //			std::cout << "Obtaining Phi_im" << std::endl;
 			getPhi(Phi_im, *n.iPtr, *n.mPtr);
 
 			if(i==0 || params.dataRed){
 				getDefVec(defVec, n, lvl, go.errorPrevLvl);
 			}
+//			std::cout << defVec << std::endl;
 
 
 
@@ -107,7 +119,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 
 		if(params.dataRed){
-			updateNodes(Phi_imGreedy,n, defVec,go.delta, go.deltaInternal);
+			updateNodes(Phi_imGreedy,n, defVec, go.delta, go.deltaInternal);
 			go.correction(m,n,params.gamma);
 		}
 
@@ -140,6 +152,7 @@ void rbf_std::performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen
 
 		}
 	}
+	std::cout << "performRBF is done" << std::endl;
 }
 
 void rbf_std::updateNodes(Eigen::MatrixXd& Phi_imGreedy, getNodeType& n, Eigen::VectorXd& defVec, Eigen::ArrayXXd& delta, Eigen::ArrayXXd& deltaInternal){
@@ -158,10 +171,11 @@ void rbf_std::updateNodes(Eigen::MatrixXd& Phi_imGreedy, getNodeType& n, Eigen::
 			ptr = n.mStdPtr;
 			N_m = n.N_mStd;
 		}
-
+//		std::cout << Phi_imGreedy << std::endl;
 		getPhi(Phi_imGreedy,*n.iPtrGrdy,*ptr);
 
-		m.coords(*n.iPtr,Eigen::all) += d;
+		m.coords(*n.iPtr, Eigen::all) += d;
+
 
 		for(int dim = 0; dim < m.nDims; dim++){
 			m.coords(*n.iPtrGrdy,dim) +=  (Phi_imGreedy*alpha(Eigen::seqN(dim*N_m,N_m))).array();

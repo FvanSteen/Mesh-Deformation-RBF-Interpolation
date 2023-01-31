@@ -13,20 +13,22 @@
 class getNodeType {
 public:
 	Mesh& m;
-	Eigen::ArrayXi iNodes, mNodes, seNodes,mNodesStd,ibNodes,esNodes;
+	Eigen::ArrayXi iNodes, mNodes, seNodes,mNodesStd,ibNodes,esNodes, sNodes,ssNodes;
 
 	Eigen::ArrayXi* mPtr;
 	Eigen::ArrayXi* iPtr;
 	Eigen::ArrayXi* iPtrGrdy;
 	Eigen::ArrayXi* sePtr;
 	Eigen::ArrayXi* mStdPtr;
+	Eigen::ArrayXi* sPtr;
+	Eigen::ArrayXi* ssPtr;
 
 
 
-	int N_i,N_m,N_se,N_mStd,N_ib,N_es,N_i_grdy;
+	int N_i,N_m,N_se,N_mStd,N_ib,N_es,N_i_grdy, N_s, N_ss;
 	getNodeType(Mesh& meshOb, bool& dataRed);
 	void assignNodeTypes();
-	void addControlNode(int& node);
+	void addControlNode(int node);
 //	void greedyNodes(int node, std::string smode);
 	void assignNodeTypesGreedy();
 };

@@ -23,7 +23,7 @@ int main()
 	ReadConfigFile config(configFile,probParams);
 
 	// lvl indicating the amount of debug messages
-	int debugLvl = 2;
+	int debugLvl = 3;
 
 	// initialising class object m, reads mesh input file in constructor.
 	Mesh meshOb(config, debugLvl);

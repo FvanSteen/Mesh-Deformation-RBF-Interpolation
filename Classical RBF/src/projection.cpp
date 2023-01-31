@@ -44,22 +44,36 @@ void projection::project(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta
 //	std::cout << "projection is done " << std::endl;
 }
 
-void projection::projectIter(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef){
+void projection::projectIter(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef, int N_se){
 //	std::cout << "in the projection iteration function" << std::endl;
+
 
 	Eigen::ArrayXXd dist;
 	Eigen::RowVectorXd finalProjection;
 
-	for(int i = 0; i<sNodes.size(); i++){
+	int edge;
 
-		dist = m.midPnts.rowwise() - (m.coords.row(sNodes(i)) + delta.row(i));
-		projectFun(m,delta,finalProjection, dist);
+	for(int i = 0; i < sNodes.size(); i++){
+
+		if(m.nDims == 3 && i < N_se){
+			edge = 1;
+			dist = m.edgeMidPnts.rowwise() - (m.coords.row(sNodes(i)) + delta.row(i));
+		}else{
+
+			edge = 0;
+			dist = m.midPnts.rowwise() - (m.coords.row(sNodes(i)) + delta.row(i));
+		}
+
+
+		projectFun(m,finalProjection, dist, edge);
 
 		finalDef.row(i) = delta.row(i) + finalProjection.array();
 	}
+
 }
 
-void projection::projectFun(Mesh& m, Eigen::ArrayXXd& delta, Eigen::RowVectorXd& projection, Eigen::ArrayXXd& dist){
+
+void projection::projectFun(Mesh& m,  Eigen::RowVectorXd& projection, Eigen::ArrayXXd& dist, int edge){
 
 	int idxMin;
 	Eigen::RowVectorXd project_i;
@@ -69,16 +83,33 @@ void projection::projectFun(Mesh& m, Eigen::ArrayXXd& delta, Eigen::RowVectorXd&
 
 	double residual = 1;
 	double tol = 1e-12;
-	while(fabs(residual) > tol){
-		project_i = dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix()) * m.midPntNormals.row(idxMin);
 
-		projection += project_i;
 
-		dist.rowwise() -= project_i.array();
-		dist.rowwise().norm().minCoeff(&idxMin);
+	if(edge){
+		while(fabs(residual) > tol){
+			project_i = dist.row(idxMin).matrix().dot(m.edgeMidPntNormals1.row(idxMin).matrix()) * m.edgeMidPntNormals1.row(idxMin) + dist.row(idxMin).matrix().dot(m.edgeMidPntNormals2.row(idxMin).matrix()) * m.edgeMidPntNormals2.row(idxMin);
 
-		residual = dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix());
+			projection += project_i;
+
+			dist.rowwise() -= project_i.array();
+			dist.rowwise().norm().minCoeff(&idxMin);
+
+			residual = dist.row(idxMin).matrix().dot(m.edgeMidPntNormals1.row(idxMin).matrix()) + dist.row(idxMin).matrix().dot(m.edgeMidPntNormals2.row(idxMin).matrix());
+		}
+	}else{
+		while(fabs(residual) > tol){
+			project_i = dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix()) * m.midPntNormals.row(idxMin);
+
+			projection += project_i;
+
+			dist.rowwise() -= project_i.array();
+			dist.rowwise().norm().minCoeff(&idxMin);
+
+			residual = dist.row(idxMin).matrix().dot(m.midPntNormals.row(idxMin).matrix());
+		}
 	}
+
+
 
 }
 

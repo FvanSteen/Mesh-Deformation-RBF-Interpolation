@@ -21,7 +21,7 @@ public:
 	Eigen::ArrayXi intNodes;
 	Eigen::ArrayXXd nVecs;
 	Eigen::ArrayXXd tVecs;
-	Eigen::ArrayXXd midPnts;
+	Eigen::ArrayXXd midPnts, edgeMidPnts;
 	Eigen::ArrayXi extStaticNodes, slidingSurfNodes, slidingEdgeNodes, periodicNodes;
 	Eigen::ArrayXi nrElemsBdry;
 	Eigen::ArrayXXi edgeConnectivity, surfConnectivity;
@@ -29,7 +29,7 @@ public:
 	Eigen::ArrayXXd t_se, n1_se, n2_se, n_ss,t1_ss,t2_ss;
 	Eigen::ArrayXi extBdryEdgeNodes;
 	Eigen::ArrayXXi extBdryEdgeSegments;
-	Eigen::ArrayXXd midPntNormals;
+	Eigen::ArrayXXd midPntNormals, edgeMidPntNormals1,edgeMidPntNormals2;
 	Eigen::ArrayXi mNodes,seNodes,iNodes, staticNodes, ssNodes;
 	Eigen::ArrayXi ibIndices;
 	Eigen::ArrayXi mNodesStd;
@@ -68,7 +68,7 @@ public:
 	void getEdgeConnectivity();
 	void getSurfConnectivity();
 	void getVecs3D(Eigen::ArrayXXd& t_se, Eigen::ArrayXXd& n1_se, Eigen::ArrayXXd& n2_se, Eigen::ArrayXXd& n_ss, Eigen::ArrayXXd& t1_ss, Eigen::ArrayXXd& t2_ss);
-	void getPerpVecs(std::string& type);
+	void getPerpVecs(Eigen::ArrayXXd& vecs, Eigen::ArrayXXd& p1, Eigen::ArrayXXd& p2);
 
 
 	void getVecs();

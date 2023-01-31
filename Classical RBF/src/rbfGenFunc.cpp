@@ -40,8 +40,9 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::Ar
 					dist = 0;
 					for(int dim = 0; dim < m.nDims; dim++){
 						if(pVec(dim)){
-							//todo change function to allow for periodic length in stead of unit length
+
 							dist += pow(m.lambda/M_PI*sin( (m.coords(idxSet1(i),dim)-m.coords(idxSet2(j),dim))*M_PI/m.lambda),2);
+
 						}
 						else{
 							dist += pow(m.coords(idxSet1(i),dim)-m.coords(idxSet2(j),dim),2);
@@ -62,9 +63,27 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::Ar
 			}
 			//todo if statements can probably by removed if the calc is done with the previous for loop.
 			else if(m.nDims == 3){
-				dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1),2) + pow(m.coords(idxSet1(i),2)-m.coords(idxSet2(j),2),2));
+				if(m.pmode != "none"){
+					dist = 0;
+					for(int dim = 0; dim < m.nDims; dim++){
+
+						if(pVec(dim)){
+							dist += pow(m.lambda/M_PI*sin( (m.coords(idxSet1(i),dim)-m.coords(idxSet2(j),dim))*M_PI/m.lambda),2);
+						}else{
+							dist += pow(m.coords(idxSet1(i),dim)-m.coords(idxSet2(j),dim),2);
+						}
+
+					dist = sqrt(dist);
+					}
+				}else{
+//					std::cout << "check" << std::endl;
+					dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1),2) + pow(m.coords(idxSet1(i),2)-m.coords(idxSet2(j),2),2));
+				}
 			}
+//			std::cout << m.coords(idxSet1(i),2)-m.coords(idxSet2(j),2) << std::endl;
+//			std::cout << i << '\t' << j << '\t' << dist << std::endl;
 			Phi(i,j) = pow((1-(dist/m.r)),4)*(4*(dist/m.r)+1);
+
 		}
 	}
 //	std::exit(0);
@@ -173,10 +192,18 @@ void rbfGenFunc::getPeriodicParams(){
 			pVec << 0,0;
 		}
 
-	// todo do the same for 3D
+	// todo define the pnVecs for 3D.
 	}
 	else if(m.nDims==3){
-
+		if(m.pmode != "none"){
+			if(params.pDir == "x"){
+				pVec << 1,0,0;
+			}else if(params.pDir == "y"){
+				pVec << 0,1,0;
+			}else if(params.pDir == "z"){
+				pVec << 0,0,1;
+			}
+		}
 	}
 
 //	std::cout << "vector in the periodic direction is: \n" << pVec << std::endl;

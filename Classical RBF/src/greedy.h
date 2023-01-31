@@ -29,7 +29,7 @@ public:
 	void correction(Mesh& m, getNodeType& n, double& gamma);
 	void getNearestNode(Mesh& m, getNodeType& n,  int& node, int& idxMin, double& dist);
 	double rbfEval(double distance, double radius);
-	void project(Mesh& m, int& node, int& index, Eigen::ArrayXXd& disp, Eigen::VectorXd& pnVec, projection* projPtr);
+	void project(Mesh& m, int& node, int& index, Eigen::ArrayXXd& disp, Eigen::VectorXd& pnVec, projection* projPtr, int edge);
 	int getDoubleEdgeError(Eigen::ArrayXd& errorAngle, int idxMax, int N_i);
 	void setLevelParams(Mesh& m, getNodeType& n, int& lvl, int& lvlSize, Eigen::ArrayXXd& d, Eigen::VectorXd& alpha, Eigen::MatrixXd& Phi_imGreedy);
 

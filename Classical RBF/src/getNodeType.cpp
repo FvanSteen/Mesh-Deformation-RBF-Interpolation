@@ -36,10 +36,20 @@ void getNodeType::assignNodeTypes(){
 	N_se = m.N_se;
 	sePtr = &m.seNodes;
 
-	N_mStd = m.N_m + m.N_se;
+	N_ss = m.N_ss;
+	ssPtr = &m.ssNodes;
+
+	N_mStd = m.N_m + m.N_se + m.N_ss;
 	mNodesStd.resize(N_mStd);
-	mNodesStd << m.mNodes, m.seNodes;
+	mNodesStd << m.mNodes, m.seNodes, m.ssNodes;
 	mStdPtr = &mNodesStd;
+
+
+	N_s = m.N_se+m.N_ss;
+	sNodes.resize(N_s);
+	sNodes << m.seNodes, m.ssNodes;
+	sPtr = &sNodes;
+
 
 //todo move this to a seperate function
 //	N_ib = m.N_ib;
@@ -100,9 +110,9 @@ void getNodeType::assignNodeTypesGreedy(){
 
 	// for the non sliding rbf
 
-	N_i = m.N_m+m.N_se;
+	N_i = m.N_m + m.N_se + m.N_ss;
 	iNodes.resize(N_i);
-	iNodes << m.mNodes, m.seNodes;
+	iNodes << m.mNodes, m.seNodes, m.ssNodes;
 
 	iPtr = &iNodes;
 
@@ -114,14 +124,21 @@ void getNodeType::assignNodeTypesGreedy(){
 	seNodes.resize(N_se);
 	sePtr = &seNodes;
 
+	N_ss = 0;
+	ssNodes.resize(N_ss);
+	ssPtr = &ssNodes;
+
 
 	iPtrGrdy = &m.iNodes;
 	N_i_grdy = m.N_i;
 
 	N_mStd = 0;
 	mNodesStd.resize(N_mStd);
-
 	mStdPtr = &mNodesStd;
+
+	N_s = 0;
+	sNodes.resize(N_s);
+	sPtr = &sNodes;
 
 //	N_m = 0;
 //	N_s = 0;
@@ -142,7 +159,7 @@ void getNodeType::assignNodeTypesGreedy(){
 }
 
 
-void getNodeType::addControlNode(int& node){
+void getNodeType::addControlNode(int node){
 
 
 
@@ -154,18 +171,35 @@ void getNodeType::addControlNode(int& node){
 
 
 	}else if(std::find(std::begin(m.seNodes),std::end(m.seNodes),node) != std::end(m.seNodes)){
+
 		N_se++;
 		seNodes.conservativeResize(N_se);
 		seNodes(N_se-1) = node;
 //		std::cout << seNodes << std::endl;
+		N_s++;
+		sNodes.resize(N_s);
+		sNodes << seNodes, ssNodes;
+	}else if(std::find(std::begin(m.ssNodes), std::end(m.ssNodes),node) != std::end(m.ssNodes)){
+
+		N_ss++;
+		ssNodes.conservativeResize(N_ss);
+		ssNodes(N_ss-1) = node;
+
+		N_s++;
+		sNodes.resize(N_s);
+		sNodes << seNodes, ssNodes;
 
 	}
 
+
+
 	if(m.smode != "none"){
+
+
 		N_mStd++;
 		mNodesStd.resize(N_mStd);
 //		mNodesStd(N_mStd-1) = node;
-		mNodesStd << mNodes,seNodes;
+		mNodesStd << mNodes,seNodes, ssNodes;
 //		std::cout << mNodesStd << std::endl;
 
 	}

@@ -10,16 +10,19 @@ greedy::greedy()
 
 
 void greedy::getError(Mesh& m, getNodeType& n, Eigen::ArrayXXd& d, double& maxError, Eigen::ArrayXi& maxErrorNodes, Eigen::ArrayXi& movingIndices, Eigen::ArrayXXd& exactDisp, Eigen::VectorXd& pnVec, projection* projPtr, bool multiLvl, int lvl){
-//	std::cout << "in the main getError function" << std::endl;
 
 	if(error.rows() == 0){
 		error.resize(n.N_i,m.nDims);
 	}
+
 	// defining array for the error directions
 	Eigen::ArrayXd errorAngle(n.N_i);
 
+
 	if(multiLvl && lvl>0){
+
 		getErrorMultiLvl(n,errorAngle,d,m,movingIndices,pnVec,projPtr);
+
 	}else{
 		getErrorSingleLvl(m,n,errorAngle,d,movingIndices,exactDisp,pnVec, projPtr);
 	}
@@ -52,8 +55,8 @@ void greedy::getError(Mesh& m, getNodeType& n, Eigen::ArrayXXd& d, double& maxEr
 
 void greedy::getErrorSingleLvl(Mesh& m, getNodeType& n, Eigen::ArrayXd& errorAngle, Eigen::ArrayXXd& d, Eigen::ArrayXi& movingIndices, Eigen::ArrayXXd& exactDisp, Eigen::VectorXd& pnVec, projection* projPtr){
 
-	int idx_m, idx_se, i;
-
+	int idx_m, idx_se, idx_ss, i;
+	int edge;
 	// for all of the boundary nodes the error will be determined
 	for(i = 0; i< n.N_i; i++){
 
@@ -63,27 +66,48 @@ void greedy::getErrorSingleLvl(Mesh& m, getNodeType& n, Eigen::ArrayXd& errorAng
 		// finding index of the node in consideration among the sliding edge nodes
 		idx_se = std::distance(std::begin(m.seNodes), std::find(std::begin(m.seNodes),std::end(m.seNodes),(*n.iPtr)(i)));
 
+		// finding index of the node in consideration among the sliding edge nodes
+		idx_ss = std::distance(std::begin(m.ssNodes), std::find(std::begin(m.ssNodes),std::end(m.ssNodes),(*n.iPtr)(i)));
+
 		// if the node is part of the nodes with a prescribed displacement
 		if(idx_m != movingIndices.size()){
 
+//			std::cout <<"moving node: " <<  (*n.iPtr)(i) << std::endl;
 			// the error is equal to the difference between the displacement and the prescribed (exact) displacement
 			error.row(i) = d.row(i) - exactDisp.row(idx_m);
-
+//			std::cout << d.row(i) << std::endl;
+//			std::cout << exactDisp.row(idx_m) << std::endl;
+//			std::cout << error.row(i) << std::endl;
 		// if the node is part of the sliding edge nodes
 		}else if(idx_se != m.N_se){
-
+//			std::cout << "sliding edge node" << std::endl;
+			if(m.nDims == 3){
+				edge = 1;
+			}else{
+				edge = 0;
+			}
 			// projection is performed in which the projection itself is the error indication
-			project(m, (*n.iPtr)(i),i, d, pnVec, projPtr);
+
+			project(m, (*n.iPtr)(i), i, d, pnVec, projPtr, edge);
+		}else if(idx_ss != m.N_ss){
+//			std::cout << "sliding surf node" << std::endl;
+			edge = 0;
+			project(m, (*n.iPtr)(i), i, d, pnVec, projPtr, edge);
 		}
 
 		// if not the two above then the node is a static node with zero displacement. Therefore, its error is equal to the found displacement
 		else{
+
 			error.row(i) = d.row(i);
+//			std::cout << (*n.iPtr)(i) << '\t' << error.row(i) << std::endl;
 		}
 		// finding the direction of the error.
 		errorAngle(i) = atan2(error(i,1),error(i,0));
 	}
 
+//	std::cout << d << std::endl;
+//	std::cout << error << std::endl;
+//	std::cout << *n.iPtr << std::endl;
 
 
 
@@ -187,6 +211,7 @@ int greedy::getDoubleEdgeError(Eigen::ArrayXd& errorAngle, int idxMax, int N_i){
 	errorAngle -= errorAngle(idxMax);
 
 
+
 	// array containing the errors of the nodes that have an angle > 90 deg w.r.t. the max magnitude error direction
 	Eigen::ArrayXd largeAngleError(N_i-1);
 	// corresponding indices
@@ -203,7 +228,7 @@ int greedy::getDoubleEdgeError(Eigen::ArrayXd& errorAngle, int idxMax, int N_i){
 	// for each boundary node
 	for(int i=0; i<N_i; i++){
 		// if the relative angle is between 90 and 270 degrees the squared norm is included in the array and its index is saved.
-		if(abs(errorAngle(i)) > refAngle && abs(errorAngle(i)) < refAngle2){
+		if(abs(errorAngle(i)) >= refAngle && abs(errorAngle(i)) <= refAngle2){
 			largeAngleError(cnt) = error.row(i).matrix().squaredNorm();
 			largeAngleIdx(cnt) = i;
 			cnt++;
@@ -252,16 +277,19 @@ void greedy::correction(Mesh& m, getNodeType& n, double& gamma){
 	int idxNear;
 
 	// looping through the internal nodes that were selected previously for applying the correction
-	for (int i = 0; i < m.intCorNodes.size(); i++){
+//	for (int i = 0; i < m.intCorNodes.size(); i++){
+	for (int i = 0; i < m.iNodes.size(); i++){
 
 		// finding the nearest boundary node
-		getNearestNode(m, n, m.intCorNodes(i), idxNear, dist);
+//		getNearestNode(m, n, m.intCorNodes(i), idxNear, dist);
+		getNearestNode(m, n, m.iNodes(i), idxNear, dist);
 
 		// applying the interpolation
-		m.coords.row(m.intCorNodes(i)) -= error.row(idxNear)*rbfEval(dist,gamma*maxError);
+//		m.coords.row(m.intCorNodes(i)) -= error.row(idxNear)*rbfEval(dist,gamma*maxError);
+		m.coords.row(m.iNodes(i)) -= error.row(idxNear)*rbfEval(dist,gamma*maxError);
 
 		// keeping track of the progress
-		std::cout << i << '\t' << m.intCorNodes.size() << std::endl;
+		std::cout << i << '\t' << m.iNodes.size() << std::endl;
 	}
 }
 
@@ -291,7 +319,7 @@ double greedy::rbfEval(double distance, double radius){
 	return f_xi;
 }
 
-void greedy::project(Mesh& m, int& node, int& idx, Eigen::ArrayXXd& disp,Eigen::VectorXd& pnVec, projection* projPtr){
+void greedy::project(Mesh& m, int& node, int& idx, Eigen::ArrayXXd& disp,Eigen::VectorXd& pnVec, projection* projPtr, int edge){
 	if(std::find(std::begin(m.staticNodes),std::end(m.staticNodes),node) != std::end(m.staticNodes)){
 		std::cout << "static node: " << node << std::endl;
 		std::cout << "displacement: \n" << disp.row(idx) << std::endl;
@@ -304,10 +332,14 @@ void greedy::project(Mesh& m, int& node, int& idx, Eigen::ArrayXXd& disp,Eigen::
 
 		Eigen::RowVectorXd err;
 		Eigen::ArrayXXd dist;
+		if(edge){
+			dist = m.edgeMidPnts.rowwise() - (m.coords.row(node) + disp.row(idx));
+		}else{
+			dist = m.midPnts.rowwise() - (m.coords.row(node) + disp.row(idx));
+		}
 
-		dist = m.midPnts.rowwise() - (m.coords.row(node) + disp.row(idx));
 
-		projPtr->projectFun(m,disp, err, dist);
+		projPtr->projectFun(m, err, dist,edge);
 
 		error.row(idx) = -err;
 	}
