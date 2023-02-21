@@ -205,7 +205,7 @@ void getNodeType::addControlNode(int node){
 	}
 
 
-	std::cout << "control node: " << node << " is added"<< std::endl;
+//	std::cout << "control node: " << node << " is added"<< std::endl;
 //	std::cout << "control node is added " << std::endl;
 
 }

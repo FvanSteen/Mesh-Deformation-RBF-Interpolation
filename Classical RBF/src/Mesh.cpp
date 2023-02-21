@@ -209,6 +209,14 @@ void Mesh::readMeshFile(){
 		ibIndices(x) = std::distance(std::begin(mNodes), std::find(std::begin(mNodes), std::end(mNodes),intBdryNodes(x)));
 	}
 
+	ebIndices.resize(N_m-intBdryNodes.size());
+	int cnt = 0;
+	for(int i = 0; i<N_m;i++){
+		if(std::find(std::begin(intBdryNodes),std::end(intBdryNodes), mNodes(i)) == std::end(intBdryNodes)){
+			ebIndices(cnt) = i;
+			cnt++;
+		}
+	}
 
 //	std::cout << '\n' << mNodes << std::endl;
 
@@ -271,9 +279,9 @@ void Mesh::readMeshFile(){
 //	std::cout << extBdryEdgeSegments << std::endl;
 
 	if(smode != "none"){
-		N_mStd = N_m+N_se;
+		N_mStd = N_m+N_se+N_ss;
 		mNodesStd.resize(N_mStd);
-		mNodesStd << mNodes, seNodes;
+		mNodesStd << mNodes, seNodes, ssNodes;
 	}
 //	std::cout << mNodesStd << std::endl;
 
@@ -501,7 +509,6 @@ void Mesh::getNodeTypes(){
 		if(moving){
 			intBdryNodes.conservativeResize(intBdryNodes.size()+cntMoving);
 			intBdryNodes(Eigen::lastN(cntMoving)) = idxMoving(Eigen::seqN(0,cntMoving));
-
 		}
 
 		if(cntStatic != 0){
@@ -676,14 +683,13 @@ void Mesh::getIntNodes(){
  */
 
 double Mesh::charLength(){
-	Eigen::Index row[2],col[2];
-	Eigen::VectorXd maxVal(2);
-	Eigen::VectorXd minVal(2);
-	for(int i=0; i<2;i++){
-		maxVal(i) = coords.col(i).maxCoeff(&row[i], &col[i]);
-		minVal(i) = coords.col(i).minCoeff(&row[i], &col[i]);
+	double charLength = 0;
+	for(int i=0; i<nDims;i++){
+		double length =  coords.col(i).maxCoeff()-coords.col(i).minCoeff();
+		if (length > charLength){
+			charLength = length;
+		}
 	}
-	double charLength = std::max(maxVal(0) - minVal(0),maxVal(1) - minVal(1));
 	return charLength;
 }
 
@@ -956,6 +962,7 @@ void Mesh::getVecs(){
 
 
 	}
+
 }
 
 /* getEdgeTan function
@@ -1024,6 +1031,7 @@ void Mesh::getSurfNormal(){
 
 	// looping through all sliding surface nodes
 	for(int i = 0; i<N_ss; i++){
+//		std::cout << i << '\t' << N_ss << std::endl;
 		// initialise a zero normal vector
 		n = Eigen::VectorXd::Zero(nDims);
 

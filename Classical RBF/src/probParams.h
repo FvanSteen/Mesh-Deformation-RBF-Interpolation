@@ -17,6 +17,8 @@ struct probParams{
 	double gamma;
 	bool multiLvl;
 	int lvlSize;
+	int lvlSizeInit;
+	std::string convHistFile;
 };
 
 

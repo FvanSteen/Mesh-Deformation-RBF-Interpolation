@@ -20,6 +20,7 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 			if(line.rfind("MESH_FILENAME")==0){
 				findStringBounds(first,last,line);
 				mesh_ifName = line.substr(first,last-first);
+//				probParamsObject.convHistFile = mesh_ifName.substr(0,mesh_ifName.find(".")) + "_convHist.txt";
 			}
 			else if(line.rfind("MESH_OUT_FILENAME")==0){
 				findStringBounds(first,last,line);
@@ -38,6 +39,7 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 				findStringBounds(first,last,line);
 				probParamsObject.dispFile =  line.substr(first,last-first);
 			}
+
 			else if(line.rfind("SLIDING_MODE")==0){
 				findStringBounds(first,last,line);
 				smode =  line.substr(first,last-first);
@@ -99,8 +101,13 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 			}
 			else if(line.rfind("LEVELSIZE")==0){
 				findStringBounds(first,last,line);
-				probParamsObject.lvlSize = stoi(line.substr(first,last-first));
-
+				if(probParamsObject.multiLvl){
+					probParamsObject.lvlSize = stoi(line.substr(first,last-first));
+				}else{
+					probParamsObject.lvlSize = 1;
+				}
+				probParamsObject.lvlSizeInit = probParamsObject.lvlSize;
+				probParamsObject.convHistFile = mesh_ifName.substr(0,mesh_ifName.find(".")) + "_m" + std::to_string(probParamsObject.lvlSize) + ".txt";
 			}
 		}
 		file.close();

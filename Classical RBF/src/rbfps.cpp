@@ -27,12 +27,12 @@ void rbf_ps::perform_rbf(getNodeType& n){
 	Eigen::ArrayXi maxErrorNodes;
 	greedy go;
 
-	if(params.dataRed){
-		n.addControlNode(m.intBdryNodes(0));
-		n.addControlNode(m.intBdryNodes(m.intBdryNodes.size()-1));
-	}
+//	if(params.dataRed){
+//		n.addControlNode(m.intBdryNodes(0));
+//		n.addControlNode(m.intBdryNodes(m.intBdryNodes.size()-1));
+//	}
+//	go.setInitMaxErrorNodes(m.coords, exactDisp, movingIndices, maxErrorNodes);
 
-//
 //	std::cout <<"moving nodes: "<< *n.mPtr << std::endl;
 //	std::cout <<"Internal nodes: "<< *n.iPtr << std::endl;
 //	std::cout << "sliding Nodes: " << *n.sPtr << std::endl;
@@ -50,15 +50,20 @@ void rbf_ps::perform_rbf(getNodeType& n){
 		maxError = 1;
 		iter = 0;
 		lvl = 0;
-		if(params.multiLvl && i != 0){
-			n.addControlNode(m.intBdryNodes(0));
-			n.addControlNode(m.intBdryNodes(m.intBdryNodes.size()-1));
-		}
-		iterating = true;
 
+		if((params.dataRed && i==0) || params.multiLvl ){
+			go.setInitMaxErrorNodes(m, m.coords, exactDisp, movingIndices, maxErrorNodes);
+		}
+
+		iterating = true;
+		if(params.curved || i==0){
+			m.getMidPnts();
+//				m.getVecs();
+		}
 		while(iterating){
 
-			if(iter!=0){
+
+			if(params.dataRed){
 				for(int node = 0; node < maxErrorNodes.size(); node++){
 					n.addControlNode(maxErrorNodes(node));
 				}
@@ -68,7 +73,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 //			std::cout <<"moving nodes: "<< *n.mPtr << std::endl;
 //			std::cout << "sliding edge Nodes: " << n.seNodes << std::endl;
 //			std::cout << "sliding surf Nodes: " << n.ssNodes << std::endl;
-//			std::cout << "std rbf nodes: " << *n.mStdPtr << std::endl;
+			std::cout << "std rbf nodes: " << *n.mStdPtr << std::endl;
 //			delta.resize(n.N_se, m.nDims);
 //			finalDef.resize(n.N_se,m.nDims);
 
@@ -85,12 +90,6 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 			if(i==0 || params.dataRed){
 				getDefVec(defVec, n, lvl, go.errorPrevLvl);
-			}
-
-
-			if(params.curved || i==0){
-				m.getMidPnts();
-				m.getVecs();
 			}
 
 
@@ -131,9 +130,15 @@ void rbf_ps::perform_rbf(getNodeType& n){
 			}
 
 			if(params.multiLvl && n.N_mStd >= params.lvlSize){
+
+//				std::cout << *n.mStdPtr << std::endl;
+//				m.coords(*n.iPtr, Eigen::all) += d;
+//				m.writeMeshFile();
+//				std::exit(0);
+
 //				std::cout << *n.mStdPtr << std::endl;
 				getPhi(Phi_imGrdy, *n.iPtrGrdy, *n.mStdPtr);
-				go.setLevelParams(m,n,lvl,params.lvlSize, d, alpha, Phi_imGrdy);
+				go.setLevelParams(m,n,lvl,params.lvlSize, d, alpha, maxError);
 
 				std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" << std::endl;
 				lvl++;
@@ -142,8 +147,8 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 				if(maxError < params.tol){
 					iterating = false;
-				}
 
+				}
 			}
 
 			iter++;
@@ -152,12 +157,13 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 
 		if(params.dataRed){
-			updateNodes(Phi_imGrdy, n, defVec ,go.delta, go.deltaInternal);
+//			updateNodes(Phi_imGrdy, n, defVec ,go.delta, go.deltaInternal, go.alphaSum);
 			std::cout << "DOING AN UPDATE" << std::endl;
 			go.correction(m,n, params.gamma);
+
 		}
 
-		std::cout << "number of control nodes: " << n.N_m << std::endl;
+		std::cout << "number of control nodes: " << n.N_mStd << std::endl;
 
 	}
 	auto stop = std::chrono::high_resolution_clock::now();
@@ -216,7 +222,7 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 //	p->project(m, *n.sePtr, delta, finalDef, pVec);
 
 //	p->projectIter(m, *n.sePtr, delta, finalDef); FOR 2D
-	p->projectIter(m, *n.sPtr, delta, finalDef, n.N_se);
+	p->projectIter(m, *n.sPtr, delta, finalDef, n.N_s);
 
 
 //	std::cout << finalDef << std::endl;

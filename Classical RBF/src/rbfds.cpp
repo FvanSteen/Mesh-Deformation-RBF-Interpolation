@@ -108,7 +108,8 @@ void rbf_ds::perform_rbf(getNodeType& n){
 				m.getVecs();
 				m.getMidPnts();
 			}
-
+			std::cout << "done" << std::endl;
+			std::cout << lvl << std::endl;
 		//		defVec = Eigen::VectorXd::Zero((N_m+N_s)*m.nDims);
 
 
@@ -116,16 +117,19 @@ void rbf_ds::perform_rbf(getNodeType& n){
 //			getDefVec(defVec,n.N_m,params.steps,*n.mPtr);
 //			getDefVec(defVec, n, lvl, go.errorPrevLvl);
 			if(lvl!=0){
+				std::cout << "hier" << std::endl;
 				getPhi(Phi_mmStd, *n.mStdPtr,*n.mStdPtr);
 				getPhi(Phi_imStd, *n.iPtr,*n.mStdPtr);
 				performRBF(Phi_mmStd, Phi_imStd, defVec, *n.mStdPtr, *n.iPtr, n.N_mStd);
 			}else{
 				if(m.nDims == 2){
+
+
 					getPhiDS(Phi,Phi_mm,Phi_ms, Phi_sm, Phi_ss, m.n, m.t,n.N_m,n.N_s, *n.sPtr);
 					// todo check which items can be omitted
 					performRBF_DS(n, Phi, Phi_im, Phi_is, Phi_sm, Phi_ss, defVec, p,*n.iPtr, *n.iPtrGrdy,*n.mPtr,*n.mStdPtr, *n.sPtr, n.N_i, n.N_m, n.N_mStd, n.N_s);
 				}else if (m.nDims == 3){
-
+					std::cout << "getting PHI DS" << std::endl;
 					getPhiDS_3D(Phi,Phi_mm, Phi_me, Phi_ms, Phi_em, Phi_ee, Phi_es, Phi_sm, Phi_se, Phi_ss, n);
 
 					performRBF_DS_3D( Phi,  Phi_im,  Phi_ie,  Phi_is,  Phi_em,  Phi_ee, Phi_es, Phi_sm, Phi_se, Phi_ss,defVec,  n);
@@ -154,9 +158,11 @@ void rbf_ds::perform_rbf(getNodeType& n){
 //			}
 
 			if(params.multiLvl && n.N_mStd >= params.lvlSize){
+
+
 //				std::cout << *n.mStdPtr << std::endl;
 				getPhi(Phi_imGrdy, *n.iPtrGrdy, *n.mStdPtr);
-				go.setLevelParams(m,n,lvl,params.lvlSize, d, alpha, Phi_imGrdy);
+				go.setLevelParams(m,n,lvl,params.lvlSize, d, alpha, maxError);
 
 				std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" << std::endl;
 				lvl++;
@@ -175,7 +181,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 		}
 
 		if(params.dataRed){
-			updateNodes(Phi_imGrdy, n, defVec,go.delta, go.deltaInternal);
+//			updateNodes(Phi_imGrdy, n, defVec,go.delta, go.deltaInternal, go.alphaSum);
 			std::cout << "DOING AN UPDATE" << std::endl;
 			go.correction( m,n,params.gamma);
 		}
@@ -189,7 +195,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 
 void rbf_ds::performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_im, Eigen::MatrixXd& Phi_is, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_ss, Eigen::VectorXd& defVec, projection* proPnt, Eigen::ArrayXi& iNodes,Eigen::ArrayXi& iNodesGrdy, Eigen::ArrayXi& mNodes, Eigen::ArrayXi& mNodesStd, Eigen::ArrayXi& sNodes, int& N_i, int& N_m, int& N_mStd, int& N_s){
 
-	alpha = Phi.fullPivLu().solve(defVec);
+	alpha = Phi.llt().solve(defVec);
 
 
 	if(params.dataRed){
@@ -263,10 +269,12 @@ void rbf_ds::performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi, Eigen::MatrixXd
 	}
 	else{
 		for (int dim = 0; dim < m.nDims; dim++){
+
 			if(params.dataRed){
 				d.col(dim) = Phi_im*alpha(Eigen::seqN(dim*(N_m+N_s),N_m)) + Phi_is*alpha(Eigen::seqN(dim*(N_m+N_s)+N_m, N_s));
 			}
 			else{
+				std::cout << "solving for dimensions: " << dim << std::endl;
 				m.coords(iNodes, dim) += (Phi_im*alpha(Eigen::seqN(dim*(N_m+N_s),N_m)) + Phi_is*alpha(Eigen::seqN(dim*(N_m+N_s)+N_m, N_s))).array();
 
 				m.coords(sNodes, dim) += (Phi_sm*alpha(Eigen::seqN(dim*(N_m+N_s),N_m)) + Phi_ss*alpha(Eigen::seqN(dim*(N_m+N_s)+N_m, N_s))).array();
@@ -393,7 +401,7 @@ void rbf_ds::getPhiDS_3D(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_mm, Eigen::M
 }
 
 void rbf_ds::performRBF_DS_3D(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_im, Eigen::MatrixXd& Phi_ie, Eigen::MatrixXd& Phi_is, Eigen::MatrixXd& Phi_em, Eigen::MatrixXd& Phi_ee, Eigen::MatrixXd& Phi_es, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_se, Eigen::MatrixXd& Phi_ss, Eigen::VectorXd& defVec, getNodeType& n){
-
+	std::cout << "deze" << std::endl;
 	alpha = Phi.partialPivLu().solve(defVec);
 	std::cout << "SOLUTION WAS FOUND" << std::endl;
 
@@ -402,6 +410,7 @@ void rbf_ds::performRBF_DS_3D(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_im, Eig
 	}
 
 	for (int dim = 0; dim < m.nDims; dim++){
+		std::cout << "dim: " << dim << std::endl;
 		if(params.dataRed){
 			d.col(dim) = (Phi_im*alpha(Eigen::seqN(dim*(n.N_mStd),n.N_m)) + Phi_ie*alpha(Eigen::seqN(dim*(n.N_mStd)+n.N_m, n.N_se)) + Phi_is*alpha(Eigen::seqN(dim*(n.N_mStd)+n.N_m+n.N_se, n.N_ss)) ).array();
 		}else{

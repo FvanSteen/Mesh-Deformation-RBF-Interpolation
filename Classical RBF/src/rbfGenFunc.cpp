@@ -82,7 +82,11 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::Ar
 			}
 //			std::cout << m.coords(idxSet1(i),2)-m.coords(idxSet2(j),2) << std::endl;
 //			std::cout << i << '\t' << j << '\t' << dist << std::endl;
-			Phi(i,j) = pow((1-(dist/m.r)),4)*(4*(dist/m.r)+1);
+			if(dist/m.r > 1){
+				Phi(i,j) = 0;
+			}else{
+				Phi(i,j) = pow((1-(dist/m.r)),4)*(4*(dist/m.r)+1);
+			}
 
 		}
 	}
@@ -153,9 +157,8 @@ void rbfGenFunc::readDisplacementFile(){
 	std::ifstream file("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\defs\\" + params.dispFile);
 
 
-
+	int lineNo = 0;
 	if(file.is_open()){
-		int lineNo = 0;
 		while(getline(file, line)){
 			std::stringstream ss(line);
 			if(m.nDims == 2){
@@ -166,7 +169,6 @@ void rbfGenFunc::readDisplacementFile(){
 			lineNo++;
 		}
 	}else std::cout << "Unable to open the displacment file" << std::endl;
-
 //	std::cout << displacement << std::endl;
 //	std::cout << mIndex << std::endl;
 }
@@ -220,7 +222,7 @@ double rbfGenFunc::rbfEval(double distance){
 
 
 void rbfGenFunc::getDefVecMultiGreedy(Eigen::VectorXd& defVec, getNodeType& n, Eigen::ArrayXXd& errors, int N, Eigen::ArrayXi*& mPtr){
-//	std::cout << "testing" << std::endl;
+//	std::cout << "get defVec Multi greedy" << std::endl;
 //	std::cout << *n.mPtr << std::endl;
 //	std::cout << '\n' << *n.iPtr << std::endl;
 

@@ -31,7 +31,7 @@ public:
 	Eigen::ArrayXXi extBdryEdgeSegments;
 	Eigen::ArrayXXd midPntNormals, edgeMidPntNormals1,edgeMidPntNormals2;
 	Eigen::ArrayXi mNodes,seNodes,iNodes, staticNodes, ssNodes;
-	Eigen::ArrayXi ibIndices;
+	Eigen::ArrayXi ibIndices, ebIndices;
 	Eigen::ArrayXi mNodesStd;
 
 	Eigen::ArrayXi intCorNodes;
