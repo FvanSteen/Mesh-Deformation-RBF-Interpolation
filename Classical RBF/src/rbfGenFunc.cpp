@@ -36,7 +36,7 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::Ar
 
 
 				//todo following if statement is introduced to improve efficiency, check if anything else can be done
-				if(m.pmode != "none"){
+				if(params.pmode != "none"){
 					dist = 0;
 					for(int dim = 0; dim < m.nDims; dim++){
 						if(pVec(dim)){
@@ -63,7 +63,7 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::Ar
 			}
 			//todo if statements can probably by removed if the calc is done with the previous for loop.
 			else if(m.nDims == 3){
-				if(m.pmode != "none"){
+				if(params.pmode != "none"){
 					dist = 0;
 					for(int dim = 0; dim < m.nDims; dim++){
 
@@ -130,7 +130,7 @@ void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, getNodeType& n, int lvl, Eig
 }
 
 void rbfGenFunc::getDefVecStd(getNodeType& n, Eigen::VectorXd& defVec){
-	std::cout << "determinging std defvec"  << std::endl;
+//	std::cout << "determinging std defvec"  << std::endl;
 
 //	std::cout << exactDisp << std::endl;
 //	std::cout << *n.mPtr << std::endl;
@@ -180,7 +180,7 @@ void rbfGenFunc::getPeriodicParams(){
 	pVec.resize(m.nDims);
 	pnVec.resize(m.nDims);
 	if(m.nDims==2){
-		if(m.pmode != "none"){
+		if(params.pmode != "none"){
 			if(params.pDir == "x"){
 				pVec << 1,0;
 				pnVec << 0,1;
@@ -197,7 +197,7 @@ void rbfGenFunc::getPeriodicParams(){
 	// todo define the pnVecs for 3D.
 	}
 	else if(m.nDims==3){
-		if(m.pmode != "none"){
+		if(params.pmode != "none"){
 			if(params.pDir == "x"){
 				pVec << 1,0,0;
 			}else if(params.pDir == "y"){

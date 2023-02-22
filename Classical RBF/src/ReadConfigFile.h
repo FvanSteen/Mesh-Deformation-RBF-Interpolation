@@ -15,7 +15,7 @@ public:
 	ReadConfigFile(std::string& ifName, probParams& probParamsObject);
 	void findStringBounds(int& first, int& last, std::string& line);
 	void getTags(std::string& line, std::vector<std::string>& tagVec);
-
+	void getBool(std::string& param, bool& boolean, std::string& line);
 };
 
 #endif /* READCONFIGFILE_H_ */

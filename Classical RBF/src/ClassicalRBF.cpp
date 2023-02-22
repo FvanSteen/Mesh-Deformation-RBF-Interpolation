@@ -22,12 +22,13 @@ int main()
 	// Variables required for performing the interpolation are saved in the probParams structure and passed on in the main rbf class.
 	ReadConfigFile config(configFile,probParams);
 
+
 	// lvl indicating the amount of debug messages
 	int debugLvl = 3;
 
 	// initialising class object m, reads mesh input file in constructor.
-	Mesh meshOb(config, debugLvl);
-
+	Mesh meshOb(probParams, debugLvl);
+	std::exit(0);
 	// Initialising the rbf class with the mesh data and the problem parameters
 	rbf rbf(meshOb, probParams);
 

@@ -1,14 +1,15 @@
 #ifndef MESH_H_
 #define MESH_H_
-#include "ReadConfigFile.h"
+//#include "ReadConfigFile.h"
 #include <string>
 #include <Eigen/Dense>
 #include <vector>
-class Mesh : public ReadConfigFile
+#include "probParams.h"
+class Mesh
 {
 public:
 //	Mesh(const std::string& inputFileName,const std::string& outputFileName, const std::vector<std::string>& Tags,const double& rFac,const int& debugLvl, const std::string& slidingMode, const std::string& periodicMode,const std::vector<std::string>& movingTags, const std::vector<std::string>& periodicTags);
-	Mesh(ReadConfigFile& config, const int& debugLvl);
+	Mesh(probParams& params, const int& debugLvl);
 //	const std::string ifName, ofName;
 //	const std::vector<std::string>& Tags;
 	int nNodes, nDims,nElem, lvl;
@@ -35,6 +36,7 @@ public:
 	Eigen::ArrayXi mNodesStd;
 
 	Eigen::ArrayXi intCorNodes;
+
 //	struct Domains{
 //		Eigen::ArrayXi d1;
 //		Eigen::ArrayXi d2;
@@ -56,14 +58,14 @@ public:
 	double charLength();
 	void removeDuplicates(Eigen::ArrayXi& arr);
 	void getIntNodes();
-	void readMeshFile();
+	void readMeshFile(probParams& params);
 //	void updateNodes(Eigen::VectorXd dxVec,Eigen::VectorXd dyVec, Eigen::VectorXd xDisp,Eigen::VectorXd yDisp);
-	void writeMeshFile();
+	void writeMeshFile(std::string& ifName, std::string& ofName);
 	void getExtBdryData();
 	void getBdryNodes(Eigen::ArrayXXi& bdryNodesMat, Eigen::ArrayXi& bdryNodesArr, int& nBdryNodes, int& nBdryElems);
 	void getNodeVecs(Eigen::ArrayXXd& n, Eigen::ArrayXXd& t);
 	void getNormals(Eigen::ArrayXXd& n);
-	void getNodeTypes();
+	void getNodeTypes(probParams& params);
 	void getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::string>& ebTags);
 	void getEdgeConnectivity();
 	void getSurfConnectivity();
@@ -75,11 +77,13 @@ public:
 	void getEdgeTan(Eigen::ArrayXXd& t);
 	void getSurfNormal();
 	void getExtBdryEdgeSegments();
-	void getMidPnts();
+	void getMidPnts(probParams& params);
 
 	void getSubDomains(Eigen::ArrayXi& subDomains, Eigen::ArrayXi& subDomLen, Eigen::ArrayXi& subDomBdry, Eigen::ArrayXi& subDomBdryLen);
-	void getIntCorNodes();
-	void getCharLength();
+	void getIntCorNodes(double& gamma, double& tol);
+	void getCharLength(std::string& pDir);
+
+	void findStringBounds(int& first, int& last, std::string& line);
 //	void getInternalCorrectionNodes(Eigen::ArrayXi& subDomains,  Eigen::ArrayXi& subDomsLen, Eigen::ArrayXXd& bdryCoord);
 
 };

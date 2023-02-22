@@ -26,32 +26,17 @@ void greedy::getError(Mesh& m, getNodeType& n, Eigen::ArrayXXd& d, double& maxEr
 		getErrorSingleLvl(m,n,errorAngle,d,movingIndices,exactDisp,pnVec, projPtr);
 	}
 
-//	error(m.ibIndices, Eigen::all) = error(m.ibIndices, Eigen::all)/0.2;
-//	error(Eigen::seqN(200,50), Eigen::all) = error(Eigen::seqN(200,50), Eigen::all)/40;
-//	error(m.ibIndices, Eigen::all) = error(m.ibIndices, Eigen::all)/0.7208;
-//	error(m.ebIndices, Eigen::all) = error(m.ebIndices, Eigen::all)/m.r*2.5;
-
 	// find index of largest error
 	int idxMax;
 	error.rowwise().squaredNorm().maxCoeff(&idxMax);
-//	error(m.ibIndices, Eigen::all) = error(m.ibIndices, Eigen::all)*0.7208;
-//	error(m.ebIndices, Eigen::all) = error(m.ebIndices, Eigen::all)*m.r*2.5;
-//	error(Eigen::seqN(200,50), Eigen::all) = error(Eigen::seqN(200,50), Eigen::all)*40;
 
 	// and the maximum error magnitude
 	maxError = error.row(idxMax).matrix().norm();
 
-//	error(m.ibIndices, Eigen::all) = error(m.ibIndices, Eigen::all)/0.7208;
-//	error(m.ebIndices, Eigen::all) = error(m.ebIndices, Eigen::all)/m.r*2.5;
-//	error(Eigen::seqN(200,50), Eigen::all) = error(Eigen::seqN(200,50), Eigen::all)/40;
 	// find index of largest error where there is a 90 degree difference with the max magnitude direction
 	int idxMaxAngle = getDoubleEdgeError(errorAngle, idxMax, n.N_i, error);
 
-//	maxErrorNodes.resize(1);
-//	maxErrorNodes << (*n.iPtr)(idxMax);
-//	error(m.ibIndices, Eigen::all) = error(m.ibIndices, Eigen::all)*0.7208;
-//	error(m.ebIndices, Eigen::all) = error(m.ebIndices, Eigen::all)*m.r*2.5;
-//	error(Eigen::seqN(200,50), Eigen::all) = error(Eigen::seqN(200,50), Eigen::all)*40;
+
 	// check if node selected as double edge error node is already among the control nodes:
 	if(std::find(std::begin(*n.mPtr),std::end(*n.mPtr), (*n.iPtr)(idxMaxAngle)) != std::end(*n.mPtr)){
 		maxErrorNodes.resize(1);
@@ -60,25 +45,6 @@ void greedy::getError(Mesh& m, getNodeType& n, Eigen::ArrayXXd& d, double& maxEr
 		maxErrorNodes.resize(2);
 		maxErrorNodes << (*n.iPtr)(idxMax), (*n.iPtr)(idxMaxAngle);
 	}
-
-
-
-
-	// making array with the max error indices
-//	maxErrorNodes.resize(2);
-//	maxErrorNodes << (*n.iPtr)(idxMax), (*n.iPtr)(idxMaxAngle);
-
-//	std::cout << "control nodes: \n" << *n.mPtr << std::endl;
-
-//	if(lvl==1 && n.N_mStd == 8){
-//		std::cout << maxErrorNodes << std::endl;
-//		m.coords(*n.iPtr,Eigen::all) += d;
-//		m.writeMeshFile();
-//		std::exit(0);
-//	}
-
-
-
 }
 
 void greedy::getErrorSingleLvl(Mesh& m, getNodeType& n, Eigen::ArrayXd& errorAngle, Eigen::ArrayXXd& d, Eigen::ArrayXi& movingIndices, Eigen::ArrayXXd& exactDisp, Eigen::VectorXd& pnVec, projection* projPtr){

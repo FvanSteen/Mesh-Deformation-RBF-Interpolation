@@ -159,7 +159,7 @@ void getNodeType::assignNodeTypesGreedy(){
 }
 
 
-void getNodeType::addControlNode(int node){
+void getNodeType::addControlNode(int node, std::string& smode){
 
 
 
@@ -193,7 +193,7 @@ void getNodeType::addControlNode(int node){
 
 
 
-	if(m.smode != "none"){
+	if(smode != "none"){
 
 
 		N_mStd++;

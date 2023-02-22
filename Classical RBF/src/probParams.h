@@ -2,11 +2,9 @@
 #define PROBPARAMS_H_
 #include <Eigen/Dense>
 #include <string>
+#include <vector>
 struct probParams{
-//	Eigen::VectorXd dVec;
 	int steps;
-//	Eigen::VectorXd rotVec;
-//	Eigen::RowVectorXd rotPnt;
 	std::string smode;
 	std::string pmode;
 	bool curved;
@@ -16,9 +14,14 @@ struct probParams{
 	std::string dispFile;
 	double gamma;
 	bool multiLvl;
-	int lvlSize;
-	int lvlSizeInit;
+	int lvlSize; // delete
+	int lvlSizeInit; // delete
 	std::string convHistFile;
+	std::string mesh_ifName, mesh_ofName;
+	std::vector<std::string> bdryTags, mTags, pTags;
+	double rFac;
+	bool doubleEdge;
+	double tolCrit;
 };
 
 

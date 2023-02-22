@@ -28,7 +28,7 @@ public:
 	int N_i,N_m,N_se,N_mStd,N_ib,N_es,N_i_grdy, N_s, N_ss;
 	getNodeType(Mesh& meshOb, bool& dataRed);
 	void assignNodeTypes();
-	void addControlNode(int node);
+	void addControlNode(int node, std::string& smode);
 //	void greedyNodes(int node, std::string smode);
 	void assignNodeTypesGreedy();
 };
