@@ -18,7 +18,7 @@ public:
 	Eigen::ArrayXXi extBdryNodesMat,bdryNodesMat;
 	Eigen::ArrayXi bdryNodes; // Remove this one later
 	Eigen::ArrayXi intBdryNodes;
-	Eigen::ArrayXXi intBdryNodesMat;
+//	Eigen::ArrayXXi intBdryNodesMat;
 	Eigen::ArrayXi intNodes;
 	Eigen::ArrayXXd nVecs;
 	Eigen::ArrayXXd tVecs;
@@ -28,11 +28,11 @@ public:
 	Eigen::ArrayXXi edgeConnectivity, surfConnectivity;
 	Eigen::ArrayXXd n, t;
 	Eigen::ArrayXXd t_se, n1_se, n2_se, n_ss,t1_ss,t2_ss;
-	Eigen::ArrayXi extBdryEdgeNodes;
+//	Eigen::ArrayXi extBdryEdgeNodes;
 	Eigen::ArrayXXi extBdryEdgeSegments;
 	Eigen::ArrayXXd midPntNormals, edgeMidPntNormals1,edgeMidPntNormals2;
 	Eigen::ArrayXi mNodes,seNodes,iNodes, staticNodes, ssNodes;
-	Eigen::ArrayXi ibIndices, ebIndices;
+	Eigen::ArrayXi  ebIndices; //ibIndices,
 	Eigen::ArrayXi mNodesStd;
 
 	Eigen::ArrayXi intCorNodes;
@@ -65,7 +65,7 @@ public:
 	void getBdryNodes(Eigen::ArrayXXi& bdryNodesMat, Eigen::ArrayXi& bdryNodesArr, int& nBdryNodes, int& nBdryElems);
 	void getNodeVecs(Eigen::ArrayXXd& n, Eigen::ArrayXXd& t);
 	void getNormals(Eigen::ArrayXXd& n);
-	void getNodeTypes(probParams& params);
+	void getNodeTypes(probParams& params, int nMarker);
 	void getNodeType(Eigen::ArrayXi& nrElemsExtBdry, const std::vector<std::string>& ebTags);
 	void getEdgeConnectivity();
 	void getSurfConnectivity();

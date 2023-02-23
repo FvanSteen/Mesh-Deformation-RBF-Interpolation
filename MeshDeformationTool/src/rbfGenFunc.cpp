@@ -11,8 +11,8 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 {
 
 	std::cout << "Initialised the rbfGenFunc class" << std::endl;
-	movingIndices.resize(m.ibIndices.size());
-	exactDisp.resize(m.ibIndices.size(),m.nDims);
+	movingIndices.resize(m.intBdryNodes.size());
+	exactDisp.resize(m.intBdryNodes.size(),m.nDims);
 	readDisplacementFile();
 
 	exactDisp = exactDisp/params.steps; // deformation per step is more usefull then the total deformation.
@@ -154,7 +154,7 @@ void rbfGenFunc::getDefVecStd(getNodeType& n, Eigen::VectorXd& defVec){
 void rbfGenFunc::readDisplacementFile(){
 	std::cout << "Reading the displacement file :" << params.dispFile << std::endl;
 	std::string line;							// string containing line obtained by getline() function
-	std::ifstream file("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\defs\\" + params.dispFile);
+	std::ifstream file("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\defs\\" + params.dispFile);
 
 
 	int lineNo = 0;

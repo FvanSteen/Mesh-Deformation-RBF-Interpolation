@@ -28,7 +28,8 @@ int main()
 
 	// initialising class object m, reads mesh input file in constructor.
 	Mesh meshOb(probParams, debugLvl);
-
+	std::cout << "done" << std::endl;
+	std::exit(0);
 	// Initialising the rbf class with the mesh data and the problem parameters
 	rbf rbf(meshOb, probParams);
 

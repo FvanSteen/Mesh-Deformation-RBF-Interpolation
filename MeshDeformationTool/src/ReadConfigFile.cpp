@@ -8,7 +8,7 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 	std::cout << "Reading the configuration file" << std::endl;
 
 	std::string line;							// string containing line obtained by getline() function
-	std::ifstream file("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\ConfigFiles\\" + ifName);
+	std::ifstream file("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\ConfigFiles\\" + ifName);
 
 	int first, last;
 	std::string tolCrit;

@@ -69,14 +69,14 @@ DEFORMATION_FILENAME = 25x25_deformation.txt
 %DEFORMATION_FILENAME = ONERAM6_FFD_deformation.txt
 %DEFORMATION_FILENAME = gis_nthx001_mesh_deformation.txt
  
-CURVED = yes
-DATA_REDUCTION = yes
+CURVED = NO
+DATA_REDUCTION = NO
 DATA_RED_TOLERANCE = 1e-2
 GAMMA = 25
 DOUBLE_EDGE = NO
 
 ## Parameters for the multi level greedy
-MULTILEVEL = no
+MULTILEVEL = NO
 LVL_TOL_CRIT = 0.5
 
 

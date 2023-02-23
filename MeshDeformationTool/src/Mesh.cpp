@@ -6,8 +6,10 @@
 #include <iterator>
 #include <math.h>
 #include <chrono>
-using Eigen::MatrixXd;
-// notes
+#include <Eigen/Dense>
+
+
+
 Mesh::Mesh(probParams& params, const int& debugLvl)
 :lvl(debugLvl)
 {
@@ -23,42 +25,43 @@ void Mesh::readMeshFile(probParams& params){
 	}
 
 	int lineNo = 0;								// line number counter
-	int nBdryElems = 0;	// variables that sum the amount of marker elements
-//	bool bdry = true;		// booleans to acknowledge if on int/ext boundary
-	int markerIdx = -2;
-	int nBdryNodes = 0;	// counters for int/ext boundary nodes
-	int nodeCnt = 0;								// counter for number of points
+	int nBdryElemsTotal = 0;					// stores total number of boundary elements
+
+	int markerIdx = -2;							// contain line index containing the latest marker found
+
+//	int nBdryNodes = 0;							// counter of the total number of boundary nodes
+
+	int nodeCnt = 0;							// counter for number of points
 	int pntsIdx;								// int that stores the line where "NPOIN= " is
 
-	int bdryElemCnt = 0; // counting the elements of the boundaries
-	int MarkerElems;							// locally stores how many elements are in that boundary
-	int nMarker = 0; 						// Counts the number of external boundary markers
-
+	int bdryElemCnt = 0; 						// counting the elements of the boundaries
+	int markerElems;							// locally stores how many elements are in that boundary
+	int nMarker = 0; 							// Counts the number of external boundary markers
+	nNodes = -1; // set to a default so some if statements are not triggered
 
 	int firstIdx, lastIdx;
-	bdryNodesMat.resize(0,3), intBdryNodesMat.resize(0,3);	// the int/ ext boundary node arrays have a minimum of 3 columns. One for the node type and at least two node indices.
+	bdryNodesMat.resize(0,3);//, intBdryNodesMat.resize(0,3);	// the int/ ext boundary node arrays have a minimum of 3 columns. One for the node type and at least two node indices.
 																// The array will be adjusted to appropriate size depending on the boundary element type.
 	srtdTags.resize(params.bdryTags.size());
 	nrElemsBdry.resize(params.bdryTags.size());		// Array containing the sizes of each ext boundary
 	std::string line;							// string containing line obtained by getline() function
-	std::ifstream mFile("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes\\" + params.mesh_ifName); 	//opening file name stored in mFile object
+	std::ifstream mFile("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes\\" + params.mesh_ifName); 	//opening file name stored in mFile object
 	// Check if file is opened
 	if (mFile.is_open()){
 		//Obtain line
 		while (getline(mFile, line)){
-
 			if (line.rfind("NDIME= ",0)==0){							// save number of dimensions
 				nDims = stoi(line.substr(7));
 			}
-			else if (line.rfind("NPOIN= ",0)==0){						// save nr of points
+			else if (line.rfind("NPOIN= ",0)==0){// save nr of points
 				nNodes = stoi(line.substr(7));
 				pntsIdx = lineNo;										// save line nr.
 				coords.resize(nNodes, nDims);							// resizing the array containing the coordinates
 				std::cout << "Saving node coordinates" << std::endl;
 			}
 			else if (line.rfind("NELEM= ",0)==0){						// save nr of elements
-
 				nElem = stoi(line.substr(7));
+
 			}
 
 			// Checking whether provided boundary tags equals the amount in the mesh file
@@ -76,16 +79,10 @@ void Mesh::readMeshFile(probParams& params){
 			}
 
 			// Finding tags of the boundaries
-			else if (line.rfind("MARKER_TAG= ",0)==0){
-				int cnt = 12; // substring starts from index 12
+			else if (line.rfind("MARKER_TAG=",0)==0){
 				// start here
-
-				while(line[cnt] == ' '){
-					cnt++;
-				}
-
-				std::string tag =  line.substr(cnt);
-
+				findStringBounds(firstIdx, lastIdx,line);
+				std::string tag =  line.substr(firstIdx, lastIdx-firstIdx);
 				try{
 					if(std::find(std::begin(params.bdryTags), std::end(params.bdryTags), tag) != std::end(params.bdryTags)){
 						if(lvl >=2){
@@ -106,21 +103,20 @@ void Mesh::readMeshFile(probParams& params){
 			// Check whether line corresponds to ext. boundary
 			else if(lineNo == markerIdx+1){
 
-//				if(line.rfind("MARKER_ELEMS= ",0)==0){
-					// Obtaining number of elements in the boundary
-				MarkerElems = stoi(line.substr(13));
+				findStringBounds(firstIdx,lastIdx,line);
+				markerElems = stoi(line.substr(firstIdx, lastIdx-firstIdx));
 
 					// Updating number of external boundary elements
-				nBdryElems+= MarkerElems;
+				nBdryElemsTotal+= markerElems;
 					// Saving number of elements of each boundary in an array
-				nrElemsBdry(nMarker) = MarkerElems;
+				nrElemsBdry(nMarker) = markerElems;
 					// resizing the array containing the external boundary data
-				bdryNodesMat.conservativeResize(nBdryElems,bdryNodesMat.cols());
+				bdryNodesMat.conservativeResize(nBdryElemsTotal,bdryNodesMat.cols());
 				nMarker++;
 
 				}
 
-			else if(markerIdx > 0 && lineNo > markerIdx+1 && lineNo <= markerIdx+1 + MarkerElems){
+			else if(markerIdx > 0 && lineNo > markerIdx+1 && lineNo <= markerIdx+1 + markerElems){
 
 
 				// split line by '\t' character
@@ -133,25 +129,22 @@ void Mesh::readMeshFile(probParams& params){
 
 					// following if statements check the elementtype and if needed resize the intBdryNodesMat array.
 					if(lineElem == 0 && data == 5 && bdryNodesMat.cols() < 4){
-						bdryNodesMat.conservativeResize(nBdryElems,4);
+						bdryNodesMat.conservativeResize(nBdryElemsTotal,4);
 					}
 					else if(lineElem == 0 && data == 9 && bdryNodesMat.cols() < 5){
-						bdryNodesMat.conservativeResize(nBdryElems,5);
+						bdryNodesMat.conservativeResize(nBdryElemsTotal,5);
 					}
 
 					// assigning the node information to the array
 					bdryNodesMat(bdryElemCnt,lineElem) = data;
-					// counting of the number of internal boundary nodes°
-					if(lineElem>0){
-						nBdryNodes++;
-					}
+
 					lineElem++;
 				}
 				bdryElemCnt++;
 			}
-
 			// Check if line corresponds to line containing node coordinates
 			if (lineNo > pntsIdx && nodeCnt < nNodes){
+
 				// split line by '\t' character
 				std::istringstream is(line);
 				// based on the number of dimensions 2 or 3 coordinates are assigned to the coords array
@@ -164,8 +157,10 @@ void Mesh::readMeshFile(probParams& params){
 						break;
 				}
 				nodeCnt++;
+
 			}
 			lineNo++;
+
 		}
 		//closing meshing file
 		mFile.close();
@@ -173,7 +168,7 @@ void Mesh::readMeshFile(probParams& params){
 	// If the file is not opened then the following error message will be displayed
 	else std::cout << "Not able to open input mesh file";
 
-	getNodeTypes(params);
+	getNodeTypes(params, nMarker);
 //	std::cout <<"moving Nodes: \n" <<  mNodes << std::endl;
 //	std::cout <<"sliding edge Nodes: \n" <<  seNodes << std::endl;
 //	std::cout <<"sliding surf Nodes: \n" <<  ssNodes << std::endl;
@@ -202,11 +197,11 @@ void Mesh::readMeshFile(probParams& params){
 
 
 
-	ibIndices.resize(intBdryNodes.size());
-
-	for(int x=0; x< intBdryNodes.size(); x++){
-		ibIndices(x) = std::distance(std::begin(mNodes), std::find(std::begin(mNodes), std::end(mNodes),intBdryNodes(x)));
-	}
+//	ibIndices.resize(intBdryNodes.size());
+//
+//	for(int x=0; x< intBdryNodes.size(); x++){
+//		ibIndices(x) = std::distance(std::begin(mNodes), std::find(std::begin(mNodes), std::end(mNodes),intBdryNodes(x)));
+//	}
 
 	ebIndices.resize(N_m-intBdryNodes.size());
 	int cnt = 0;
@@ -306,7 +301,8 @@ void Mesh::readMeshFile(probParams& params){
  * The remaining elements only appear once in the array and are therefore static external nodes.  *
  * For 2D meshes the sliding surface nodes don't have to be found.
  */
-void Mesh::getNodeTypes(probParams& params){
+void Mesh::getNodeTypes(probParams& params, int nMarker){
+	std::cout << nMarker << std::endl;
 	if(lvl>=1){
 		std::cout << "Obtaining node types" << std::endl;
 	}
@@ -318,22 +314,22 @@ void Mesh::getNodeTypes(probParams& params){
 
 	// array that will contain the external edge boundary nodes in the order of the meshing file.
 	// This will be used to establish the line segments of the boundary and the corresponding midpoints.
-	int nrSegments = 0;
-	for(int elem = 0; elem < nrElemsBdry.size(); elem++){
-		if(std::find(std::begin(params.mTags),std::end(params.mTags),srtdTags[elem]) == std::end(params.mTags) && (std::find(std::begin(params.pTags),std::end(params.pTags),srtdTags[elem]) == std::end(params.pTags) || params.pmode == "none" || params.pmode == "periodic" )){
-			nrSegments += nrElemsBdry(elem) + 1;
-		}
-	}
+//	int nrSegments = 0;
+//	for(int elem = 0; elem < nrElemsBdry.size(); elem++){
+//		if(std::find(std::begin(params.mTags),std::end(params.mTags),srtdTags[elem]) == std::end(params.mTags) && (std::find(std::begin(params.pTags),std::end(params.pTags),srtdTags[elem]) == std::end(params.pTags) || params.pmode == "none" || params.pmode == "periodic" )){
+//			nrSegments += nrElemsBdry(elem) + 1;
+//		}
+//	}
 
 
-	extBdryEdgeNodes.resize(4*nrSegments);
+//	extBdryEdgeNodes.resize(4*nrSegments);
 
-	int edgeNodeCnt = 0;
+//	int edgeNodeCnt = 0;
 	bool periodic, moving;										// boolean that is set based on whether its a periodic boundary element or not.
 
 
 	// for each external boundary the sliding edge, sliding surface and static nodes are identified
-	for(int elem = 0; elem < nrElemsBdry.size(); elem++){
+	for(int elem = 0; elem < nMarker; elem++){
 //		std::cout << "MARKER: " << srtdTags[elem] << std::endl;
 		// resizing the array that will contain all the boundary nodes of that boundary
 		bdryNodesArr.resize(nrElemsBdry(elem)*(bdryNodesMat.cols()-1));
@@ -422,8 +418,8 @@ void Mesh::getNodeTypes(probParams& params){
 
 							}
 						}
-						extBdryEdgeNodes(edgeNodeCnt) = bdryNodesArr(i);
-						edgeNodeCnt++;
+//						extBdryEdgeNodes(edgeNodeCnt) = bdryNodesArr(i);
+//						edgeNodeCnt++;
 					}
 
 					// saving the nodes in the order they were found to be able to establish the line segments of the external boundary
@@ -488,8 +484,8 @@ void Mesh::getNodeTypes(probParams& params){
 								cntMoving++;
 							}
 						}
-						extBdryEdgeNodes(edgeNodeCnt) = bdryNodesArr(i);
-						edgeNodeCnt++;
+//						extBdryEdgeNodes(edgeNodeCnt) = bdryNodesArr(i);
+//						edgeNodeCnt++;
 					}
 				}
 			}
@@ -547,10 +543,10 @@ void Mesh::getNodeTypes(probParams& params){
 	// In case there is just a single external boundary then the final element is equal to the first element
 	// This ensures that the line segments making up the external boundary is closed.
 
-	if(int(params.bdryTags.size()-params.mTags.size())==1){
-		extBdryEdgeNodes.conservativeResize(edgeNodeCnt+1);
-		extBdryEdgeNodes(edgeNodeCnt) = extBdryEdgeNodes(0);
-	}
+//	if(int(params.bdryTags.size()-params.mTags.size())==1){
+//		extBdryEdgeNodes.conservativeResize(edgeNodeCnt+1);
+//		extBdryEdgeNodes(edgeNodeCnt) = extBdryEdgeNodes(0);
+//	}
 }
 
 
@@ -706,10 +702,10 @@ void Mesh::writeMeshFile(std::string& ifName, std::string& ofName){
 	outputF.precision(15);		// sets precision of the floats in the file
 
 	// opening existing or creating new output file. In its respective folder.
-	outputF.open("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes\\" + ofName, std::ios::out); // ios::out allows output to file
+	outputF.open("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes\\" + ofName, std::ios::out); // ios::out allows output to file
 
 	// Reopening the initial mesh file
-	std::ifstream inputF("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes\\" + ifName);
+	std::ifstream inputF("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes\\" + ifName);
 	// string containing the contents of each line
 	std::string line;
 	// boolean that will be set to true whenever the new coordinates have to be specified.
@@ -1496,7 +1492,7 @@ void Mesh::getCharLength(std::string& pDir){
 
 void Mesh::findStringBounds(int& first, int& last, std::string& line){
 	first = line.find("=")+1;
-	last = line.size()-1;
+	last = line.size();
 
 	while(line[first] == ' '){
 		first++;
@@ -1505,7 +1501,6 @@ void Mesh::findStringBounds(int& first, int& last, std::string& line){
 	while(line[last-1] == ' '){
 		last = last -1;
 	}
-	last++;
 
 	if(first == last){
 		last++;
