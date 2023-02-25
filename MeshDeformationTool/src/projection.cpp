@@ -18,7 +18,7 @@ void projection::project(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta
 	Eigen::ArrayXi index = Eigen::ArrayXi::LinSpaced(m.midPnts.rows(),0,m.midPnts.rows()-1);
 
 	for(int i=0; i<sNodes.size(); i++){
-		if(std::find(std::begin(m.staticNodes),std::end(m.staticNodes),sNodes(i))  != std::end(m.staticNodes)){
+		if(std::find(std::begin(m.verticesNodes),std::end(m.verticesNodes),sNodes(i))  != std::end(m.verticesNodes)){
 			finalDef.row(i) = delta.row(i)*pVec.transpose().array();
 		}else{
 			// distance to all midpoints

@@ -26,7 +26,7 @@ public:
 //	int N_m,N_i,N_s, N_mPro;
 	projection* p;
 
-	rbf_ps(Mesh& meshObject, struct probParams& probParamsObject);
+	rbf_ps(struct probParams& probParamsObject, Mesh& meshObject, getNodeType& n);
 	void perform_rbf(getNodeType& n);
 	void performRBF_PS(Eigen::MatrixXd& Phi_mmPro, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVecPro,Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef, Eigen::VectorXd& defVec, getNodeType& n);
 

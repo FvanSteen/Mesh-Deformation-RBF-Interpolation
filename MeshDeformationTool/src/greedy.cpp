@@ -344,7 +344,7 @@ double greedy::rbfEval(double distance, double radius){
 }
 
 void greedy::project(Mesh& m, int& node, int& idx, Eigen::ArrayXXd& disp,Eigen::VectorXd& pnVec, projection* projPtr, int edge){
-	if(std::find(std::begin(m.staticNodes),std::end(m.staticNodes),node) != std::end(m.staticNodes)){
+	if(std::find(std::begin(m.verticesNodes),std::end(m.verticesNodes),node) != std::end(m.verticesNodes)){
 		std::cout << "static node: " << node << std::endl;
 		std::cout << "displacement: \n" << disp.row(idx) << std::endl;
 		std::cout << "PERIODIC VECTOR: \n" << pnVec << std::endl;

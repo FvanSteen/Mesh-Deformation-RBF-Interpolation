@@ -5,9 +5,10 @@
 #include "greedy.h"
 #include "WriteResults.h"
 //rbf_std::rbf_std(Mesh& meshObject, Eigen::VectorXd& dVec, Eigen::RowVectorXd& rotPnt, Eigen::VectorXd& rotVec, const int& steps, const std::string& smode, const bool& curved, const std::string& pDir)
-rbf_std::rbf_std(Mesh& meshObject, struct probParams& probParamsObject)
+rbf_std::rbf_std(struct probParams& probParamsObject, Mesh& meshObject, getNodeType& n)
 :rbfGenFunc(meshObject, probParamsObject)
 {
+	perform_rbf(n);
 }
 
 
@@ -15,7 +16,6 @@ void rbf_std::perform_rbf(getNodeType& n){
 	std::cout << "Performing standard rbf interpolation" << std::endl;
 
 	WriteResults w;
-
 	w.createConvHistFile(params.convHistFile);
 
 	projection* p;
@@ -25,7 +25,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 	auto start = std::chrono::high_resolution_clock::now();
 	Eigen::MatrixXd Phi_mm, Phi_im, Phi_imGreedy;
-	Eigen::VectorXd defVec,defVecStd;
+	Eigen::VectorXd defVec;
 
 	double maxError;
 
@@ -33,22 +33,6 @@ void rbf_std::perform_rbf(getNodeType& n){
 	bool iterating;
 
 	Eigen::ArrayXi maxErrorNodes;
-
-
-//	if(params.dataRed){
-//		n.addControlNode(m.intBdryNodes(0));
-//		n.addControlNode(m.intBdryNodes(m.intBdryNodes.size()-1));
-//	}
-
-//	std::cout <<"moving nodes: "<< *n.mPtr << std::endl;
-//	std::cout <<"Internal nodes: "<< *n.iPtrGrdy << std::endl;
-
-//	std::cout << "sliding Nodes: " << *n.sPtr << std::endl;
-//	std::cout << "sliding edge nodes: " << n.seNodes << std::endl;
-//	std::cout << "sliding surf nodes: " << n.ssNodes << std::endl;
-//	std::cout << "std rbf nodes: " << *n.mStdPtr << std::endl;
-//	std::exit(0);
-
 
 	greedy go;
 
@@ -90,27 +74,17 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 			if(params.dataRed){
 				int node = 0;
-//				while( (params.multiLvl == false || n.N_m < params.lvlSize) && node < maxErrorNodes.size()){
 				while(node < maxErrorNodes.size()){
-					n.addControlNode(maxErrorNodes(node), params.smode);
+					n.addControlNode(maxErrorNodes(node), params.smode, m);
 					node++;
 				}
 			}
 
-
-//			std::cout << "int nodes\n" << *n.iPtr << std::endl;
-//			std::cout << "Obtaining Phi_mm" << std::endl;
-			getPhi(Phi_mm, *n.mPtr, *n.mPtr);
-//			std::cout << Phi_mm << std::endl;
-//			std::cout << "Obtaining Phi_im" << std::endl;
-			getPhi(Phi_im, *n.iPtr, *n.mPtr);
+			getPhis(Phi_mm, Phi_im, n.mPtr, n.iPtr);
 
 			if(i==0 || params.dataRed){
 				getDefVec(defVec, n, lvl, go.errorPrevLvl);
 			}
-//			std::cout << defVec << std::endl;
-
-
 
 			performRBF(Phi_mm, Phi_im, defVec,*n.mPtr,*n.iPtr, n.N_m);
 
@@ -186,7 +160,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 				lvl++;
 
-				n.assignNodeTypesGreedy();
+				n.assignNodeTypesGrdy(m);
 
 				if(maxError < params.tol){
 					iterating = false;
@@ -280,7 +254,7 @@ void rbf_std::updateNodes(Eigen::MatrixXd& Phi_imGreedy, getNodeType& n, Eigen::
 //	std::cout << *alpha_step << std::endl;
 	auto start = std::chrono::high_resolution_clock::now();
 
-	getPhi(Phi_imGreedy,*n.iPtrGrdy,*ptr);
+	getPhi(Phi_imGreedy,n.iPtrGrdy,ptr);
 
 
 	m.coords(*n.iPtr, Eigen::all) += *d_step;

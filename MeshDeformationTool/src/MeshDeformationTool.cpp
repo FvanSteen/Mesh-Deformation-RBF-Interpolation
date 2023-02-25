@@ -1,6 +1,6 @@
-#include "rbf.h"
 #include "probParams.h"
 #include "ReadConfigFile.h"
+#include "rbfstd.h"
 #include <iostream>
 #include <fstream>
 #include <Eigen/Dense>
@@ -28,8 +28,25 @@ int main()
 
 	// initialising class object m, reads mesh input file in constructor.
 	Mesh meshOb(probParams, debugLvl);
-	std::cout << "done" << std::endl;
+
+// todo ds with moving does not run with greedy
+
+	getNodeType n(probParams, meshOb);
+
+//	std::cout << "moving Nodes: \n" <<  *n.mPtr << std::endl;
+//	std::cout << "sliding edge Nodes: \n" <<  *n.sePtr << std::endl;
+//	std::cout << "sliding surface nodes: \n" << *n.ssPtr << std::endl;
+//	std::cout << "internal nodes:\n" << *n.iPtr << std::endl;
+	if(probParams.smode == "none"){
+		rbf_std rbf(probParams, meshOb, n);
+//		rbf.perform_rbf(n);
+		std::cout << "here" << std::endl;
+	}
+
 	std::exit(0);
+
+
+
 	// Initialising the rbf class with the mesh data and the problem parameters
 	rbf rbf(meshOb, probParams);
 

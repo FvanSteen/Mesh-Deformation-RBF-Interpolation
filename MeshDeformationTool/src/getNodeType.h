@@ -1,18 +1,11 @@
-/*
- * getNodeType.h
- *
- *  Created on: 19 nov. 2022
- *      Author: floyd
- */
-
 #ifndef GETNODETYPE_H_
 #define GETNODETYPE_H_
 #include "Mesh.h"
+#include "probParams.h"
 #include <Eigen/Dense>
 
 class getNodeType {
 public:
-	Mesh& m;
 	Eigen::ArrayXi iNodes, mNodes, seNodes,mNodesStd,ibNodes,esNodes, sNodes,ssNodes;
 
 	Eigen::ArrayXi* mPtr;
@@ -26,11 +19,14 @@ public:
 
 
 	int N_i,N_m,N_se,N_mStd,N_ib,N_es,N_i_grdy, N_s, N_ss;
-	getNodeType(Mesh& meshOb, bool& dataRed);
-	void assignNodeTypes();
-	void addControlNode(int node, std::string& smode);
-//	void greedyNodes(int node, std::string smode);
-	void assignNodeTypesGreedy();
+
+
+
+	getNodeType(probParams& params, Mesh& m);
+	void assignNodeTypes(Mesh& m);
+	void addControlNode(int node, std::string& smode, Mesh& m);
+
+	void assignNodeTypesGrdy(Mesh& m);
 };
 
 #endif /* GETNODETYPE_H_ */

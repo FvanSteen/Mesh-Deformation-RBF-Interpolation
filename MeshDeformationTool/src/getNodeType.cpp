@@ -1,33 +1,17 @@
-/*
- * getNodeType.cpp
- *
- *  Created on: 19 nov. 2022
- *      Author: floyd
- */
 
 #include "getNodeType.h"
 #include <iostream>
 #include <iterator>
-getNodeType::getNodeType(Mesh& meshOb, bool& dataRed)
-:m(meshOb)
+getNodeType::getNodeType(probParams& params, Mesh& m)
 {
-	std::cout << "done assigning node types" << std::endl;
-	if(dataRed){
-		assignNodeTypesGreedy();
+	if(params.dataRed){
+		assignNodeTypesGrdy(m);
 	}else{
-		assignNodeTypes();
+		assignNodeTypes(m);
 	}
 }
 
-void getNodeType::assignNodeTypes(){
-//
-//	mNodes = m.mNodes;
-//	N_m = m.N_m;
-//	iNodes = m.iNodes;
-//	N_i = m.N_i;
-//	std::cout << *ptr << std::endl;
-
-
+void getNodeType::assignNodeTypes(Mesh& m){
 	N_m = m.N_m;
 	N_i = m.N_i;
 	mPtr = &m.mNodes;
@@ -49,64 +33,11 @@ void getNodeType::assignNodeTypes(){
 	sNodes.resize(N_s);
 	sNodes << m.seNodes, m.ssNodes;
 	sPtr = &sNodes;
-
-
-//todo move this to a seperate function
-//	N_ib = m.N_ib;
-//	ibNodes.resize(N_ib);
-//	ibNodes = m.intBdryNodes;
-//
-//	N_i = m.N_i;
-//	iNodes.resize(N_i);
-//	iNodes << m.iNodes;
-//
-////	N_es = m.N_es;
-////	esNodes.resize(N_es);
-////	esNodes << m.extStaticNodes;
-//
-//	if(m.smode == "none"){
-//		N_m = m.N_m;
-//		mNodes.resize(N_m);
-//		mNodes << m.mNodes;
-//
-//	}else{
-//		// only in case pmode != moving
-//		N_m = m.N_m;
-//		mNodes.resize(N_m);
-//		mNodes << m.mNodes;
-//
-//		N_s = m.N_se;
-//		sNodes.resize(N_s);
-//		sNodes << m.seNodes;
-//
-//		N_mStd = m.N_mStd;
-//		mNodesStd.resize(N_mStd);
-//		mNodesStd << m.mNodesStd;
-//	}
-//		else if(m.smode == "ds"){ // only in case of non moving periodic boundaries.
-//		N_m = m.N_ib + m.N_es;
-//		mNodes.resize(N_m);
-//		mNodes << m.intBdryNodes, m.extStaticNodes;
-//
-//		N_s = m.N_se;
-//		sNodes.resize(N_s);
-//		sNodes << m.slidingEdgeNodes;
-//
-//		// todo rename to make clearer
-//		N_mStd = m.N_ib + m.N_es + m.N_se;
-//		mNodesStd.resize(N_mStd);
-//		mNodesStd << m.intBdryNodes,m.extStaticNodes, m.slidingEdgeNodes;
-//
-//	}
-
-	std::cout << "done" << std::endl;
-
-
 }
 
 
 
-void getNodeType::assignNodeTypesGreedy(){
+void getNodeType::assignNodeTypesGrdy(Mesh& m){
 
 	// for the non sliding rbf
 
@@ -139,27 +70,10 @@ void getNodeType::assignNodeTypesGreedy(){
 	N_s = 0;
 	sNodes.resize(N_s);
 	sPtr = &sNodes;
-
-//	N_m = 0;
-//	N_s = 0;
-//	N_mStd = 0;
-//	N_ib = 0;
-//	N_es = 0;
-//	N_i = m.N_i+m.N_p+m.N_ib+ m.N_es + m.N_se;
-//
-//	iNodes.resize(N_i);
-//	iNodes <<  m.intNodes, m.periodicNodes, m.intBdryNodes, m.extStaticNodes, m.slidingEdgeNodes;
-//
-//	esNodes.resize(N_es);
-//	mNodes.resize(N_m);
-//	sNodes.resize(N_s);
-//	mNodesStd.resize(N_mStd);
-//	ibNodes.resize(N_ib);
-
 }
 
 
-void getNodeType::addControlNode(int node, std::string& smode){
+void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 
 
 

@@ -5,8 +5,8 @@
 #include <Eigen/Dense>
 
 //rbf_ps::rbf_ps(Mesh& meshObject, Eigen::VectorXd& dVec, Eigen::RowVectorXd& rotPnt, Eigen::VectorXd& rotVec, const int& steps, const std::string& smode, const bool& curved, const std::string& pDir)
-rbf_ps::rbf_ps(Mesh& meshObject, struct probParams& probParamsObject)
-:rbf_std(meshObject, probParamsObject)
+rbf_ps::rbf_ps( struct probParams& probParamsObject, Mesh& meshObject, getNodeType& n)
+:rbf_std(probParamsObject, meshObject, n)
 {
 	std::cout << "in the ps class" << std::endl;
 
@@ -65,7 +65,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 			if(params.dataRed){
 				for(int node = 0; node < maxErrorNodes.size(); node++){
-					n.addControlNode(maxErrorNodes(node), params.smode);
+					n.addControlNode(maxErrorNodes(node), params.smode, m);
 				}
 
 //				std::cout << "Moving nodes: \n" << *n.mPtr << "\n internal nodes (same): \n" << *n.iPtr << "\n sliding edge Nodes: \n" << *n.sePtr << "\n mnodesStd: \n" << *n.mStdPtr << std::endl;
@@ -77,15 +77,15 @@ void rbf_ps::perform_rbf(getNodeType& n){
 //			delta.resize(n.N_se, m.nDims);
 //			finalDef.resize(n.N_se,m.nDims);
 
-			getPhi(Phi_mm, *n.mPtr, *n.mPtr);
+			getPhi(Phi_mm, n.mPtr, n.mPtr);
 
 //			getPhi(Phi_sm, *n.sePtr, *n.mPtr); 	FOR 2D
-			getPhi(Phi_sm, *n.sPtr, *n.mPtr);
+			getPhi(Phi_sm, n.sPtr, n.mPtr);
 
-			getPhi(Phi_mmStd, *n.mStdPtr, *n.mStdPtr);
+			getPhi(Phi_mmStd, n.mStdPtr, n.mStdPtr);
 
 
-			getPhi(Phi_im, *n.iPtr, *n.mStdPtr);
+			getPhi(Phi_im, n.iPtr, n.mStdPtr);
 
 
 			if(i==0 || params.dataRed){
@@ -143,7 +143,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 				std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" << std::endl;
 				lvl++;
 
-				n.assignNodeTypesGreedy();
+				n.assignNodeTypesGrdy(m);
 
 				if(maxError < params.tol){
 					iterating = false;

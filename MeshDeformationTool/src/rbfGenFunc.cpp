@@ -11,8 +11,8 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 {
 
 	std::cout << "Initialised the rbfGenFunc class" << std::endl;
-	movingIndices.resize(m.intBdryNodes.size());
-	exactDisp.resize(m.intBdryNodes.size(),m.nDims);
+	movingIndices.resize(m.N_nonzeroDisp);
+	exactDisp.resize(m.N_nonzeroDisp,m.nDims);
 	readDisplacementFile();
 
 	exactDisp = exactDisp/params.steps; // deformation per step is more usefull then the total deformation.
@@ -21,14 +21,18 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 
 }
 
-void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::ArrayXi& idxSet2){
-//	double lambda = 0.05749995;
-//	double lambda = 1;
-//	double lambda = 0.045;
-	Phi.resize(idxSet1.size(), idxSet2.size());
+
+
+void rbfGenFunc::getPhis(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::ArrayXi* mPtr, Eigen::ArrayXi* iPtr){
+	getPhi(Phi_mm, mPtr, mPtr);
+	getPhi(Phi_im, iPtr, mPtr);
+}
+
+void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::ArrayXi* idxSet2){
+	Phi.resize((*idxSet1).size(), (*idxSet2).size());
 	double dist;
-	for(int i=0; i<idxSet1.size();i++){
-		for(int j=0; j<idxSet2.size();j++){
+	for(int i=0; i<(*idxSet1).size();i++){
+		for(int j=0; j<(*idxSet2).size();j++){
 			if(m.nDims == 2){
 				// Euclidian distance
 
@@ -41,11 +45,11 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::Ar
 					for(int dim = 0; dim < m.nDims; dim++){
 						if(pVec(dim)){
 
-							dist += pow(m.lambda/M_PI*sin( (m.coords(idxSet1(i),dim)-m.coords(idxSet2(j),dim))*M_PI/m.lambda),2);
+							dist += pow(m.lambda/M_PI*sin( (m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim))*M_PI/m.lambda),2);
 
 						}
 						else{
-							dist += pow(m.coords(idxSet1(i),dim)-m.coords(idxSet2(j),dim),2);
+							dist += pow(m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim),2);
 						}
 
 					}
@@ -53,7 +57,7 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::Ar
 				}
 				else{
 					//todo can the difference in coordinates by calculated for the whole row. then take the power of 2, sum and take square root??
-					dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1),2) );
+					dist = sqrt(pow(m.coords((*idxSet1)(i),0)-m.coords((*idxSet2)(j),0),2) + pow(m.coords((*idxSet1)(i),1)-m.coords((*idxSet2)(j),1),2) );
 				}
 //				dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(1/M_PI*sin( (m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1))*M_PI/1),2));
 //				std::cout << dist << std::endl;
@@ -68,16 +72,16 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi& idxSet1, Eigen::Ar
 					for(int dim = 0; dim < m.nDims; dim++){
 
 						if(pVec(dim)){
-							dist += pow(m.lambda/M_PI*sin( (m.coords(idxSet1(i),dim)-m.coords(idxSet2(j),dim))*M_PI/m.lambda),2);
+							dist += pow(m.lambda/M_PI*sin( (m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim))*M_PI/m.lambda),2);
 						}else{
-							dist += pow(m.coords(idxSet1(i),dim)-m.coords(idxSet2(j),dim),2);
+							dist += pow(m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim),2);
 						}
 
 					dist = sqrt(dist);
 					}
 				}else{
 //					std::cout << "check" << std::endl;
-					dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1),2) + pow(m.coords(idxSet1(i),2)-m.coords(idxSet2(j),2),2));
+					dist = sqrt(pow(m.coords((*idxSet1)(i),0)-m.coords((*idxSet2)(j),0),2) + pow(m.coords((*idxSet1)(i),1)-m.coords((*idxSet2)(j),1),2) + pow(m.coords((*idxSet1)(i),2)-m.coords((*idxSet2)(j),2),2));
 				}
 			}
 //			std::cout << m.coords(idxSet1(i),2)-m.coords(idxSet2(j),2) << std::endl;
@@ -132,18 +136,12 @@ void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, getNodeType& n, int lvl, Eig
 void rbfGenFunc::getDefVecStd(getNodeType& n, Eigen::VectorXd& defVec){
 //	std::cout << "determinging std defvec"  << std::endl;
 
-//	std::cout << exactDisp << std::endl;
-//	std::cout << *n.mPtr << std::endl;
-//	std::cout << movingIndices << std::endl;
 
 	int idx;
 	//loop through the moving nodes
 	for(int i = 0; i < n.N_m; i++){
 		idx = std::distance(std::begin(movingIndices), std::find(std::begin(movingIndices), std::end(movingIndices),(*n.mPtr)(i)));
 		if(idx!= movingIndices.size()){
-//			std::cout << idx << std::endl;
-//			std::cout << mIndex(idx) << std::endl;
-//			std::cout << displacement.row(idx) << std::endl;
 			for(int dim = 0; dim < m.nDims; dim++){
 				defVec(dim*n.N_m+i) = exactDisp(idx,dim);
 			}

@@ -3,8 +3,8 @@
 #include <Eigen/Dense>
 #include <chrono>
 
-rbf_ds::rbf_ds(Mesh& meshObject, struct probParams& probParamsObject)
-:rbf_std(meshObject, probParamsObject)
+rbf_ds::rbf_ds(struct probParams& probParamsObject, Mesh& meshObject, getNodeType& n)
+:rbf_std(probParamsObject, meshObject, n)
 {
 	std::cout << "Initialised the ds class" << std::endl;
 }
@@ -67,19 +67,19 @@ void rbf_ds::perform_rbf(getNodeType& n){
 
 			if(params.dataRed){
 				for(int node = 0; node < maxErrorNodes.size(); node++){
-					n.addControlNode(maxErrorNodes(node), params.smode);
+					n.addControlNode(maxErrorNodes(node), params.smode, m);
 				}
 			}
 //			std::cout << "Moving nodes: \n " << *n.mPtr << std::endl;
 //			std::cout << "sliding nodes: \n " << *n.sPtr << std::endl;
 			if (m.nDims == 2){
-				getPhi(Phi_mm, *n.mPtr,*n.mPtr);
-				getPhi(Phi_ms, *n.mPtr, *n.sPtr);
-				getPhi(Phi_sm, *n.sPtr, *n.mPtr);
-				getPhi(Phi_ss, *n.sPtr, *n.sPtr);
+				getPhi(Phi_mm, n.mPtr,n.mPtr);
+				getPhi(Phi_ms, n.mPtr, n.sPtr);
+				getPhi(Phi_sm, n.sPtr, n.mPtr);
+				getPhi(Phi_ss, n.sPtr, n.sPtr);
 
-				getPhi(Phi_im, *n.iPtr, *n.mPtr);
-				getPhi(Phi_is, *n.iPtr, *n.sPtr);
+				getPhi(Phi_im, n.iPtr, n.mPtr);
+				getPhi(Phi_is, n.iPtr, n.sPtr);
 			}else if(m.nDims == 3){
 //				Eigen::MatrixXd Phi_mm, Phi_ms, Phi_sm, Phi_ss, Phi_im, Phi_is, Phi;
 //			//	Eigen::ArrayXXd n(m.N_se, m.nDims), t(m.N_se, m.nDims);		// two column array containing normal vector components
@@ -87,21 +87,21 @@ void rbf_ds::perform_rbf(getNodeType& n){
 //			//	Eigen::ArrayXXd t_se(m.N_se,m.nDims),n1_se(m.N_se,m.nDims), n2_se(m.N_se,m.nDims), n_ss(m.N_ss, m.nDims),t1_ss(m.N_ss, m.nDims),t2_ss(m.N_ss, m.nDims);
 //				Eigen::MatrixXd Phi_me, Phi_ee, Phi_es, Phi_em, Phi_se, Phi_ie;
 
-				getPhi(Phi_mm,*n.mPtr,*n.mPtr);
-				getPhi(Phi_me, *n.mPtr, *n.sePtr);
-				getPhi(Phi_ms, *n.mPtr, *n.ssPtr);
+				getPhi(Phi_mm,n.mPtr,n.mPtr);
+				getPhi(Phi_me, n.mPtr, n.sePtr);
+				getPhi(Phi_ms, n.mPtr, n.ssPtr);
 
-				getPhi(Phi_em, *n.sePtr, *n.mPtr);
-				getPhi(Phi_ee, *n.sePtr, *n.sePtr);
-				getPhi(Phi_es, *n.sePtr, *n.ssPtr);
+				getPhi(Phi_em, n.sePtr, n.mPtr);
+				getPhi(Phi_ee, n.sePtr, n.sePtr);
+				getPhi(Phi_es, n.sePtr, n.ssPtr);
 
-				getPhi(Phi_sm, *n.ssPtr, *n.mPtr);
-				getPhi(Phi_se, *n.ssPtr, *n.sePtr);
-				getPhi(Phi_ss, *n.ssPtr, *n.ssPtr);
+				getPhi(Phi_sm, n.ssPtr, n.mPtr);
+				getPhi(Phi_se, n.ssPtr, n.sePtr);
+				getPhi(Phi_ss, n.ssPtr, n.ssPtr);
 
-				getPhi(Phi_im, *n.iPtr, *n.mPtr);
-				getPhi(Phi_ie, *n.iPtr, *n.sePtr);
-				getPhi(Phi_is, *n.iPtr, *n.ssPtr);
+				getPhi(Phi_im, n.iPtr, n.mPtr);
+				getPhi(Phi_ie, n.iPtr, n.sePtr);
+				getPhi(Phi_is, n.iPtr, n.ssPtr);
 			}
 
 			if(i==0 || params.dataRed){
@@ -118,8 +118,8 @@ void rbf_ds::perform_rbf(getNodeType& n){
 //			getDefVec(defVec,n.N_m,params.steps,*n.mPtr);
 //			getDefVec(defVec, n, lvl, go.errorPrevLvl);
 			if(lvl!=0){
-				getPhi(Phi_mmStd, *n.mStdPtr,*n.mStdPtr);
-				getPhi(Phi_imStd, *n.iPtr,*n.mStdPtr);
+				getPhi(Phi_mmStd, n.mStdPtr,n.mStdPtr);
+				getPhi(Phi_imStd, n.iPtr,n.mStdPtr);
 				performRBF(Phi_mmStd, Phi_imStd, defVec, *n.mStdPtr, *n.iPtr, n.N_mStd);
 			}else{
 				if(m.nDims == 2){
@@ -165,7 +165,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 //				std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" << std::endl;
 				lvl++;
 
-				n.assignNodeTypesGreedy();
+				n.assignNodeTypesGrdy(m);
 
 				if(maxError < params.tol){
 					iterating = false;
@@ -256,8 +256,8 @@ void rbf_ds::performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi, Eigen::MatrixXd
 		Eigen::MatrixXd Phi_mm2, Phi_im2;
 
 		//todo give n as argument in the function :(
-		getPhi(Phi_mm2, *n.mStdPtr,*n.mStdPtr);
-		getPhi(Phi_im2,*n.iPtr,*n.mStdPtr);
+		getPhi(Phi_mm2, n.mStdPtr,n.mStdPtr);
+		getPhi(Phi_im2,n.iPtr,n.mStdPtr);
 
 		performRBF(Phi_mm2,Phi_im2,defVecStd,mNodesStd,iNodes,N_mStd);
 //		std::cout << d << std::endl;
@@ -297,7 +297,7 @@ void rbf_ds::getPhiDS(Eigen::MatrixXd& Phi,Eigen::MatrixXd& Phi_mm,Eigen::Matrix
 	if(params.pmode == "moving"){
 		n.conservativeResize(N_s,m.nDims);
 		t.conservativeResize(N_s,m.nDims);
-		for(int i = N_s - m.staticNodes.size(); i< N_s; i++){
+		for(int i = N_s - m.verticesNodes.size(); i< N_s; i++){
 			n.row(i) = pnVec;
 			t.row(i) = pVec;
 		}

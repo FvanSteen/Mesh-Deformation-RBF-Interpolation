@@ -43,17 +43,17 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 			else if(line.rfind("SLIDING_MODE")==0){
 				findStringBounds(first,last,line);
 				probParamsObject.smode =  line.substr(first,last-first);
-//				probParamsObject.smode = smode;
 			}
 			else if(line.rfind("PERIODIC_MODE")==0){
 				findStringBounds(first,last,line);
 				probParamsObject.pmode =  line.substr(first,last-first);
-//				probParamsObject.pmode = pmode;
+
+
+
 			}
 			else if(line.rfind("PERIODIC_DIRECTION")==0){
 				findStringBounds(first,last,line);
 				probParamsObject.pDir = line.substr(first,last-first);
-//				probParamsObject.pDir = pDir;
 			}
 			else if(line.rfind("STEPS")==0){
 				findStringBounds(first,last,line);
@@ -100,6 +100,16 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 		}
 		file.close();
 	}else{std::cout << "Unable to open the configuration file: " << ifName << std::endl;}
+
+	try{
+		if(probParamsObject.smode =="none" && (probParamsObject.pmode == "fixed" || probParamsObject.pmode =="moving")){
+			throw(probParamsObject.pmode);
+		}
+	}
+	catch(std::string& pmode){
+		std::cout << "Non-compatible configuration file settings. Periodicity setting: '" << pmode << "' is only applicable when sliding is allowed.";
+		std::exit(0);
+	}
 
 	std::string str1,str2;
 	if(probParamsObject.multiLvl){
