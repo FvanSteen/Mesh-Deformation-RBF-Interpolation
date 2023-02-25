@@ -47,7 +47,7 @@ MARKER_PERIODIC = (upper, lower)
 %MARKER_PERIODIC = (FRONT, BACK)
  
 %(none, pseudo, direct)
-SLIDING_MODE = none
+SLIDING_MODE = ps
 
 %(none,periodic,fixed_vertices,moving_vertices)
 PERIODIC_MODE = none
@@ -70,10 +70,10 @@ DEFORMATION_FILENAME = 25x25_deformation.txt
 %DEFORMATION_FILENAME = gis_nthx001_mesh_deformation.txt
  
 CURVED = NO
-DATA_REDUCTION = no
+DATA_REDUCTION = yes
 DATA_RED_TOLERANCE = 1e-2
 GAMMA = 25
-DOUBLE_EDGE = NO
+DOUBLE_EDGE = YES
 
 ## Parameters for the multi level greedy
 MULTILEVEL = NO

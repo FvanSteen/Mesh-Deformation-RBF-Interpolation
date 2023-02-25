@@ -23,8 +23,10 @@ void rbf_std::perform_rbf(getNodeType& n){
 	projection proObject;
 	p = &proObject;
 
-	auto start = std::chrono::high_resolution_clock::now();
-	Eigen::MatrixXd Phi_mm, Phi_im, Phi_imGreedy;
+	auto start = std::chrono::high_resolution_clock::now();\
+
+	// matrices and vector required to solve the rbf interpolation
+	Eigen::MatrixXd Phi_cc, Phi_ic, Phi_icGrdy;
 	Eigen::VectorXd defVec;
 
 	double maxError;
@@ -32,8 +34,8 @@ void rbf_std::perform_rbf(getNodeType& n){
 	int iter, lvl;
 	bool iterating;
 
-	Eigen::ArrayXi maxErrorNodes;
 
+	Eigen::ArrayXi maxErrorNodes;
 	greedy go;
 
 
@@ -73,41 +75,40 @@ void rbf_std::perform_rbf(getNodeType& n){
 		while(iterating){
 
 			if(params.dataRed){
-				int node = 0;
-				while(node < maxErrorNodes.size()){
+				//todo can be a for loop
+				for(int node = 0; node < maxErrorNodes.size(); node++){
 					n.addControlNode(maxErrorNodes(node), params.smode, m);
-					node++;
 				}
 			}
 
-			getPhis(Phi_mm, Phi_im, n.mPtr, n.iPtr);
+			getPhis(Phi_cc, Phi_ic, n.cPtr, n.iPtr);
 
 			if(i==0 || params.dataRed){
-				getDefVec(defVec, n, lvl, go.errorPrevLvl);
+				getDefVec(defVec, n.N_c, n.cPtr);
 			}
 
-			performRBF(Phi_mm, Phi_im, defVec,*n.mPtr,*n.iPtr, n.N_m);
+			performRBF(Phi_cc, Phi_ic, defVec,n.cPtr, n.iPtr, n.N_c);
 
 
 
 //			std::cout << d << std::endl;
 			if(params.dataRed){
-				go.getError(m,n,d,maxError,maxErrorNodes, movingIndices, exactDisp,pnVec,p, params.multiLvl, lvl);
+				go.getError(m,n,d,maxError,maxErrorNodes, movingIndices, exactDisp,pnVec,p, params.multiLvl, lvl, params.doubleEdge);
 				std::cout << "error: \t"<< maxError <<" at node: \t" << maxErrorNodes(0)<< std::endl;
 
 
 				auto stop = std::chrono::high_resolution_clock::now();
 				auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
-				w.setIntResults(i, lvl, maxError, abs(go.error).mean(), duration.count()/1e6, params.convHistFile, n.N_m);
+				w.setIntResults(i, lvl, maxError, abs(go.error).mean(), duration.count()/1e6, params.convHistFile, n.N_c);
 
 
 				if(maxError < params.tol){
 					iterating = false;
+					maxErrorNodes.resize(0);
 				}
 
 			}else{
 
-//				maxError = 0;
 				iterating = false;
 			}
 //			if(lvl == 12 && n.N_m == 8){
@@ -125,7 +126,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 
 //			if(params.multiLvl && n.N_m == params.lvlSize){
-			if(params.multiLvl && (maxError/go.maxErrorPrevLvl < 0.5 || iterating == false)){
+			if(params.multiLvl && (maxError/go.maxErrorPrevLvl < params.tolCrit || iterating == false)){
 
 //				std::cout << go.maxErrorPrevLvl << '\t' << maxError << '\t' << maxError/go.maxErrorPrevLvl << std::endl;
 //				std::cout << "Nm: " << n.N_m << std::endl;
@@ -189,13 +190,13 @@ void rbf_std::perform_rbf(getNodeType& n){
 //			}
 
 
-			updateNodes(Phi_imGreedy,n,defVec, d_step, alpha_step,ctrlPtr);
+			updateNodes(Phi_icGrdy,n,defVec, d_step, alpha_step,ctrlPtr);
 			go.correction(m,n,params.gamma);
 		}
 
 	}
 	std::cout << "Number of different control nodes: " << go.ctrlNodesAll.size() << std::endl;
-	std::cout << "number of control nodes: " << n.N_m << std::endl;
+	std::cout << "number of control nodes: " << n.N_c << std::endl;
 	auto stop = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
 
@@ -204,34 +205,32 @@ void rbf_std::perform_rbf(getNodeType& n){
 }
 
 
-void rbf_std::performRBF(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::VectorXd& defVec, Eigen::ArrayXi& movingNodes, Eigen::ArrayXi& internalNodes,int& N){
+void rbf_std::performRBF(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ic, Eigen::VectorXd& defVec, Eigen::ArrayXi* cNodes, Eigen::ArrayXi* iNodes, int& N){
 	alpha.resize(N*m.nDims);
 
 	if(params.dataRed){
-		d.resize(internalNodes.size(),m.nDims);
+		d.resize((*iNodes).size(),m.nDims);
 	}
 
 	for(int dim = 0; dim < m.nDims; dim++){
 //		std::cout << "Solving for dimension: " << dim << std::endl;
-		auto start = std::chrono::high_resolution_clock::now();
-		alpha(Eigen::seqN(dim*N,N)) = Phi_mm.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))); //fullPivHouseholderQr()
+//		auto start = std::chrono::high_resolution_clock::now();
+		alpha(Eigen::seqN(dim*N,N)) = Phi_cc.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))); //fullPivHouseholderQr()
 
-		auto stop = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
+//		auto stop = std::chrono::high_resolution_clock::now();
+//		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
 
 //		std::cout << "Time to solve for alpha: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
 		if(params.dataRed){
-			d.col(dim) = Phi_im*alpha(Eigen::seqN(dim*N,N));
+			d.col(dim) = Phi_ic*alpha(Eigen::seqN(dim*N,N));
 		}else{
-			m.coords(internalNodes,dim) += (Phi_im*alpha(Eigen::seqN(dim*N,N))).array();
-			m.coords(movingNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
+			m.coords(*iNodes,dim) += (Phi_ic*alpha(Eigen::seqN(dim*N,N))).array();
+			m.coords(*cNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
 		}
 	}
-
-//	std::cout << "performRBF is done" << std::endl;
 }
 
-void rbf_std::updateNodes(Eigen::MatrixXd& Phi_imGreedy, getNodeType& n, Eigen::VectorXd& defVec, Eigen::ArrayXXd* d_step, Eigen::VectorXd* alpha_step, Eigen::ArrayXi* ctrlPtr){
+void rbf_std::updateNodes(Eigen::MatrixXd& Phi_icGrdy, getNodeType& n, Eigen::VectorXd& defVec, Eigen::ArrayXXd* d_step, Eigen::VectorXd* alpha_step, Eigen::ArrayXi* ctrlPtr){
 
 	int N_m;
 	Eigen::ArrayXi* ptr;
@@ -243,10 +242,11 @@ void rbf_std::updateNodes(Eigen::MatrixXd& Phi_imGreedy, getNodeType& n, Eigen::
 //		m.coords(*n.iPtrGrdy,Eigen::all) += deltaInternal;
 	}else{
 		if(params.smode == "none"){
-			ptr = n.mPtr;
-			N_m = n.N_m;
+
+			ptr = n.cPtr;
+			N_m = n.N_c;
 		}else{
-			ptr = n.mStdPtr;
+			ptr = n.bPtr;
 			N_m = n.N_mStd;
 		}
 	}
@@ -254,7 +254,7 @@ void rbf_std::updateNodes(Eigen::MatrixXd& Phi_imGreedy, getNodeType& n, Eigen::
 //	std::cout << *alpha_step << std::endl;
 	auto start = std::chrono::high_resolution_clock::now();
 
-	getPhi(Phi_imGreedy,n.iPtrGrdy,ptr);
+	getPhi(Phi_icGrdy,n.iPtrGrdy,ptr);
 
 
 	m.coords(*n.iPtr, Eigen::all) += *d_step;
@@ -262,7 +262,8 @@ void rbf_std::updateNodes(Eigen::MatrixXd& Phi_imGreedy, getNodeType& n, Eigen::
 
 
 	for(int dim = 0; dim < m.nDims; dim++){
-		m.coords(*n.iPtrGrdy,dim) +=  (Phi_imGreedy*(*alpha_step)(Eigen::seqN(dim*N_m,N_m))).array();
+		m.coords(*ptr,dim) += (defVec(Eigen::seqN(dim*N_m,N_m))).array();
+		m.coords(*n.iPtrGrdy,dim) +=  (Phi_icGrdy*(*alpha_step)(Eigen::seqN(dim*N_m,N_m))).array();
 	}
 
 	auto stop = std::chrono::high_resolution_clock::now();

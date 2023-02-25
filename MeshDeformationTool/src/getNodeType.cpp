@@ -12,9 +12,10 @@ getNodeType::getNodeType(probParams& params, Mesh& m)
 }
 
 void getNodeType::assignNodeTypes(Mesh& m){
-	N_m = m.N_m;
+	N_c = m.N_m;
 	N_i = m.N_i;
-	mPtr = &m.mNodes;
+
+	cPtr = &m.mNodes;
 	iPtr = &m.iNodes;
 
 	N_se = m.N_se;
@@ -26,7 +27,7 @@ void getNodeType::assignNodeTypes(Mesh& m){
 	N_mStd = m.N_m + m.N_se + m.N_ss;
 	mNodesStd.resize(N_mStd);
 	mNodesStd << m.mNodes, m.seNodes, m.ssNodes;
-	mStdPtr = &mNodesStd;
+	bPtr = &mNodesStd;
 
 
 	N_s = m.N_se+m.N_ss;
@@ -39,17 +40,15 @@ void getNodeType::assignNodeTypes(Mesh& m){
 
 void getNodeType::assignNodeTypesGrdy(Mesh& m){
 
-	// for the non sliding rbf
-
 	N_i = m.N_m + m.N_se + m.N_ss;
 	iNodes.resize(N_i);
 	iNodes << m.mNodes, m.seNodes, m.ssNodes;
 
 	iPtr = &iNodes;
 
-	N_m = 0;
-	mNodes.resize(N_m);
-	mPtr = &mNodes;
+	N_c = 0;
+	cNodes.resize(N_c);
+	cPtr = &cNodes;
 
 	N_se = 0;
 	seNodes.resize(N_se);
@@ -61,11 +60,11 @@ void getNodeType::assignNodeTypesGrdy(Mesh& m){
 
 
 	iPtrGrdy = &m.iNodes;
-	N_i_grdy = m.N_i;
+	N_iGrdy = m.N_i;
 
-	N_mStd = 0;
-	mNodesStd.resize(N_mStd);
-	mStdPtr = &mNodesStd;
+	N_b = 0;
+	bNodes.resize(N_b);
+	bPtr = &bNodes;
 
 	N_s = 0;
 	sNodes.resize(N_s);
@@ -75,12 +74,10 @@ void getNodeType::assignNodeTypesGrdy(Mesh& m){
 
 void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 
-
-
 	if (std::find(std::begin(m.mNodes),std::end(m.mNodes),node) != std::end(m.mNodes)){
-		N_m++;
-		mNodes.conservativeResize(N_m);
-		mNodes(N_m-1) = node;
+		N_c++;
+		cNodes.conservativeResize(N_c);
+		cNodes(N_c-1) = node;
 
 
 
@@ -108,16 +105,18 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 
 
 	if(smode != "none"){
-
-
 		N_mStd++;
 		mNodesStd.resize(N_mStd);
-//		mNodesStd(N_mStd-1) = node;
 		mNodesStd << mNodes,seNodes, ssNodes;
-//		std::cout << mNodesStd << std::endl;
 
 	}
 
+	// reducing the iNodes array:
+	int idx;
+	idx = std::distance(std::begin(iNodes), std::find(std::begin(iNodes), std::end(iNodes),node));
+	N_i --;
+	iNodes(Eigen::seqN(0,N_i)) << iNodes(Eigen::seqN(0,idx)), iNodes(Eigen::seq(idx+1,N_i));
+	iNodes.conservativeResize(N_i);
 
 //	std::cout << "control node: " << node << " is added"<< std::endl;
 //	std::cout << "control node is added " << std::endl;

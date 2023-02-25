@@ -73,12 +73,12 @@ void rbf_ds::perform_rbf(getNodeType& n){
 //			std::cout << "Moving nodes: \n " << *n.mPtr << std::endl;
 //			std::cout << "sliding nodes: \n " << *n.sPtr << std::endl;
 			if (m.nDims == 2){
-				getPhi(Phi_mm, n.mPtr,n.mPtr);
-				getPhi(Phi_ms, n.mPtr, n.sPtr);
-				getPhi(Phi_sm, n.sPtr, n.mPtr);
+				getPhi(Phi_mm, n.cPtr,n.cPtr);
+				getPhi(Phi_ms, n.cPtr, n.sPtr);
+				getPhi(Phi_sm, n.sPtr, n.cPtr);
 				getPhi(Phi_ss, n.sPtr, n.sPtr);
 
-				getPhi(Phi_im, n.iPtr, n.mPtr);
+				getPhi(Phi_im, n.iPtr, n.cPtr);
 				getPhi(Phi_is, n.iPtr, n.sPtr);
 			}else if(m.nDims == 3){
 //				Eigen::MatrixXd Phi_mm, Phi_ms, Phi_sm, Phi_ss, Phi_im, Phi_is, Phi;
@@ -87,25 +87,25 @@ void rbf_ds::perform_rbf(getNodeType& n){
 //			//	Eigen::ArrayXXd t_se(m.N_se,m.nDims),n1_se(m.N_se,m.nDims), n2_se(m.N_se,m.nDims), n_ss(m.N_ss, m.nDims),t1_ss(m.N_ss, m.nDims),t2_ss(m.N_ss, m.nDims);
 //				Eigen::MatrixXd Phi_me, Phi_ee, Phi_es, Phi_em, Phi_se, Phi_ie;
 
-				getPhi(Phi_mm,n.mPtr,n.mPtr);
-				getPhi(Phi_me, n.mPtr, n.sePtr);
-				getPhi(Phi_ms, n.mPtr, n.ssPtr);
+				getPhi(Phi_mm,n.cPtr,n.cPtr);
+				getPhi(Phi_me, n.cPtr, n.sePtr);
+				getPhi(Phi_ms, n.cPtr, n.ssPtr);
 
-				getPhi(Phi_em, n.sePtr, n.mPtr);
+				getPhi(Phi_em, n.sePtr, n.cPtr);
 				getPhi(Phi_ee, n.sePtr, n.sePtr);
 				getPhi(Phi_es, n.sePtr, n.ssPtr);
 
-				getPhi(Phi_sm, n.ssPtr, n.mPtr);
+				getPhi(Phi_sm, n.ssPtr, n.cPtr);
 				getPhi(Phi_se, n.ssPtr, n.sePtr);
 				getPhi(Phi_ss, n.ssPtr, n.ssPtr);
 
-				getPhi(Phi_im, n.iPtr, n.mPtr);
+				getPhi(Phi_im, n.iPtr, n.cPtr);
 				getPhi(Phi_ie, n.iPtr, n.sePtr);
 				getPhi(Phi_is, n.iPtr, n.ssPtr);
 			}
 
 			if(i==0 || params.dataRed){
-				getDefVec(defVec, n, lvl, go.errorPrevLvl);
+//				getDefVec(defVec, n, lvl, go.errorPrevLvl);
 			}
 
 
@@ -118,14 +118,14 @@ void rbf_ds::perform_rbf(getNodeType& n){
 //			getDefVec(defVec,n.N_m,params.steps,*n.mPtr);
 //			getDefVec(defVec, n, lvl, go.errorPrevLvl);
 			if(lvl!=0){
-				getPhi(Phi_mmStd, n.mStdPtr,n.mStdPtr);
-				getPhi(Phi_imStd, n.iPtr,n.mStdPtr);
-				performRBF(Phi_mmStd, Phi_imStd, defVec, *n.mStdPtr, *n.iPtr, n.N_mStd);
+				getPhi(Phi_mmStd, n.bPtr,n.bPtr);
+				getPhi(Phi_imStd, n.iPtr,n.bPtr);
+				performRBF(Phi_mmStd, Phi_imStd, defVec, n.bPtr, n.iPtr, n.N_mStd);
 			}else{
 				if(m.nDims == 2){
 					getPhiDS(Phi,Phi_mm,Phi_ms, Phi_sm, Phi_ss, m.n, m.t,n.N_m,n.N_s, *n.sPtr);
 					// todo check which items can be omitted
-					performRBF_DS(n, Phi, Phi_im, Phi_is, Phi_sm, Phi_ss, defVec, p,*n.iPtr, *n.iPtrGrdy,*n.mPtr,*n.mStdPtr, *n.sPtr, n.N_i, n.N_m, n.N_mStd, n.N_s);
+					performRBF_DS(n, Phi, Phi_im, Phi_is, Phi_sm, Phi_ss, defVec, p,*n.iPtr, *n.iPtr,*n.cPtr,*n.bPtr, *n.sPtr, n.N_i, n.N_m, n.N_mStd, n.N_s);
 				}else if (m.nDims == 3){
 
 					getPhiDS_3D(Phi,Phi_mm, Phi_me, Phi_ms, Phi_em, Phi_ee, Phi_es, Phi_sm, Phi_se, Phi_ss, n);
@@ -140,7 +140,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 //			std::exit(0);
 			if(params.dataRed){
 
-				go.getError(m,n, d,maxError,maxErrorNodes,movingIndices, exactDisp,pnVec,p, params.multiLvl, lvl);
+				go.getError(m,n, d,maxError,maxErrorNodes,movingIndices, exactDisp,pnVec,p, params.multiLvl, lvl, params.doubleEdge);
 				std::cout << "error: \t"<< maxError <<" at node: \t" << maxErrorNodes(0) << std::endl;
 
 				if(maxError < params.tol){
@@ -256,10 +256,11 @@ void rbf_ds::performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi, Eigen::MatrixXd
 		Eigen::MatrixXd Phi_mm2, Phi_im2;
 
 		//todo give n as argument in the function :(
-		getPhi(Phi_mm2, n.mStdPtr,n.mStdPtr);
-		getPhi(Phi_im2,n.iPtr,n.mStdPtr);
+		getPhi(Phi_mm2, n.bPtr,n.bPtr);
+		getPhi(Phi_im2,n.iPtr,n.bPtr);
 
-		performRBF(Phi_mm2,Phi_im2,defVecStd,mNodesStd,iNodes,N_mStd);
+		//todo next statement is broken
+//		performRBF(Phi_mm2,Phi_im2,defVecStd,mNodesStd,iNodes,N_mStd);
 //		std::cout << d << std::endl;
 //		std::cout << "std rbf has been performed " << std::endl;
 //		if(N_s == 1){
@@ -418,7 +419,7 @@ void rbf_ds::performRBF_DS_3D(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_im, Eig
 			m.coords(*n.iPtr, dim) += (Phi_im*alpha(Eigen::seqN(dim*(n.N_mStd),n.N_m)) + Phi_ie*alpha(Eigen::seqN(dim*(n.N_mStd)+n.N_m, n.N_se)) + Phi_is*alpha(Eigen::seqN(dim*(n.N_mStd)+n.N_m+n.N_se, n.N_ss)) ).array();
 			m.coords(*n.sePtr, dim) += (Phi_em*alpha(Eigen::seqN(dim*(n.N_mStd),n.N_m)) + Phi_ee*alpha(Eigen::seqN(dim*(n.N_mStd)+n.N_m, n.N_se)) + Phi_es*alpha(Eigen::seqN(dim*(n.N_mStd)+n.N_m+n.N_se, n.N_ss)) ).array();
 			m.coords(*n.ssPtr, dim) += (Phi_sm*alpha(Eigen::seqN(dim*(n.N_mStd),n.N_m)) + Phi_se*alpha(Eigen::seqN(dim*(n.N_mStd)+n.N_m, n.N_se)) + Phi_ss*alpha(Eigen::seqN(dim*(n.N_mStd)+n.N_m+n.N_se, n.N_ss)) ).array();
-			m.coords(*n.mPtr, dim) += (defVec(Eigen::seqN(dim*n.N_m,n.N_m))).array();
+			m.coords(*n.cPtr, dim) += (defVec(Eigen::seqN(dim*n.N_m,n.N_m))).array();
 		}
 
 	}

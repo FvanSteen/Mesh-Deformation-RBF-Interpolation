@@ -15,8 +15,12 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 	exactDisp.resize(m.N_nonzeroDisp,m.nDims);
 	readDisplacementFile();
 
+	dispIdx = &movingIndices;
+	disp = &exactDisp;
+
 	exactDisp = exactDisp/params.steps; // deformation per step is more usefull then the total deformation.
 	getPeriodicParams();
+
 
 
 }
@@ -98,52 +102,43 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::Ar
 }
 
 
-void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, getNodeType& n, int lvl, Eigen::ArrayXXd& errorPrevLvl){
-
-	int N;
-	Eigen::ArrayXi* mPtr;
-	if(params.smode == "ds" || (params.smode == "ps" && lvl > 0)){
-		N = n.N_mStd;
-		mPtr = n.mStdPtr;
-	}else{
-		N = n.N_m;
-		mPtr = n.mPtr;
-	}
-
-	defVec = Eigen::VectorXd::Zero(N*m.nDims);
+//void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, getNodeType& n, int lvl, Eigen::ArrayXXd& errorPrevLvl){
 //
-//	if(params.smode == "ds"){
-//		defVec = Eigen::VectorXd::Zero((n.N_m+n.N_se)*m.nDims);
+//	int N;
+//	Eigen::ArrayXi* mPtr;
+//	if(params.smode == "ds" || (params.smode == "ps" && lvl > 0)){
+//		N = n.N_mStd;
+//		mPtr = n.mStdPtr;
 //	}else{
-//		defVec = Eigen::VectorXd::Zero(n.N_m*m.nDims);
-////		defVec = Eigen::VectorXd::Zero(n.N_mStd*m.nDims);
+//		N = n.N_m;
+//		mPtr = n.mPtr;
 //	}
+//
+//	defVec = Eigen::VectorXd::Zero(N*m.nDims);
+//
+//
+//	if(lvl > 0){
+//		getDefVecMultiGreedy(defVec,n, errorPrevLvl,N, mPtr);
+//	}else{
+//		setDefVec(defVec, n.N_m, n.mPtr);
+//	}
+//
+////	std::cout << '\n' << defVec.size() << '\t' << m.N_m << std::endl;
+//
+//}
 
-
-
-	if(params.multiLvl && lvl > 0){
-		getDefVecMultiGreedy(defVec,n, errorPrevLvl,N, mPtr);
-	}else{
-		getDefVecStd(n, defVec);
-	}
-
-//	std::cout << '\n' << defVec.size() << '\t' << m.N_m << std::endl;
-
-
-
-}
-
-void rbfGenFunc::getDefVecStd(getNodeType& n, Eigen::VectorXd& defVec){
+void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, int N_c, Eigen::ArrayXi* cPtr){
 //	std::cout << "determinging std defvec"  << std::endl;
-
-
+	defVec = Eigen::VectorXd::Zero(N_c*m.nDims);
 	int idx;
-	//loop through the moving nodes
-	for(int i = 0; i < n.N_m; i++){
-		idx = std::distance(std::begin(movingIndices), std::find(std::begin(movingIndices), std::end(movingIndices),(*n.mPtr)(i)));
-		if(idx!= movingIndices.size()){
+
+	//loop through the control nodes
+	for(int i = 0; i < N_c; i++){
+		idx = std::distance(std::begin(*dispIdx), std::find(std::begin(*dispIdx), std::end(*dispIdx),(*cPtr)(i)));
+		if(idx!= (*dispIdx).size()){
+
 			for(int dim = 0; dim < m.nDims; dim++){
-				defVec(dim*n.N_m+i) = exactDisp(idx,dim);
+				defVec(dim*N_c+i) = (*disp)(idx,dim);
 			}
 		}
 	}

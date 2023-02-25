@@ -9,14 +9,14 @@ greedy::greedy()
 {}
 
 
-void greedy::getError(Mesh& m, getNodeType& n, Eigen::ArrayXXd& d, double& maxError, Eigen::ArrayXi& maxErrorNodes, Eigen::ArrayXi& movingIndices, Eigen::ArrayXXd& exactDisp, Eigen::VectorXd& pnVec, projection* projPtr, bool multiLvl, int lvl){
+void greedy::getError(Mesh& m, getNodeType& n, Eigen::ArrayXXd& d, double& maxError, Eigen::ArrayXi& maxErrorNodes, Eigen::ArrayXi& movingIndices, Eigen::ArrayXXd& exactDisp, Eigen::VectorXd& pnVec, projection* projPtr, bool multiLvl, int lvl, bool doubleEdge){
 
-	if(error.rows() == 0){
-		error.resize(n.N_i,m.nDims);
-	}
+
+	error.resize(n.N_i,m.nDims);
 
 	// defining array for the error directions
 	Eigen::ArrayXd errorAngle(n.N_i);
+
 
 
 	if(multiLvl && lvl>0){
@@ -33,17 +33,14 @@ void greedy::getError(Mesh& m, getNodeType& n, Eigen::ArrayXXd& d, double& maxEr
 	// and the maximum error magnitude
 	maxError = error.row(idxMax).matrix().norm();
 
-	// find index of largest error where there is a 90 degree difference with the max magnitude direction
-	int idxMaxAngle = getDoubleEdgeError(errorAngle, idxMax, n.N_i, error);
 
-
-	// check if node selected as double edge error node is already among the control nodes:
-	if(std::find(std::begin(*n.mPtr),std::end(*n.mPtr), (*n.iPtr)(idxMaxAngle)) != std::end(*n.mPtr)){
-		maxErrorNodes.resize(1);
-		maxErrorNodes << (*n.iPtr)(idxMax);
-	}else{
+	if(doubleEdge){
+		int idxMaxAngle = getDoubleEdgeError(errorAngle, idxMax, n.N_i, error);
 		maxErrorNodes.resize(2);
 		maxErrorNodes << (*n.iPtr)(idxMax), (*n.iPtr)(idxMaxAngle);
+	}else{
+		maxErrorNodes.resize(1);
+		maxErrorNodes << (*n.iPtr)(idxMax);
 	}
 }
 
@@ -310,9 +307,9 @@ void greedy::correction(Mesh& m, getNodeType& n, double& gamma){
 
 		// keeping track of the progress
 
-		if(i % 5000 == 0){
-			std::cout << i << '\t' << m.iNodes.size() << std::endl;
-		}
+//		if(i % 5000 == 0){
+//			std::cout << i << '\t' << m.iNodes.size() << std::endl;
+//		}
 //		std::cout << i << '\t' << m.intCorNodes.size() << std::endl;
 	}
 }
@@ -398,7 +395,7 @@ void greedy::setLevelParams(Mesh& m, getNodeType& n, int& lvl, int& lvlSize, Eig
 	int cnt = 0;
 	int idx, dim;
 	for(int i = 0; i < n.N_m; i++){
-		idx = std::distance(std::begin(ctrlNodesAll), std::find(std::begin(ctrlNodesAll), std::end(ctrlNodesAll), (*n.mPtr)(i)));
+		idx = std::distance(std::begin(ctrlNodesAll), std::find(std::begin(ctrlNodesAll), std::end(ctrlNodesAll), (*n.cPtr)(i)));
 		if(idx == ctrlNodesAll.size()){
 //			std::cout << i << '\t' << (*n.mPtr)(i) << std::endl;
 			newCtrlNodes(cnt) = i;
@@ -417,7 +414,7 @@ void greedy::setLevelParams(Mesh& m, getNodeType& n, int& lvl, int& lvlSize, Eig
 
 	ctrlNodesAll.conservativeResize(ctrlNodesAll.size()+cnt);
 	alphaTotal.conservativeResize(alphaTotal.rows()+cnt,m.nDims);
-	ctrlNodesAll(Eigen::lastN(cnt)) = (*n.mPtr)(newCtrlNodes(Eigen::seqN(0,cnt)));
+	ctrlNodesAll(Eigen::lastN(cnt)) = (*n.cPtr)(newCtrlNodes(Eigen::seqN(0,cnt)));
 	alphaTotal(Eigen::lastN(cnt), Eigen::all) = newAlpha(Eigen::seqN(0,cnt), Eigen::all);
 //	alphaSum(Eigen::lastN(cnt), Eigen::all) << alpha(newCtrlNodes);
 

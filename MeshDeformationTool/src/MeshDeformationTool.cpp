@@ -39,8 +39,8 @@ int main()
 //	std::cout << "internal nodes:\n" << *n.iPtr << std::endl;
 	if(probParams.smode == "none"){
 		rbf_std rbf(probParams, meshOb, n);
-//		rbf.perform_rbf(n);
-		std::cout << "here" << std::endl;
+	}else if(probParams.smode == "ps"){
+		rbf_ps rbf(probparams, meshOb, n)
 	}
 
 	std::exit(0);

@@ -77,25 +77,25 @@ void rbf_ps::perform_rbf(getNodeType& n){
 //			delta.resize(n.N_se, m.nDims);
 //			finalDef.resize(n.N_se,m.nDims);
 
-			getPhi(Phi_mm, n.mPtr, n.mPtr);
+			getPhi(Phi_mm, n.cPtr, n.cPtr);
 
 //			getPhi(Phi_sm, *n.sePtr, *n.mPtr); 	FOR 2D
-			getPhi(Phi_sm, n.sPtr, n.mPtr);
+			getPhi(Phi_sm, n.sPtr, n.cPtr);
 
-			getPhi(Phi_mmStd, n.mStdPtr, n.mStdPtr);
+			getPhi(Phi_mmStd, n.bPtr, n.bPtr);
 
 
-			getPhi(Phi_im, n.iPtr, n.mStdPtr);
+			getPhi(Phi_im, n.iPtr, n.bPtr);
 
 
 			if(i==0 || params.dataRed){
-				getDefVec(defVec, n, lvl, go.errorPrevLvl);
+//				getDefVec(defVec, n, lvl, go.errorPrevLvl);
 			}
 
 
 
 			if(lvl!=0){
-				performRBF(Phi_mmStd, Phi_im, defVec,*n.mStdPtr,*n.iPtr, n.N_mStd);
+				performRBF(Phi_mmStd, Phi_im, defVec,n.bPtr,n.iPtr, n.N_mStd);
 			}else{
 				performRBF_PS(Phi_mm, Phi_sm, Phi_mmStd, Phi_im, defVec, delta, finalDef, defVecStd, n);
 			}
@@ -103,7 +103,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 			if(params.dataRed){
 
-				go.getError(m,n,d, maxError, maxErrorNodes, movingIndices, exactDisp ,pnVec, p, params.multiLvl, lvl);
+				go.getError(m,n,d, maxError, maxErrorNodes, movingIndices, exactDisp ,pnVec, p, params.multiLvl, lvl, params.doubleEdge);
 				std::cout << "error: \t"<< maxError <<" at node: \t" << maxErrorNodes(0)<< std::endl;
 
 //				std::cout << *n.iPtr << std::endl;
@@ -289,7 +289,7 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_sm, Eig
 
 //	rbf_std stand;
 
-	performRBF(Phi_mmStd,Phi_im,defVecStd,*n.mStdPtr,*n.iPtr,n.N_mStd);
+	performRBF(Phi_mmStd,Phi_im,defVecStd,n.bPtr,n.iPtr,n.N_mStd);
 	stopi = std::chrono::high_resolution_clock::now();
 	durationi = std::chrono::duration_cast<std::chrono::microseconds>(stopi-starti);
 //	std::cout <<  "performing classical rbf: \t"<<  durationi.count()/1e6 << " seconds"<< std::endl;

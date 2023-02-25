@@ -6,9 +6,10 @@
 
 class getNodeType {
 public:
-	Eigen::ArrayXi iNodes, mNodes, seNodes,mNodesStd,ibNodes,esNodes, sNodes,ssNodes;
 
-	Eigen::ArrayXi* mPtr;
+
+	Eigen::ArrayXi* cPtr;
+	Eigen::ArrayXi* bPtr;
 	Eigen::ArrayXi* iPtr;
 	Eigen::ArrayXi* iPtrGrdy;
 	Eigen::ArrayXi* sePtr;
@@ -18,8 +19,8 @@ public:
 
 
 
-	int N_i,N_m,N_se,N_mStd,N_ib,N_es,N_i_grdy, N_s, N_ss;
-
+	int N_i,N_m,N_se,N_mStd,N_ib,N_es,N_iGrdy, N_s, N_ss;
+	int N_c, N_b;
 
 
 	getNodeType(probParams& params, Mesh& m);
@@ -27,6 +28,8 @@ public:
 	void addControlNode(int node, std::string& smode, Mesh& m);
 
 	void assignNodeTypesGrdy(Mesh& m);
+private:
+	Eigen::ArrayXi iNodes, bNodes, cNodes, mNodes, seNodes,mNodesStd,ibNodes,esNodes, sNodes,ssNodes;
 };
 
 #endif /* GETNODETYPE_H_ */
