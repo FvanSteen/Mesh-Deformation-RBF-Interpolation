@@ -24,10 +24,10 @@ void getNodeType::assignNodeTypes(Mesh& m){
 	N_ss = m.N_ss;
 	ssPtr = &m.ssNodes;
 
-	N_mStd = m.N_m + m.N_se + m.N_ss;
-	mNodesStd.resize(N_mStd);
-	mNodesStd << m.mNodes, m.seNodes, m.ssNodes;
-	bPtr = &mNodesStd;
+	N_b = m.N_m + m.N_se + m.N_ss;
+	bNodes.resize(N_b);
+	bNodes << m.mNodes, m.seNodes, m.ssNodes;
+	bPtr = &bNodes;
 
 
 	N_s = m.N_se+m.N_ss;
@@ -105,9 +105,9 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 
 
 	if(smode != "none"){
-		N_mStd++;
-		mNodesStd.resize(N_mStd);
-		mNodesStd << mNodes,seNodes, ssNodes;
+		N_b++;
+		bNodes.resize(N_b);
+		bNodes << cNodes, seNodes, ssNodes;
 
 	}
 

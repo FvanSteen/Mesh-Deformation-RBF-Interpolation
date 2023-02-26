@@ -4,23 +4,22 @@
 #include <chrono>
 
 rbf_ds::rbf_ds(struct probParams& probParamsObject, Mesh& meshObject, getNodeType& n)
-:rbf_std(probParamsObject, meshObject, n)
+:rbfGenFunc(meshObject,probParamsObject)
 {
 	std::cout << "Initialised the ds class" << std::endl;
+	perform_rbf(n);
 }
 
 void rbf_ds::perform_rbf(getNodeType& n){
 	std::cout << "Performing RBF DS " << std::endl;
-	projection* p;
 
-	projection proObject;
-	p = &proObject;
+	projection p(pVec);
 
 
 	auto start = std::chrono::high_resolution_clock::now();
 
 
-	Eigen::MatrixXd Phi_mm, Phi_ms, Phi_sm, Phi_ss, Phi_im, Phi_is, Phi,Phi_imGrdy,Phi_mmStd,Phi_imStd;
+	Eigen::MatrixXd Phi_cc, Phi_cs, Phi_sc, Phi_ss, Phi_ic, Phi_is, Phi,Phi_imGrdy,Phi_mmStd,Phi_imStd;
 	//for 3D
 	Eigen::MatrixXd Phi_me, Phi_em, Phi_es, Phi_ee,Phi_se,Phi_ie;
 	Eigen::VectorXd defVec;
@@ -53,7 +52,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 		lvl = 0;
 
 		if((params.dataRed && i==0) || params.multiLvl ){
-			go.setInitMaxErrorNodes(m, m.coords, exactDisp, movingIndices, maxErrorNodes);
+			go.setInitMaxErrorNodes(m, m.coords, exactDisp, movingIndices, maxErrorNodes, params.doubleEdge);
 		}
 
 		if(params.curved || i==0){
@@ -70,45 +69,35 @@ void rbf_ds::perform_rbf(getNodeType& n){
 					n.addControlNode(maxErrorNodes(node), params.smode, m);
 				}
 			}
-//			std::cout << "Moving nodes: \n " << *n.mPtr << std::endl;
-//			std::cout << "sliding nodes: \n " << *n.sPtr << std::endl;
+
+
+
 			if (m.nDims == 2){
-				getPhi(Phi_mm, n.cPtr,n.cPtr);
-				getPhi(Phi_ms, n.cPtr, n.sPtr);
-				getPhi(Phi_sm, n.sPtr, n.cPtr);
-				getPhi(Phi_ss, n.sPtr, n.sPtr);
-
-				getPhi(Phi_im, n.iPtr, n.cPtr);
-				getPhi(Phi_is, n.iPtr, n.sPtr);
+				getPhis(Phi_cc, Phi_cs, Phi_sc, Phi_ss, Phi_ic, Phi_is, n);
 			}else if(m.nDims == 3){
-//				Eigen::MatrixXd Phi_mm, Phi_ms, Phi_sm, Phi_ss, Phi_im, Phi_is, Phi;
-//			//	Eigen::ArrayXXd n(m.N_se, m.nDims), t(m.N_se, m.nDims);		// two column array containing normal vector components
-//				Eigen::VectorXd defVec, alpha(m.nDims*(N_m+m.N_se+m.N_ss));
-//			//	Eigen::ArrayXXd t_se(m.N_se,m.nDims),n1_se(m.N_se,m.nDims), n2_se(m.N_se,m.nDims), n_ss(m.N_ss, m.nDims),t1_ss(m.N_ss, m.nDims),t2_ss(m.N_ss, m.nDims);
-//				Eigen::MatrixXd Phi_me, Phi_ee, Phi_es, Phi_em, Phi_se, Phi_ie;
 
-				getPhi(Phi_mm,n.cPtr,n.cPtr);
-				getPhi(Phi_me, n.cPtr, n.sePtr);
-				getPhi(Phi_ms, n.cPtr, n.ssPtr);
-
-				getPhi(Phi_em, n.sePtr, n.cPtr);
-				getPhi(Phi_ee, n.sePtr, n.sePtr);
-				getPhi(Phi_es, n.sePtr, n.ssPtr);
-
-				getPhi(Phi_sm, n.ssPtr, n.cPtr);
-				getPhi(Phi_se, n.ssPtr, n.sePtr);
-				getPhi(Phi_ss, n.ssPtr, n.ssPtr);
-
-				getPhi(Phi_im, n.iPtr, n.cPtr);
-				getPhi(Phi_ie, n.iPtr, n.sePtr);
-				getPhi(Phi_is, n.iPtr, n.ssPtr);
+//				getPhi(Phi_mm,n.cPtr,n.cPtr);
+//				getPhi(Phi_me, n.cPtr, n.sePtr);
+//				getPhi(Phi_ms, n.cPtr, n.ssPtr);
+//
+//				getPhi(Phi_em, n.sePtr, n.cPtr);
+//				getPhi(Phi_ee, n.sePtr, n.sePtr);
+//				getPhi(Phi_es, n.sePtr, n.ssPtr);
+//
+//				getPhi(Phi_sm, n.ssPtr, n.cPtr);
+//				getPhi(Phi_se, n.ssPtr, n.sePtr);
+//				getPhi(Phi_ss, n.ssPtr, n.ssPtr);
+//
+//				getPhi(Phi_im, n.iPtr, n.cPtr);
+//				getPhi(Phi_ie, n.iPtr, n.sePtr);
+//				getPhi(Phi_is, n.iPtr, n.ssPtr);
 			}
 
 			if(i==0 || params.dataRed){
-//				getDefVec(defVec, n, lvl, go.errorPrevLvl);
+				getDefVec(defVec, n.N_b, n.cPtr);
 			}
 
-
+			std::exit(0);
 
 
 		//		defVec = Eigen::VectorXd::Zero((N_m+N_s)*m.nDims);
@@ -123,14 +112,14 @@ void rbf_ds::perform_rbf(getNodeType& n){
 				performRBF(Phi_mmStd, Phi_imStd, defVec, n.bPtr, n.iPtr, n.N_mStd);
 			}else{
 				if(m.nDims == 2){
-					getPhiDS(Phi,Phi_mm,Phi_ms, Phi_sm, Phi_ss, m.n, m.t,n.N_m,n.N_s, *n.sPtr);
+					getPhiDS(Phi,Phi_cc,Phi_cs, Phi_sc, Phi_ss, m.n, m.t,n.N_m,n.N_s, *n.sPtr);
 					// todo check which items can be omitted
-					performRBF_DS(n, Phi, Phi_im, Phi_is, Phi_sm, Phi_ss, defVec, p,*n.iPtr, *n.iPtr,*n.cPtr,*n.bPtr, *n.sPtr, n.N_i, n.N_m, n.N_mStd, n.N_s);
+//					performRBF_DS(n, Phi, Phi_im, Phi_is, Phi_sm, Phi_ss, defVec, p,*n.iPtr, *n.iPtr,*n.cPtr,*n.bPtr, *n.sPtr, n.N_i, n.N_m, n.N_mStd, n.N_s);
 				}else if (m.nDims == 3){
 
-					getPhiDS_3D(Phi,Phi_mm, Phi_me, Phi_ms, Phi_em, Phi_ee, Phi_es, Phi_sm, Phi_se, Phi_ss, n);
+//					getPhiDS_3D(Phi,Phi_mm, Phi_me, Phi_ms, Phi_em, Phi_ee, Phi_es, Phi_sm, Phi_se, Phi_ss, n);
 
-					performRBF_DS_3D( Phi,  Phi_im,  Phi_ie,  Phi_is,  Phi_em,  Phi_ee, Phi_es, Phi_sm, Phi_se, Phi_ss,defVec,  n);
+//					performRBF_DS_3D( Phi,  Phi_im,  Phi_ie,  Phi_is,  Phi_em,  Phi_ee, Phi_es, Phi_sm, Phi_se, Phi_ss,defVec,  n);
 				}
 
 
@@ -193,7 +182,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 	m.writeMeshFile(params.mesh_ifName, params.mesh_ofName);
 }
 
-void rbf_ds::performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_im, Eigen::MatrixXd& Phi_is, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_ss, Eigen::VectorXd& defVec, projection* proPnt, Eigen::ArrayXi& iNodes,Eigen::ArrayXi& iNodesGrdy, Eigen::ArrayXi& mNodes, Eigen::ArrayXi& mNodesStd, Eigen::ArrayXi& sNodes, int& N_i, int& N_m, int& N_mStd, int& N_s){
+void rbf_ds::performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi, Eigen::MatrixXd& Phi_im, Eigen::MatrixXd& Phi_is, Eigen::MatrixXd& Phi_sm, Eigen::MatrixXd& Phi_ss, Eigen::VectorXd& defVec, projection& p, Eigen::ArrayXi& iNodes,Eigen::ArrayXi& iNodesGrdy, Eigen::ArrayXi& mNodes, Eigen::ArrayXi& mNodesStd, Eigen::ArrayXi& sNodes, int& N_i, int& N_m, int& N_mStd, int& N_s){
 
 	alpha = Phi.fullPivHouseholderQr().solve(defVec);
 
@@ -216,7 +205,7 @@ void rbf_ds::performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi, Eigen::MatrixXd
 
 		// calling project function to find the final deformation after the projection
 
-		proPnt->project(m,sNodes,delta,finalDef,pVec);
+		p.project(m,sNodes,delta,finalDef,pVec);
 //		std::cout << finalDef << std::endl;
 
 

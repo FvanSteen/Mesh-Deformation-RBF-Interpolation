@@ -10,10 +10,13 @@
 #include "Mesh.h"
 class projection{
 public:
-	projection();
+
+	projection(Eigen::VectorXd& pVec);
 	void project(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta,Eigen::ArrayXXd& finalDef, Eigen::VectorXd& pVec);
 	void projectIter(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef, int N_se);
 	void projectFun(Mesh& m,  Eigen::RowVectorXd& projection, Eigen::ArrayXXd& dist, int edge);
+private:
+	Eigen::VectorXd pVec;
 };
 
 #endif /* PROJECTION_H_ */
