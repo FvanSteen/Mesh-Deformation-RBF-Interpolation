@@ -31,12 +31,12 @@ public:
 	void getErrorSingleLvl(Mesh& m, getNodeType& n, Eigen::ArrayXd& errorAngle, Eigen::ArrayXXd& d, Eigen::ArrayXi& movingIndices, Eigen::ArrayXXd& exactDisp, Eigen::VectorXd& pnVec, projection& p);
 	void getErrorMultiLvl( getNodeType& n,  Eigen::ArrayXd& errorAngle,Eigen::ArrayXXd& d, Mesh& m, Eigen::ArrayXi& movingIndices, Eigen::VectorXd& pnVec, projection& p);
 
-	void correction(Mesh& m, getNodeType& n, double& gamma);
+	void correction(Mesh& m, getNodeType& n, double& gamma, bool& multiLvl);
 	void getNearestNode(Mesh& m, getNodeType& n,  int& node, int& idxMin, double& dist);
 	double rbfEval(double distance, double radius);
 	void project(Mesh& m, int& node, int& index, Eigen::ArrayXXd& disp, Eigen::VectorXd& pnVec, projection& p, int edge);
 	int getDoubleEdgeError(Eigen::ArrayXd& errorAngle, int idxMax, int N_i, Eigen::ArrayXXd& error);
-	void setLevelParams(Mesh& m, getNodeType& n, int& lvl, int& lvlSize, Eigen::ArrayXXd& d, Eigen::VectorXd& alpha, double maxError);
+	void setLevelParams(Mesh& m, getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::VectorXd& alpha, double maxError, Eigen::VectorXd& defVec, Eigen::ArrayXi* cPtr, int N_c);
 	void setInitMaxErrorNodes(Mesh& m, Eigen::ArrayXXd& coords, Eigen::ArrayXXd& disp, Eigen::ArrayXi& mIdx,Eigen::ArrayXi& maxErrorNodes, bool doubleEdge);
 	void setMaxErrorNodes(Mesh& m, Eigen::ArrayXi& maxErrorNodes);
 	void getAlphaIdx(Eigen::ArrayXi& mNodes, Eigen::ArrayXi* mNodesGrdy, int N, Eigen::ArrayXi& idxAlpha);

@@ -154,14 +154,14 @@ void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, int N_c, Eigen::ArrayXi* cPt
 //	std::cout << "determinging std defvec"  << std::endl;
 	defVec = Eigen::VectorXd::Zero(N_c*m.nDims);
 	int idx;
-
+	int size = (*cPtr).size();
 	//loop through the control nodes
-	for(int i = 0; i < (*cPtr).size(); i++){
+	for(int i = 0; i < size; i++){
 		idx = std::distance(std::begin(*dispIdx), std::find(std::begin(*dispIdx), std::end(*dispIdx),(*cPtr)(i)));
 		if(idx!= (*dispIdx).size()){
 
 			for(int dim = 0; dim < m.nDims; dim++){
-				defVec(dim*N_c+i) = (*disp)(idx,dim);
+				defVec(dim*size+i) = (*disp)(idx,dim);
 			}
 		}
 	}
@@ -247,43 +247,17 @@ double rbfGenFunc::rbfEval(double distance){
 
 
 
-void rbfGenFunc::getDefVecMultiGreedy(Eigen::VectorXd& defVec, getNodeType& n, Eigen::ArrayXXd& errors, int N, Eigen::ArrayXi*& mPtr){
-//	std::cout << "get defVec Multi greedy" << std::endl;
-//	std::cout << *n.mPtr << std::endl;
-//	std::cout << '\n' << *n.iPtr << std::endl;
+//void rbfGenFunc::getDefVecMultiGreedy(Eigen::VectorXd& defVec, getNodeType& n, Eigen::ArrayXXd& errors, int N, Eigen::ArrayXi* cPtr){
+void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, getNodeType& n, Eigen::ArrayXXd& errors, int N_c){
 
-	//todo check difference for pointers *n.mPtr/*n.mStdPtr for none/ps sliding and in the for loop
-	int idx;
-	for(int i = 0; i < N ;i++){
-//		std::cout << i << '\t' << (*n.mPtr)(i) << std::endl;
-		idx = std::distance(std::begin(*n.iPtr), std::find(std::begin(*n.iPtr), std::end(*n.iPtr),(*mPtr)(i)));
-//		std::cout << errors.row(idx) << std::endl;
-//		std::cout << "index: " << idx << std::endl;
-		for(int j = 0; j < errors.cols();j++){
-			defVec(N*j+i) = errors(idx,j);
-		}
-
+	defVec.resize(m.nDims*N_c);
+	for(int dim = 0; dim< m.nDims; dim++){
+		defVec(Eigen::seqN(N_c*dim,N_c)) = -errors(n.cNodesIdx, dim);
 	}
-
-//	std::cout << defVec << std::endl;
-
-
-
-
-//	int idx;
-//	//loop through the moving nodes
-//	for(int i = 0; i < N; i++){
-//		idx = std::distance(std::begin(mIndex), std::find(std::begin(mIndex), std::end(mIndex),movingNodes(i)));
-//		if(idx!= mIndex.size()){
-//
-//			for(int dim = 0; dim < m.nDims; dim++){
-//				defVec(dim*N+i) = displacement(idx,dim);
-//			}
-//		}
-//	}
 }
 
 void rbfGenFunc::performRBF(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ic, Eigen::VectorXd& defVec, Eigen::ArrayXi* cNodes, Eigen::ArrayXi* iNodes, int& N){
+
 	alpha.resize(N*m.nDims);
 
 	if(params.dataRed){
@@ -332,7 +306,10 @@ void rbfGenFunc::updateNodes(Eigen::MatrixXd& Phi_icGrdy, getNodeType& n, Eigen:
 //	std::cout << *alpha_step << std::endl;
 	auto start = std::chrono::high_resolution_clock::now();
 
+
 	getPhi(Phi_icGrdy,n.iPtrGrdy,ptr);
+
+
 
 
 	m.coords(*n.iPtr, Eigen::all) += *d_step;
@@ -340,7 +317,9 @@ void rbfGenFunc::updateNodes(Eigen::MatrixXd& Phi_icGrdy, getNodeType& n, Eigen:
 
 
 	for(int dim = 0; dim < m.nDims; dim++){
-		m.coords(*ptr,dim) += (defVec(Eigen::seqN(dim*N_m,N_m))).array();
+		if(params.multiLvl == false){
+			m.coords(*ptr,dim) += (defVec(Eigen::seqN(dim*N_m,N_m))).array();
+		}
 		m.coords(*n.iPtrGrdy,dim) +=  (Phi_icGrdy*(*alpha_step)(Eigen::seqN(dim*N_m,N_m))).array();
 	}
 

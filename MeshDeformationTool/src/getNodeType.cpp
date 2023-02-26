@@ -40,11 +40,15 @@ void getNodeType::assignNodeTypes(Mesh& m){
 
 void getNodeType::assignNodeTypesGrdy(Mesh& m){
 
+
 	N_i = m.N_m + m.N_se + m.N_ss;
 	iNodes.resize(N_i);
 	iNodes << m.mNodes, m.seNodes, m.ssNodes;
 
 	iPtr = &iNodes;
+
+	iNodesIdx = Eigen::ArrayXi::LinSpaced(N_i, 0, N_i-1);
+	cNodesIdx.resize(0);
 
 	N_c = 0;
 	cNodes.resize(N_c);
@@ -86,7 +90,7 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 		N_se++;
 		seNodes.conservativeResize(N_se);
 		seNodes(N_se-1) = node;
-//		std::cout << seNodes << std::endl;
+
 		N_s++;
 		sNodes.resize(N_s);
 		sNodes << seNodes, ssNodes;
@@ -114,12 +118,33 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 	// reducing the iNodes array:
 	int idx;
 	idx = std::distance(std::begin(iNodes), std::find(std::begin(iNodes), std::end(iNodes),node));
+
 	N_i --;
 	iNodes(Eigen::seqN(0,N_i)) << iNodes(Eigen::seqN(0,idx)), iNodes(Eigen::seq(idx+1,N_i));
 	iNodes.conservativeResize(N_i);
 
-//	std::cout << "control node: " << node << " is added"<< std::endl;
-//	std::cout << "control node is added " << std::endl;
+
+	cNodesIdx.conservativeResize(N_c+N_s);
+
+	std::cout << "here nn" << std::endl;
+	//todo include the sliding surf nodes
+	if(idx <= (m.N_m-N_c)){
+		std::cout <<  "1\n" << N_c<<'\t' << N_s << "\n\n\n";
+		std::cout << cNodesIdx<< std::endl;
+		cNodesIdx(Eigen::seqN(N_c,N_s)) = cNodesIdx(Eigen::seqN(N_c-1,N_s)).eval();
+		std::cout <<  "1\n";
+		cNodesIdx(N_c-1) = iNodesIdx(idx);
+		std::cout <<  "1\n";
+	}else if(idx <= (m.N_m-N_c) + (m.N_se-N_se)){
+		std::cout <<  "2\n";
+
+		cNodesIdx(Eigen::seqN(N_c+N_se,N_ss)) = cNodesIdx(Eigen::seqN(N_c+N_se-1,N_ss)).eval();
+
+		cNodesIdx(N_c+N_se-1) = iNodesIdx(idx);
+	}
+
+	iNodesIdx(Eigen::seqN(0,N_i)) << iNodesIdx(Eigen::seqN(0,idx)), iNodesIdx(Eigen::seq(idx+1,N_i));
+	iNodesIdx.conservativeResize(N_i);
 
 }
 

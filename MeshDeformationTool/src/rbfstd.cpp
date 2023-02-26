@@ -77,15 +77,18 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 			getPhis(Phi_cc, Phi_ic, n.cPtr, n.iPtr);
 
-			if(i==0 || params.dataRed){
+
+			if(lvl > 0){
+				getDefVec(defVec, n, go.errorPrevLvl, n.N_c);
+			}else if(i==0 || params.dataRed){
 				getDefVec(defVec, n.N_c, n.cPtr);
 			}
+
+
 
 			performRBF(Phi_cc, Phi_ic, defVec,n.cPtr, n.iPtr, n.N_c);
 
 
-
-//			std::cout << d << std::endl;
 			if(params.dataRed){
 				go.getError(m,n,d,maxError,maxErrorNodes, movingIndices, exactDisp,pnVec,p, params.multiLvl, lvl, params.doubleEdge);
 				std::cout << "error: \t"<< maxError <<" at node: \t" << maxErrorNodes(0)<< std::endl;
@@ -139,7 +142,8 @@ void rbf_std::perform_rbf(getNodeType& n){
 //				}else{
 
 
-				go.setLevelParams(m,n,lvl,params.lvlSize, d, alpha, maxError);
+				go.setLevelParams(m,n, lvl, d, alpha, maxError, defVec, n.cPtr, n.N_c);
+
 //				if(lvl == 4){
 //					m.coords(*n.iPtr, Eigen::all) += *d_step;
 //					m.writeMeshFile();
@@ -149,7 +153,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 				auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
 
 //				w.setIntResults(i, lvl, maxError, abs(go.error).mean(), duration.count()/1e6, params.convHistFile, n.N_m);
-//					std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" << "\tTime: "<< duration.count()/1e6 << std::endl;
+//				std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" <<std::endl;
 
 	//				std::cout << "mean error: " << abs(go.error).mean() << std::endl;
 
@@ -176,6 +180,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 
 		if(params.dataRed){
+
 //			if(params.multiLvl == 0){
 //
 //				auto stop = std::chrono::high_resolution_clock::now();
@@ -185,7 +190,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 
 			updateNodes(Phi_icGrdy,n,defVec, d_step, alpha_step,ctrlPtr);
-			go.correction(m,n,params.gamma);
+			go.correction(m,n,params.gamma, params.multiLvl);
 		}
 
 	}
@@ -195,7 +200,6 @@ void rbf_std::perform_rbf(getNodeType& n){
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
 
 	std::cout << "Runtime duration: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
-	m.writeMeshFile(params.mesh_ifName, params.mesh_ofName);
 }
 
 

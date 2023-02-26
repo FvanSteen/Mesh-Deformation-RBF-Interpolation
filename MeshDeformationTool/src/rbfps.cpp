@@ -69,14 +69,17 @@ void rbf_ps::perform_rbf(getNodeType& n){
 				}
 			}
 
+			std::cout << "here" << std::endl;
 			getPhis(Phi_cc, Phi_sc, Phi_bb, Phi_ib, n.cPtr, n.sPtr, n.bPtr, n.iPtr);
 
-			if(i==0 || params.dataRed){
+			if(lvl > 0){
+				getDefVec(defVec_b, n, go.errorPrevLvl, n.N_b);
+			}else if(i==0 || params.dataRed){
 				getDefVec(defVec, n.N_c, n.cPtr);
 			}
 
 			if(lvl!=0){
-				performRBF(Phi_bb, Phi_ib, defVec,n.bPtr,n.iPtr, n.N_b);
+				performRBF(Phi_bb, Phi_ib, defVec_b,n.bPtr,n.iPtr, n.N_b);
 			}else{
 				performRBF_PS(Phi_cc, Phi_sc, Phi_bb, Phi_ib, defVec, delta, finalDef, defVec_b, n ,p);
 			}
@@ -97,11 +100,17 @@ void rbf_ps::perform_rbf(getNodeType& n){
 			}
 
 			if(params.multiLvl && (maxError/go.maxErrorPrevLvl < params.tolCrit || iterating == false)){
-
-				go.setLevelParams(m,n,lvl,params.lvlSize, d, alpha, maxError);
+				std::cout << "LEVEL: " << lvl << " initalizing" << std::endl;
+				go.setLevelParams(m,n,lvl, d, alpha, maxError, defVec_b, n.bPtr, n.N_b);
 
 				std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" << std::endl;
 				lvl++;
+
+//				m.coords(*n.iPtr, Eigen::all) += d;
+//				for(int dim = 0; dim<m.nDims; dim++){
+//					m.coords(*n.bPtr,dim) += (defVec_b(Eigen::seqN(dim*n.N_b,n.N_b))).array();
+//				}
+//				std::cout << *n.bPtr << std::endl;
 
 				n.assignNodeTypesGrdy(m);
 
@@ -110,6 +119,20 @@ void rbf_ps::perform_rbf(getNodeType& n){
 					go.getAlphaVector();
 
 				}
+
+
+//				if(lvl == 2){
+//					std::cout << n.N_i << '\t' << d.rows() << std::endl;
+//					m.coords(*n.iPtr,Eigen::all) += *d_step;
+//					for(int dim = 0; dim<m.nDims; dim++){
+//						m.coords(*n.bPtr,dim) += (defVec_b(Eigen::seqN(dim*n.N_b,n.N_b))).array();
+//					}
+//					m.writeMeshFile(params.mesh_ifName, params.mesh_ofName);
+//					std::exit(0);
+//					iterating = false;
+//					go.getAlphaVector();
+//				}
+
 			}
 
 			iter++;
@@ -118,9 +141,10 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 
 		if(params.dataRed){
+
 			updateNodes(Phi_ibGrdy,n,defVec_b, d_step, alpha_step,ctrlPtr);
 
-			go.correction(m,n, params.gamma);
+			go.correction(m,n, params.gamma, params.multiLvl);
 
 		}
 

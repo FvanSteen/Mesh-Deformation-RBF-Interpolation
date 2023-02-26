@@ -43,8 +43,6 @@ int main()
 		rbf_ds rbf(probParams, meshOb, n);
 	}
 	meshOb.writeMeshFile(probParams.mesh_ifName, probParams.mesh_ofName);
-	std::exit(0);
-
 
 
 	// Initialising the rbf class with the mesh data and the problem parameters

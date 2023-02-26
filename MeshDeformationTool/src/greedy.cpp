@@ -36,8 +36,13 @@ void greedy::getError(Mesh& m, getNodeType& n, Eigen::ArrayXXd& d, double& maxEr
 
 	if(doubleEdge){
 		int idxMaxAngle = getDoubleEdgeError(errorAngle, idxMax, n.N_i, error);
-		maxErrorNodes.resize(2);
-		maxErrorNodes << (*n.iPtr)(idxMax), (*n.iPtr)(idxMaxAngle);
+		if(idxMaxAngle == -1){
+			maxErrorNodes.resize(1);
+			maxErrorNodes << (*n.iPtr)(idxMax);
+		}else{
+			maxErrorNodes.resize(2);
+			maxErrorNodes << (*n.iPtr)(idxMax), (*n.iPtr)(idxMaxAngle);
+		}
 	}else{
 		maxErrorNodes.resize(1);
 		maxErrorNodes << (*n.iPtr)(idxMax);
@@ -71,7 +76,7 @@ void greedy::getErrorSingleLvl(Mesh& m, getNodeType& n, Eigen::ArrayXd& errorAng
 //			std::cout << error.row(i) << std::endl;
 		// if the node is part of the sliding edge nodes
 		}else if(idx_se != m.N_se){
-//			std::cout << "sliding edge node" << std::endl;
+//			std::cout << "sliding edge node: " <<  (*n.iPtr)(i) << std::endl;
 			if(m.nDims == 3){
 				edge = 1;
 			}else{
@@ -88,7 +93,7 @@ void greedy::getErrorSingleLvl(Mesh& m, getNodeType& n, Eigen::ArrayXd& errorAng
 
 		// if not the two above then the node is a static node with zero displacement. Therefore, its error is equal to the found displacement
 		else{
-
+//			std::cout << "static: " <<  (*n.iPtr)(i) << std::endl;
 			error.row(i) = d.row(i);
 //			std::cout << (*n.iPtr)(i) << '\t' << error.row(i) << std::endl;
 		}
@@ -158,7 +163,9 @@ void greedy::getErrorMultiLvl(getNodeType& n, Eigen::ArrayXd& errorAngle,  Eigen
 //	m.coords(*n.iPtr,Eigen::all) += (d-error);
 //	m.writeMeshFile();
 
-	error = d - errorPrevLvl;
+
+	error = d + errorPrevLvl(n.iNodesIdx, Eigen::all);
+
 //	std::cout << d.row(67) << std::endl;
 //	std::cout << errorPrevLvl.row(67) << std::endl;
 //	std::cout << error.row(67) << std::endl;
@@ -266,12 +273,18 @@ int greedy::getDoubleEdgeError(Eigen::ArrayXd& errorAngle, int idxMax, int N_i, 
 
 }
 
-void greedy::correction(Mesh& m, getNodeType& n, double& gamma){
+void greedy::correction(Mesh& m, getNodeType& n, double& gamma, bool& multiLvl){
 
 	// the correction of the boundary nodes is equal to the error found previously.
 	// for the control nodes the error is zero, so their position remains unchanged
-	m.coords(*n.iPtr , Eigen::all) -= error;
 
+	Eigen::ArrayXXd* errorPtr;
+	if(multiLvl){
+		errorPtr = &errorPrevLvl;
+	}else{
+		errorPtr = &error;
+	}
+	m.coords(*n.iPtr , Eigen::all) -= *errorPtr;
 
 	// The following part ensures the interpolation of the correction done at the boundary nodes into the internal volume
 	// This is done by applying a local rbf interpolation of the displacement (correction) at the boundary nodes.
@@ -296,14 +309,14 @@ void greedy::correction(Mesh& m, getNodeType& n, double& gamma){
 	// looping through the internal nodes that were selected previously for applying the correction
 //	for (int i = 0; i < m.intCorNodes.size(); i++){
 	for (int i = 0; i < m.iNodes.size(); i++){
-
+//		std::cout << i << '\t' << m.N_i << std::endl;
 		// finding the nearest boundary node
 //		getNearestNode(m, n, m.intCorNodes(i), idxNear, dist);
 		getNearestNode(m, n, m.iNodes(i), idxNear, dist);
 
 		// applying the interpolation
 //		m.coords.row(m.intCorNodes(i)) -= error.row(idxNear)*rbfEval(dist,gamma*maxError);
-		m.coords.row(m.iNodes(i)) -= error.row(idxNear)*rbfEval(dist,gamma*maxError);
+		m.coords.row(m.iNodes(i)) -= (*errorPtr).row(idxNear)*rbfEval(dist,gamma*maxError);
 
 		// keeping track of the progress
 
@@ -367,7 +380,13 @@ void greedy::project(Mesh& m, int& node, int& idx, Eigen::ArrayXXd& disp,Eigen::
 }
 
 
-void greedy::setLevelParams(Mesh& m, getNodeType& n, int& lvl, int& lvlSize, Eigen::ArrayXXd& d, Eigen::VectorXd& alpha, double maxError){
+void greedy::setLevelParams(Mesh& m, getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::VectorXd& alpha, double maxError, Eigen::VectorXd& defVec, Eigen::ArrayXi* cPtr, int N_c){
+
+//	std::cout << n.N_i << std::endl;
+//	std::cout << n.N_c << std::endl;
+//	std::cout << "errorRows\t" << error.rows() ;
+//
+
 //	mNodesHist.conservativeResize(lvlSize,lvl+1);
 //	mNodesHist.col(lvl) = *n.mPtr;
 
@@ -377,36 +396,40 @@ void greedy::setLevelParams(Mesh& m, getNodeType& n, int& lvl, int& lvlSize, Eig
 //
 //	std::cout << alpha << std::endl;
 //	std::cout << *n.mPtr << std::endl;
-
+//
+//	Eigen::ArrayXi test(m.N_m+m.N_se+m.N_ss);
+//	test << m.mNodes, m.seNodes,m.ssNodes;
 
 	maxErrorPrevLvl = maxError;
+
 	if(lvl == 0){
 //		deltaInternal = Eigen::ArrayXXd::Zero(m.N_i, m.nDims);
-		delta = Eigen::ArrayXXd::Zero(n.N_i, m.nDims);
+		delta = Eigen::ArrayXXd::Zero(m.N_m+m.N_se+m.N_ss, m.nDims);
 		alphaTotal.resize(0,0);
 		ctrlNodesAll.resize(0);
 //		alphaSum = Eigen::VectorXd::Zero(m.nDims*n.N_i);
 	}
 
 
-	Eigen::ArrayXi newCtrlNodes(n.N_m);
-	Eigen::ArrayXXd newAlpha(n.N_m, m.nDims);
+	Eigen::ArrayXi newCtrlNodes(N_c);
+	Eigen::ArrayXXd newAlpha(N_c, m.nDims);
 
 	int cnt = 0;
 	int idx, dim;
-	for(int i = 0; i < n.N_m; i++){
-		idx = std::distance(std::begin(ctrlNodesAll), std::find(std::begin(ctrlNodesAll), std::end(ctrlNodesAll), (*n.cPtr)(i)));
+	for(int i = 0; i < N_c; i++){
+//		std::cout << i << '\t' << N_c << std::endl;
+		idx = std::distance(std::begin(ctrlNodesAll), std::find(std::begin(ctrlNodesAll), std::end(ctrlNodesAll), (*cPtr)(i)));
 		if(idx == ctrlNodesAll.size()){
 //			std::cout << i << '\t' << (*n.mPtr)(i) << std::endl;
 			newCtrlNodes(cnt) = i;
 
 			for(dim =0; dim < m.nDims; dim++){
-				newAlpha(cnt, dim) = alpha(dim*n.N_m+i);
+				newAlpha(cnt, dim) = alpha(dim*N_c+i);
 			}
 			cnt++;
 		}else{
 			for(dim = 0; dim < m.nDims; dim++){
-				alphaTotal(idx,dim) += alpha(dim*n.N_m+i);
+				alphaTotal(idx,dim) += alpha(dim*N_c+i);
 			}
 		}
 	}
@@ -414,34 +437,24 @@ void greedy::setLevelParams(Mesh& m, getNodeType& n, int& lvl, int& lvlSize, Eig
 
 	ctrlNodesAll.conservativeResize(ctrlNodesAll.size()+cnt);
 	alphaTotal.conservativeResize(alphaTotal.rows()+cnt,m.nDims);
-	ctrlNodesAll(Eigen::lastN(cnt)) = (*n.cPtr)(newCtrlNodes(Eigen::seqN(0,cnt)));
+
+	ctrlNodesAll(Eigen::lastN(cnt)) = (*cPtr)(newCtrlNodes(Eigen::seqN(0,cnt)));
 	alphaTotal(Eigen::lastN(cnt), Eigen::all) = newAlpha(Eigen::seqN(0,cnt), Eigen::all);
-//	alphaSum(Eigen::lastN(cnt), Eigen::all) << alpha(newCtrlNodes);
 
 
-//	Eigen::ArrayXi idxAlpha;
+	delta(n.iNodesIdx,Eigen::all) += d;
 
-//	getAlphaIdx(m.mNodes, n.mPtr, n.N_m, idxAlpha);
-//	std::cout << idxAlpha << std::endl;
+	for(int dim = 0; dim < m.nDims; dim++ ){
+		delta(n.cNodesIdx,dim) += (defVec(Eigen::seqN(dim*N_c, N_c))).array();
+	}
 
-
-
-//	for(int dim=0; dim<m.nDims; dim++){
-//		alphaSum(dim*n.N_i+(idxAlpha)) += alpha(Eigen::seqN(dim*n.N_m, n.N_m));
-//	}
-
-	delta += d;
-// this part should be done at the end of each step.
-	// so only saving the intermediate mNodes (control nodes) and the alphas
-//	for(int dim = 0; dim < m.nDims; dim++){
-//		deltaInternal.col(dim) += (Phi_imGreedy*alpha(Eigen::seqN(dim*lvlSize,lvlSize))).array();
-//	}
-
-	errorPrevLvl = -error;
+	errorPrevLvl = Eigen::ArrayXXd::Zero(m.N_m+m.N_se+m.N_ss, m.nDims);
+	errorPrevLvl(n.iNodesIdx,Eigen::all) = error;
+//	std::cout << test(n.cNodesIdx) << std::endl;
 }
 
 void greedy::getAlphaVector(){
-
+	std::cout << "c\n";
 	alphaGrdy.resize(alphaTotal.size());
 
 	switch(alphaTotal.cols()){
