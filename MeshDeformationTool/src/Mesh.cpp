@@ -752,9 +752,10 @@ void Mesh::getVecs(){
  */
 
 void Mesh::getEdgeTan(Eigen::ArrayXXd& t){
-	if(lvl>=2){
+
+//	if(lvl>=2){
 //		std::cout << "Obtaining edge tangential vectors" << std::endl;
-	}
+//	}
 
 	// initialising vectors to store intermediate results.
 	Eigen::VectorXd v1(nDims), v2(nDims), tan(nDims);
@@ -764,12 +765,12 @@ void Mesh::getEdgeTan(Eigen::ArrayXXd& t){
 		// defining vectors along the line segments. Its important to note that these vectors need to have the same direction.
 		// Otherwise, the vector will (partially) cancel each other out when taking the average if they are opposite to each other.
 		// So one vector goes from connectivity node 1 to the sliding node and the second vector goes from the sliding node to connectivity node 2.
-//todo check if this is right?
+
 		v1 = coords.row(edgeConnectivity(i,0)) - coords.row(seNodes(i));
 		v2 = coords.row(seNodes(i)) - coords.row(edgeConnectivity(i,1));
 
-		// Calculating the tangential vector based on a weighted average.
-		tan = (v1/v1.norm() + v2/v2.norm())/(1/v1.norm()+1/v2.norm());
+		tan = (v1/v1.norm() + v2/v2.norm());
+
 		// Transforming the tangential vector in a unit vector and assigning it to its respective row in the tangential vector array.
 		t.row(i) = tan/tan.norm();
 	}

@@ -69,7 +69,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 				}
 			}
 
-			std::cout << "here" << std::endl;
+
 			getPhis(Phi_cc, Phi_sc, Phi_bb, Phi_ib, n.cPtr, n.sPtr, n.bPtr, n.iPtr);
 
 			if(lvl > 0){
@@ -100,38 +100,19 @@ void rbf_ps::perform_rbf(getNodeType& n){
 			}
 
 			if(params.multiLvl && (maxError/go.maxErrorPrevLvl < params.tolCrit || iterating == false)){
-				std::cout << "LEVEL: " << lvl << " initalizing" << std::endl;
+
 				go.setLevelParams(m,n,lvl, d, alpha, maxError, defVec_b, n.bPtr, n.N_b);
 
 				std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" << std::endl;
 				lvl++;
 
-//				m.coords(*n.iPtr, Eigen::all) += d;
-//				for(int dim = 0; dim<m.nDims; dim++){
-//					m.coords(*n.bPtr,dim) += (defVec_b(Eigen::seqN(dim*n.N_b,n.N_b))).array();
-//				}
-//				std::cout << *n.bPtr << std::endl;
 
 				n.assignNodeTypesGrdy(m);
 
 				if(maxError < params.tol){
 					iterating = false;
 					go.getAlphaVector();
-
 				}
-
-
-//				if(lvl == 2){
-//					std::cout << n.N_i << '\t' << d.rows() << std::endl;
-//					m.coords(*n.iPtr,Eigen::all) += *d_step;
-//					for(int dim = 0; dim<m.nDims; dim++){
-//						m.coords(*n.bPtr,dim) += (defVec_b(Eigen::seqN(dim*n.N_b,n.N_b))).array();
-//					}
-//					m.writeMeshFile(params.mesh_ifName, params.mesh_ofName);
-//					std::exit(0);
-//					iterating = false;
-//					go.getAlphaVector();
-//				}
 
 			}
 
@@ -166,7 +147,16 @@ void rbf_ps::performRBF_PS(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_sc, Eig
 		delta.col(dim) = (Phi_sc*(Phi_cc.fullPivLu().solve(defVec(Eigen::seqN(dim*n.N_c,n.N_c))))).array();
 	}
 
+
+//	for(int dim = 0; dim < m.nDims; dim++){
+//		m.coords(*n.cPtr, dim) += (defVec(Eigen::seqN(dim*n.N_c, n.N_c))).array();
+//	}
+
 	p.projectIter(m, *n.sPtr, delta, finalDef, n.N_s);
+
+//	m.coords(*n.sPtr,Eigen::all) += finalDef;
+//	m.writeMeshFile(params.mesh_ifName, params.mesh_ofName);
+//	std::exit(0);
 
 	getDefVec(defVec_b, defVec, n, finalDef);
 

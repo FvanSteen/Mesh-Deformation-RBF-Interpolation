@@ -56,6 +56,7 @@ void rbfGenFunc::getPhis(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_cs, Eigen
 
 
 void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::ArrayXi* idxSet2){
+//	std::cout << "lambda: " << m.lambda << std::endl;
 	Phi.resize((*idxSet1).size(), (*idxSet2).size());
 	double dist;
 	for(int i=0; i<(*idxSet1).size();i++){
@@ -63,7 +64,7 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::Ar
 			if(m.nDims == 2){
 				// Euclidian distance
 
-//				dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1),2));
+//				dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet22(j),0),2) + pow(m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1),2));
 
 
 				//todo following if statement is introduced to improve efficiency, check if anything else can be done
@@ -96,16 +97,26 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::Ar
 			else if(m.nDims == 3){
 				if(params.pmode != "none"){
 					dist = 0;
+//					std::cout << m.coords.row((*idxSet1)(i)) << std::endl;
+//					std::cout << m.coords.row((*idxSet2)(j)) << std::endl;
 					for(int dim = 0; dim < m.nDims; dim++){
 
 						if(pVec(dim)){
 							dist += pow(m.lambda/M_PI*sin( (m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim))*M_PI/m.lambda),2);
+//							std::cout << "here: " << pow(m.lambda/M_PI*sin( (m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim))*M_PI/m.lambda),2) << std::endl;
 						}else{
 							dist += pow(m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim),2);
+//							std::cout << "local dist: " << pow(m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim),2) << std::endl;
 						}
+//						std::cout << " squared distance: "<< dist << std::endl;
 
-					dist = sqrt(dist);
+
 					}
+					dist = sqrt(dist);
+//					std::cout << "actual dist: " << dist << std::endl;
+//					if(j>0){
+//						std::exit(0);
+//					}
 				}else{
 //					std::cout << "check" << std::endl;
 					dist = sqrt(pow(m.coords((*idxSet1)(i),0)-m.coords((*idxSet2)(j),0),2) + pow(m.coords((*idxSet1)(i),1)-m.coords((*idxSet2)(j),1),2) + pow(m.coords((*idxSet1)(i),2)-m.coords((*idxSet2)(j),2),2));

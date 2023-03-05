@@ -126,21 +126,21 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 
 	cNodesIdx.conservativeResize(N_c+N_s);
 
-	std::cout << "here nn" << std::endl;
-	//todo include the sliding surf nodes
+
+
+	//todo likely a bug when a sliding edge node is identified as moving node.
+
 	if(idx <= (m.N_m-N_c)){
-		std::cout <<  "1\n" << N_c<<'\t' << N_s << "\n\n\n";
-		std::cout << cNodesIdx<< std::endl;
 		cNodesIdx(Eigen::seqN(N_c,N_s)) = cNodesIdx(Eigen::seqN(N_c-1,N_s)).eval();
-		std::cout <<  "1\n";
 		cNodesIdx(N_c-1) = iNodesIdx(idx);
-		std::cout <<  "1\n";
+
 	}else if(idx <= (m.N_m-N_c) + (m.N_se-N_se)){
-		std::cout <<  "2\n";
 
 		cNodesIdx(Eigen::seqN(N_c+N_se,N_ss)) = cNodesIdx(Eigen::seqN(N_c+N_se-1,N_ss)).eval();
-
 		cNodesIdx(N_c+N_se-1) = iNodesIdx(idx);
+	}else{
+		std::cout << "SLIDING SURF NODE IN GETNODETYPE.CPP" << std::endl;
+		cNodesIdx(N_c+N_se+N_ss-1) = iNodesIdx(idx);
 	}
 
 	iNodesIdx(Eigen::seqN(0,N_i)) << iNodesIdx(Eigen::seqN(0,idx)), iNodesIdx(Eigen::seq(idx+1,N_i));

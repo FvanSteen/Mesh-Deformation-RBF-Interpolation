@@ -320,9 +320,9 @@ void greedy::correction(Mesh& m, getNodeType& n, double& gamma, bool& multiLvl){
 
 		// keeping track of the progress
 
-//		if(i % 5000 == 0){
-//			std::cout << i << '\t' << m.iNodes.size() << std::endl;
-//		}
+		if(i % 5000 == 0){
+			std::cout << i << '\t' << m.iNodes.size() << std::endl;
+		}
 //		std::cout << i << '\t' << m.intCorNodes.size() << std::endl;
 	}
 }
@@ -454,7 +454,7 @@ void greedy::setLevelParams(Mesh& m, getNodeType& n, int lvl, Eigen::ArrayXXd& d
 }
 
 void greedy::getAlphaVector(){
-	std::cout << "c\n";
+
 	alphaGrdy.resize(alphaTotal.size());
 
 	switch(alphaTotal.cols()){

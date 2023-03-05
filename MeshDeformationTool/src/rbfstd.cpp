@@ -35,7 +35,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 	Eigen::ArrayXi maxErrorNodes;
 	greedy go;
 
-
+//	int lvlSize = 16;
 
 	Eigen::VectorXd* alpha_step;
 	Eigen::ArrayXXd* d_step;
@@ -51,7 +51,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 		}
 	}
 
-
+	m.r = 10;
 	for(int i=0; i<params.steps; i++){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 		maxError = 1;
@@ -69,9 +69,10 @@ void rbf_std::perform_rbf(getNodeType& n){
 		while(iterating){
 
 			if(params.dataRed){
-
 				for(int node = 0; node < maxErrorNodes.size(); node++){
-					n.addControlNode(maxErrorNodes(node), params.smode, m);
+//					if(n.N_c < lvlSize){
+						n.addControlNode(maxErrorNodes(node), params.smode, m);
+//					}
 				}
 			}
 
@@ -99,7 +100,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 				w.setIntResults(i, lvl, maxError, abs(go.error).mean(), duration.count()/1e6, params.convHistFile, n.N_c);
 
 
-				if(maxError < params.tol){
+				if(maxError < params.tol){ // first part is added
 					iterating = false;
 					maxErrorNodes.resize(0);
 				}
@@ -122,7 +123,11 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 
 
-//			if(params.multiLvl && n.N_m == params.lvlSize){
+//			if(params.multiLvl && n.N_c == lvlSize){
+//				std::cout << "levelsize: " << lvlSize << std::endl;
+//				if(maxError > 0.5*go.maxErrorPrevLvl && lvl !=0){
+//					lvlSize += 16;
+//				}else{
 			if(params.multiLvl && (maxError/go.maxErrorPrevLvl < params.tolCrit || iterating == false)){
 
 //				std::cout << go.maxErrorPrevLvl << '\t' << maxError << '\t' << maxError/go.maxErrorPrevLvl << std::endl;
@@ -142,36 +147,37 @@ void rbf_std::perform_rbf(getNodeType& n){
 //				}else{
 
 
-				go.setLevelParams(m,n, lvl, d, alpha, maxError, defVec, n.cPtr, n.N_c);
+					go.setLevelParams(m,n, lvl, d, alpha, maxError, defVec, n.cPtr, n.N_c);
 
-//				if(lvl == 4){
-//					m.coords(*n.iPtr, Eigen::all) += *d_step;
-//					m.writeMeshFile();
-//					std::exit(0);
-//				}
-				auto stop = std::chrono::high_resolution_clock::now();
-				auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
+	//				if(lvl == 4){
+	//					m.coords(*n.iPtr, Eigen::all) += *d_step;
+	//					m.writeMeshFile();
+	//					std::exit(0);
+	//				}
+					auto stop = std::chrono::high_resolution_clock::now();
+					auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
 
-//				w.setIntResults(i, lvl, maxError, abs(go.error).mean(), duration.count()/1e6, params.convHistFile, n.N_m);
-//				std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" <<std::endl;
+	//				w.setIntResults(i, lvl, maxError, abs(go.error).mean(), duration.count()/1e6, params.convHistFile, n.N_m);
+	//				std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" <<std::endl;
 
-	//				std::cout << "mean error: " << abs(go.error).mean() << std::endl;
+		//				std::cout << "mean error: " << abs(go.error).mean() << std::endl;
 
-				lvl++;
+					lvl++;
 
-				n.assignNodeTypesGrdy(m);
+					n.assignNodeTypesGrdy(m);
 
-				if(maxError < params.tol){
-					iterating = false;
-					go.getAlphaVector();
-				}
-//					params.lvlSize = params.lvlSizeInit;
+					if(maxError < params.tol){
+						iterating = false;
+						go.getAlphaVector();
+					}
+//					lvlSize = 16;
 
 //					std::cout << "Maximum deformation: "<<  maxError << std::endl;
 
 //					m.r = 2.5*maxError/0.0780524;
 //					m.r = 100*maxError/0.707107;
 //					std::cout<< m.r << std::endl;
+//				}
 			}
 
 			iter++;
