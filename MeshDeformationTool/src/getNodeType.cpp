@@ -24,10 +24,10 @@ void getNodeType::assignNodeTypes(Mesh& m){
 	N_ss = m.N_ss;
 	ssPtr = &m.ssNodes;
 
-	N_mStd = m.N_m + m.N_se + m.N_ss;
-	mNodesStd.resize(N_mStd);
-	mNodesStd << m.mNodes, m.seNodes, m.ssNodes;
-	bPtr = &mNodesStd;
+	N_b = m.N_m + m.N_se + m.N_ss;
+	bNodes.resize(N_b);
+	bNodes << m.mNodes, m.seNodes, m.ssNodes;
+	bPtr = &bNodes;
 
 
 	N_s = m.N_se+m.N_ss;
@@ -39,12 +39,14 @@ void getNodeType::assignNodeTypes(Mesh& m){
 
 
 void getNodeType::assignNodeTypesGrdy(Mesh& m){
-
 	N_i = m.N_m + m.N_se + m.N_ss;
 	iNodes.resize(N_i);
 	iNodes << m.mNodes, m.seNodes, m.ssNodes;
 
 	iPtr = &iNodes;
+
+	iNodesIdx = Eigen::ArrayXi::LinSpaced(N_i, 0, N_i-1);
+	cNodesIdx.resize(0);
 
 	N_c = 0;
 	cNodes.resize(N_c);
@@ -86,7 +88,7 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 		N_se++;
 		seNodes.conservativeResize(N_se);
 		seNodes(N_se-1) = node;
-//		std::cout << seNodes << std::endl;
+
 		N_s++;
 		sNodes.resize(N_s);
 		sNodes << seNodes, ssNodes;
@@ -105,21 +107,39 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 
 
 	if(smode != "none"){
-		N_mStd++;
-		mNodesStd.resize(N_mStd);
-		mNodesStd << mNodes,seNodes, ssNodes;
+		N_b++;
+		bNodes.resize(N_b);
+		bNodes << cNodes, seNodes, ssNodes;
 
 	}
 
 	// reducing the iNodes array:
 	int idx;
 	idx = std::distance(std::begin(iNodes), std::find(std::begin(iNodes), std::end(iNodes),node));
+
 	N_i --;
 	iNodes(Eigen::seqN(0,N_i)) << iNodes(Eigen::seqN(0,idx)), iNodes(Eigen::seq(idx+1,N_i));
 	iNodes.conservativeResize(N_i);
 
-//	std::cout << "control node: " << node << " is added"<< std::endl;
-//	std::cout << "control node is added " << std::endl;
+
+	cNodesIdx.conservativeResize(N_c+N_s);
+
+
+
+	//todo likely a bug when a sliding edge node is identified as moving node.
+
+	if(idx <= (m.N_m-N_c)){
+		cNodesIdx(Eigen::seqN(N_c,N_s)) = cNodesIdx(Eigen::seqN(N_c-1,N_s)).eval();
+		cNodesIdx(N_c-1) = iNodesIdx(idx);
+	}else if(idx <= (m.N_m-N_c) + (m.N_se-N_se)){
+		cNodesIdx(Eigen::seqN(N_c+N_se,N_ss)) = cNodesIdx(Eigen::seqN(N_c+N_se-1,N_ss)).eval();
+		cNodesIdx(N_c+N_se-1) = iNodesIdx(idx);
+	}else{
+		cNodesIdx(N_c+N_se+N_ss-1) = iNodesIdx(idx);
+	}
+
+	iNodesIdx(Eigen::seqN(0,N_i)) << iNodesIdx(Eigen::seqN(0,idx)), iNodesIdx(Eigen::seq(idx+1,N_i));
+	iNodesIdx.conservativeResize(N_i);
 
 }
 

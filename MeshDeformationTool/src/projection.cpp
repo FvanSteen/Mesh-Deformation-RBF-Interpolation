@@ -6,9 +6,9 @@
 #include <iostream>
 #include <chrono>
 
-projection::projection() {
-
-}
+projection::projection(Eigen::VectorXd& pVec)
+:pVec(pVec)
+{}
 
 void projection::project(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta,Eigen::ArrayXXd& finalDef, Eigen::VectorXd& pVec){
 //	std::cout << "Doing Projection" << std::endl;
@@ -18,7 +18,7 @@ void projection::project(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& delta
 	Eigen::ArrayXi index = Eigen::ArrayXi::LinSpaced(m.midPnts.rows(),0,m.midPnts.rows()-1);
 
 	for(int i=0; i<sNodes.size(); i++){
-		if(std::find(std::begin(m.verticesNodes),std::end(m.verticesNodes),sNodes(i))  != std::end(m.verticesNodes)){
+		if(std::find(std::begin(m.periodicVerticesNodes),std::end(m.periodicVerticesNodes),sNodes(i))  != std::end(m.periodicVerticesNodes)){
 			finalDef.row(i) = delta.row(i)*pVec.transpose().array();
 		}else{
 			// distance to all midpoints
@@ -54,22 +54,25 @@ void projection::projectIter(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& d
 	int edge;
 
 	for(int i = 0; i < sNodes.size(); i++){
-
-		if(m.nDims == 3 && i < N_se){
-			edge = 1;
-			dist = m.edgeMidPnts.rowwise() - (m.coords.row(sNodes(i)) + delta.row(i));
-		}else{
-
-			edge = 0;
-			dist = m.midPnts.rowwise() - (m.coords.row(sNodes(i)) + delta.row(i));
+		if(std::find(std::begin(m.periodicVerticesNodes),std::end(m.periodicVerticesNodes),sNodes(i))  != std::end(m.periodicVerticesNodes)){
+			finalDef.row(i) = delta.row(i)*pVec.transpose().array();
 		}
+//		else if(std::find(std::begin(m.periodicEdgeNodes),std::end(m.periodicEdgeNodes),sNodes(i))  != std::end(m.periodicEdgeNodes)){
+//
+//		}
+		else{
+			if(m.nDims == 3 && i < N_se){
+				edge = 1;
+				dist = m.edgeMidPnts.rowwise() - (m.coords.row(sNodes(i)) + delta.row(i));
+			}else{
+				edge = 0;
+				dist = m.midPnts.rowwise() - (m.coords.row(sNodes(i)) + delta.row(i));
+			}
+			projectFun(m,finalProjection, dist, edge);
 
-
-		projectFun(m,finalProjection, dist, edge);
-
-		finalDef.row(i) = delta.row(i) + finalProjection.array();
+			finalDef.row(i) = delta.row(i) + finalProjection.array();
+		}
 	}
-
 }
 
 

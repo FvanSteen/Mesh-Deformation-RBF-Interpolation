@@ -18,10 +18,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 	WriteResults w;
 	w.createConvHistFile(params.convHistFile);
 
-	projection* p;
-
-	projection proObject;
-	p = &proObject;
+	projection p(periodicVec);
 
 	auto start = std::chrono::high_resolution_clock::now();\
 
@@ -36,25 +33,25 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 
 	Eigen::ArrayXi maxErrorNodes;
-	greedy go;
+	greedy go(params, alpha, d);
 
+//	int lvlSize = 16;
 
+//	Eigen::VectorXd* alpha_step;
+//	Eigen::ArrayXXd* d_step;
+//	Eigen::ArrayXi* ctrlPtr;
+//	if(params.dataRed){
+//		if(params.multiLvl){
+//			alpha_step = &go.alphaGrdy;
+//			d_step = &go.delta;
+//			ctrlPtr = &go.ctrlNodesAll;
+//		}else{
+//			alpha_step = &alpha;
+//			d_step = &d;
+//		}
+//	}
 
-	Eigen::VectorXd* alpha_step;
-	Eigen::ArrayXXd* d_step;
-	Eigen::ArrayXi* ctrlPtr;
-	if(params.dataRed){
-		if(params.multiLvl){
-			alpha_step = &go.alphaGrdy;
-			d_step = &go.delta;
-			ctrlPtr = &go.ctrlNodesAll;
-		}else{
-			alpha_step = &alpha;
-			d_step = &d;
-		}
-	}
-
-
+	m.r = 10;
 	for(int i=0; i<params.steps; i++){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 		maxError = 1;
@@ -63,37 +60,38 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 
 		if((params.dataRed && i==0) || params.multiLvl ){
-			go.setInitMaxErrorNodes(m, m.coords, exactDisp, movingIndices, maxErrorNodes);
+			go.setInitMaxErrorNodes(m, m.coords, exactDisp, movingIndices, maxErrorNodes, params.doubleEdge);
 			std::cout << "initial selected Nodes:\n" << maxErrorNodes << std::endl;
 		}
 
 		iterating = true;
-//		if(params.multiLvl && i != 0){
-//			n.addControlNode(m.intBdryNodes(0));
-//			n.addControlNode(m.intBdryNodes(m.intBdryNodes.size()-1));
-//		}
+
 		while(iterating){
 
 			if(params.dataRed){
-				//todo can be a for loop
 				for(int node = 0; node < maxErrorNodes.size(); node++){
-					n.addControlNode(maxErrorNodes(node), params.smode, m);
+//					if(n.N_c < lvlSize){
+						n.addControlNode(maxErrorNodes(node), params.smode, m);
+//					}
 				}
 			}
 
 			getPhis(Phi_cc, Phi_ic, n.cPtr, n.iPtr);
 
-			if(i==0 || params.dataRed){
+
+			if(lvl > 0){
+				getDefVec(defVec, n, go.errorPrevLvl, n.N_c);
+			}else if(i==0 || params.dataRed){
 				getDefVec(defVec, n.N_c, n.cPtr);
 			}
+
+
 
 			performRBF(Phi_cc, Phi_ic, defVec,n.cPtr, n.iPtr, n.N_c);
 
 
-
-//			std::cout << d << std::endl;
 			if(params.dataRed){
-				go.getError(m,n,d,maxError,maxErrorNodes, movingIndices, exactDisp,pnVec,p, params.multiLvl, lvl, params.doubleEdge);
+				go.getError(m,n,d,maxError,maxErrorNodes, movingIndices, exactDisp,periodicNormalVec1,p, params.multiLvl, lvl, params.doubleEdge);
 				std::cout << "error: \t"<< maxError <<" at node: \t" << maxErrorNodes(0)<< std::endl;
 
 
@@ -102,7 +100,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 				w.setIntResults(i, lvl, maxError, abs(go.error).mean(), duration.count()/1e6, params.convHistFile, n.N_c);
 
 
-				if(maxError < params.tol){
+				if(maxError < params.tol){ // first part is added
 					iterating = false;
 					maxErrorNodes.resize(0);
 				}
@@ -125,7 +123,11 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 
 
-//			if(params.multiLvl && n.N_m == params.lvlSize){
+//			if(params.multiLvl && n.N_c == lvlSize){
+//				std::cout << "levelsize: " << lvlSize << std::endl;
+//				if(maxError > 0.5*go.maxErrorPrevLvl && lvl !=0){
+//					lvlSize += 16;
+//				}else{
 			if(params.multiLvl && (maxError/go.maxErrorPrevLvl < params.tolCrit || iterating == false)){
 
 //				std::cout << go.maxErrorPrevLvl << '\t' << maxError << '\t' << maxError/go.maxErrorPrevLvl << std::endl;
@@ -145,35 +147,37 @@ void rbf_std::perform_rbf(getNodeType& n){
 //				}else{
 
 
-				go.setLevelParams(m,n,lvl,params.lvlSize, d, alpha, maxError);
-//				if(lvl == 4){
-//					m.coords(*n.iPtr, Eigen::all) += *d_step;
-//					m.writeMeshFile();
-//					std::exit(0);
-//				}
-				auto stop = std::chrono::high_resolution_clock::now();
-				auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
+					go.setLevelParams(m,n, lvl, d, alpha, maxError, defVec, n.cPtr, n.N_c);
 
-//				w.setIntResults(i, lvl, maxError, abs(go.error).mean(), duration.count()/1e6, params.convHistFile, n.N_m);
-//					std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" << "\tTime: "<< duration.count()/1e6 << std::endl;
+	//				if(lvl == 4){
+	//					m.coords(*n.iPtr, Eigen::all) += *d_step;
+	//					m.writeMeshFile();
+	//					std::exit(0);
+	//				}
+					auto stop = std::chrono::high_resolution_clock::now();
+					auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
 
-	//				std::cout << "mean error: " << abs(go.error).mean() << std::endl;
+	//				w.setIntResults(i, lvl, maxError, abs(go.error).mean(), duration.count()/1e6, params.convHistFile, n.N_m);
+	//				std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" <<std::endl;
 
-				lvl++;
+		//				std::cout << "mean error: " << abs(go.error).mean() << std::endl;
 
-				n.assignNodeTypesGrdy(m);
+					lvl++;
 
-				if(maxError < params.tol){
-					iterating = false;
-					go.getAlphaVector();
-				}
-//					params.lvlSize = params.lvlSizeInit;
+					n.assignNodeTypesGrdy(m);
+
+					if(maxError < params.tol){
+						iterating = false;
+						go.getAlphaVector();
+					}
+//					lvlSize = 16;
 
 //					std::cout << "Maximum deformation: "<<  maxError << std::endl;
 
 //					m.r = 2.5*maxError/0.0780524;
 //					m.r = 100*maxError/0.707107;
 //					std::cout<< m.r << std::endl;
+//				}
 			}
 
 			iter++;
@@ -182,6 +186,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 
 		if(params.dataRed){
+
 //			if(params.multiLvl == 0){
 //
 //				auto stop = std::chrono::high_resolution_clock::now();
@@ -190,8 +195,8 @@ void rbf_std::perform_rbf(getNodeType& n){
 //			}
 
 
-			updateNodes(Phi_icGrdy,n,defVec, d_step, alpha_step,ctrlPtr);
-			go.correction(m,n,params.gamma);
+			updateNodes(n,defVec, go.d_step, go.alpha_step, go.ctrlPtr);
+			go.correction(m,n,params.gamma, params.multiLvl);
 		}
 
 	}
@@ -201,81 +206,11 @@ void rbf_std::perform_rbf(getNodeType& n){
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
 
 	std::cout << "Runtime duration: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
-	m.writeMeshFile(params.mesh_ifName, params.mesh_ofName);
 }
 
 
-void rbf_std::performRBF(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ic, Eigen::VectorXd& defVec, Eigen::ArrayXi* cNodes, Eigen::ArrayXi* iNodes, int& N){
-	alpha.resize(N*m.nDims);
-
-	if(params.dataRed){
-		d.resize((*iNodes).size(),m.nDims);
-	}
-
-	for(int dim = 0; dim < m.nDims; dim++){
-//		std::cout << "Solving for dimension: " << dim << std::endl;
-//		auto start = std::chrono::high_resolution_clock::now();
-		alpha(Eigen::seqN(dim*N,N)) = Phi_cc.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))); //fullPivHouseholderQr()
-
-//		auto stop = std::chrono::high_resolution_clock::now();
-//		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
-
-//		std::cout << "Time to solve for alpha: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
-		if(params.dataRed){
-			d.col(dim) = Phi_ic*alpha(Eigen::seqN(dim*N,N));
-		}else{
-			m.coords(*iNodes,dim) += (Phi_ic*alpha(Eigen::seqN(dim*N,N))).array();
-			m.coords(*cNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
-		}
-	}
-}
-
-void rbf_std::updateNodes(Eigen::MatrixXd& Phi_icGrdy, getNodeType& n, Eigen::VectorXd& defVec, Eigen::ArrayXXd* d_step, Eigen::VectorXd* alpha_step, Eigen::ArrayXi* ctrlPtr){
-
-	int N_m;
-	Eigen::ArrayXi* ptr;
-
-	if(params.multiLvl){
-		ptr = ctrlPtr;
-		N_m = (*ctrlPtr).size();
-
-//		m.coords(*n.iPtrGrdy,Eigen::all) += deltaInternal;
-	}else{
-		if(params.smode == "none"){
-
-			ptr = n.cPtr;
-			N_m = n.N_c;
-		}else{
-			ptr = n.bPtr;
-			N_m = n.N_mStd;
-		}
-	}
-
-//	std::cout << *alpha_step << std::endl;
-	auto start = std::chrono::high_resolution_clock::now();
-
-	getPhi(Phi_icGrdy,n.iPtrGrdy,ptr);
-
-
-	m.coords(*n.iPtr, Eigen::all) += *d_step;
 
 
 
-	for(int dim = 0; dim < m.nDims; dim++){
-		m.coords(*ptr,dim) += (defVec(Eigen::seqN(dim*N_m,N_m))).array();
-		m.coords(*n.iPtrGrdy,dim) +=  (Phi_icGrdy*(*alpha_step)(Eigen::seqN(dim*N_m,N_m))).array();
-	}
-
-	auto stop = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
-
-	std::cout << "Time for updating internal nodes: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
-
-
-//	auto stop = std::chrono::high_resolution_clock::now();
-//	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
-//	std::cout << "time: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
-
-}
 
 

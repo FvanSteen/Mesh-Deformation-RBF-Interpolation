@@ -1,6 +1,8 @@
 #include "probParams.h"
 #include "ReadConfigFile.h"
 #include "rbfstd.h"
+#include "rbfps.h"
+#include "rbfds.h"
 #include <iostream>
 #include <fstream>
 #include <Eigen/Dense>
@@ -33,23 +35,19 @@ int main()
 
 	getNodeType n(probParams, meshOb);
 
-//	std::cout << "moving Nodes: \n" <<  *n.mPtr << std::endl;
-//	std::cout << "sliding edge Nodes: \n" <<  *n.sePtr << std::endl;
-//	std::cout << "sliding surface nodes: \n" << *n.ssPtr << std::endl;
-//	std::cout << "internal nodes:\n" << *n.iPtr << std::endl;
 	if(probParams.smode == "none"){
 		rbf_std rbf(probParams, meshOb, n);
 	}else if(probParams.smode == "ps"){
-		rbf_ps rbf(probparams, meshOb, n)
+		rbf_ps rbf(probParams, meshOb, n);
+	}else{
+		rbf_ds rbf(probParams, meshOb, n);
 	}
-
-	std::exit(0);
-
+	meshOb.writeMeshFile(probParams.mesh_ifName, probParams.mesh_ofName);
 
 
 	// Initialising the rbf class with the mesh data and the problem parameters
-	rbf rbf(meshOb, probParams);
+//	rbf rbf(meshOb, probParams);
 
 	// calling the main rbf function that performs the mesh deformation
-	rbf.RBFMain();
+//	rbf.RBFMain();
 }

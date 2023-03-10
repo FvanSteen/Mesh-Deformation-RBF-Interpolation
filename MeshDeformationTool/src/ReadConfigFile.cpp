@@ -111,6 +111,16 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 		std::exit(0);
 	}
 
+	try{
+		if(probParamsObject.dataRed == false && probParamsObject.multiLvl == true){
+			throw(probParamsObject.multiLvl);
+		}
+	}
+	catch(bool& mLvl){
+		std::cout << "Multi-level was set to: " << mLvl << ", this is only possible when data reduction is enabled. \nMulti-level is reverted to FALSE."<< std::endl;
+		probParamsObject.multiLvl = false;
+	}
+
 	std::string str1,str2;
 	if(probParamsObject.multiLvl){
 		str1 = "_ML";
