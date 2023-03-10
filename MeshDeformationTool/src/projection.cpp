@@ -56,7 +56,11 @@ void projection::projectIter(Mesh& m, Eigen::ArrayXi& sNodes, Eigen::ArrayXXd& d
 	for(int i = 0; i < sNodes.size(); i++){
 		if(std::find(std::begin(m.periodicVerticesNodes),std::end(m.periodicVerticesNodes),sNodes(i))  != std::end(m.periodicVerticesNodes)){
 			finalDef.row(i) = delta.row(i)*pVec.transpose().array();
-		}else{
+		}
+//		else if(std::find(std::begin(m.periodicEdgeNodes),std::end(m.periodicEdgeNodes),sNodes(i))  != std::end(m.periodicEdgeNodes)){
+//
+//		}
+		else{
 			if(m.nDims == 3 && i < N_se){
 				edge = 1;
 				dist = m.edgeMidPnts.rowwise() - (m.coords.row(sNodes(i)) + delta.row(i));

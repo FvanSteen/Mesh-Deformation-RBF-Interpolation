@@ -27,6 +27,9 @@ public:
 
 	Eigen::ArrayXi verticesNodes, periodicVerticesNodes;
 
+	Eigen::ArrayXi periodicEdgeNodes;
+
+	int N_pe;
 
 //	struct Domains{
 //		Eigen::ArrayXi d1;
@@ -53,12 +56,14 @@ public:
 	void getIntNodes();
 	void removeDuplicates(Eigen::ArrayXi& arr);
 
-	void getEdgeConnectivity(std::string& pmode);
+	void getEdgeConnectivity(std::string& pmode, Eigen::ArrayXXi& edgeConnectivity,Eigen::ArrayXi& seNodes, int size);
 	void getSurfConnectivity();
+
 	void getVecs();
 	void getPerpVecs(Eigen::ArrayXXd& vecs, Eigen::ArrayXXd& p1, Eigen::ArrayXXd& p2);
-	void getEdgeTan(Eigen::ArrayXXd& t);
+	void getEdgeTan(Eigen::ArrayXXd& t,Eigen::ArrayXXi& edgeConnectivity, Eigen::ArrayXi& seNodes);
 	void getSurfNormal();
+	void getSurfNormalPeriodic();
 
 
 	void getExtBdryEdgeSegments();
@@ -75,7 +80,7 @@ public:
 	void findStringBounds(int& first, int& last, std::string& line);
 //	void getInternalCorrectionNodes(Eigen::ArrayXi& subDomains,  Eigen::ArrayXi& subDomsLen, Eigen::ArrayXXd& bdryCoord);
 private:
-	Eigen::ArrayXXi edgeConnectivity, surfConnectivity, bdryNodesMat, extBdryEdgeSegments;
+	Eigen::ArrayXXi edgeConnectivity, edgeConnectivityPeriodic, surfConnectivity, bdryNodesMat, extBdryEdgeSegments;
 	Eigen::ArrayXi nrElemsBdry;
 	std::vector<std::string> srtdTags;
 	int lvl;

@@ -15,7 +15,7 @@ rbf_ps::rbf_ps( struct probParams& probParamsObject, Mesh& meshObject, getNodeTy
 void rbf_ps::perform_rbf(getNodeType& n){
 	std::cout<< "Performing RBF PS" << std::endl;
 
-	projection p(pVec);
+	projection p(periodicVec);
 
 	auto start = std::chrono::high_resolution_clock::now();
 
@@ -25,21 +25,21 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 
 	Eigen::ArrayXi maxErrorNodes;
-	greedy go;
+	greedy go(params, alpha, d);
 
-	Eigen::VectorXd* alpha_step;
-	Eigen::ArrayXXd* d_step;
-	Eigen::ArrayXi* ctrlPtr;
-	if(params.dataRed){
-		if(params.multiLvl){
-			alpha_step = &go.alphaGrdy;
-			d_step = &go.delta;
-			ctrlPtr = &go.ctrlNodesAll;
-		}else{
-			alpha_step = &alpha;
-			d_step = &d;
-		}
-	}
+//	Eigen::VectorXd* alpha_step;
+//	Eigen::ArrayXXd* d_step;
+//	Eigen::ArrayXi* ctrlPtr;
+//	if(params.dataRed){
+//		if(params.multiLvl){
+//			alpha_step = &go.alphaGrdy;
+//			d_step = &go.delta;
+//			ctrlPtr = &go.ctrlNodesAll;
+//		}else{
+//			alpha_step = &alpha;
+//			d_step = &d;
+//		}
+//	}
 
 	int iter, lvl;
 	double maxError;
@@ -87,7 +87,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 			if(params.dataRed){
 
-				go.getError(m,n,d, maxError, maxErrorNodes, movingIndices, exactDisp ,pnVec, p, params.multiLvl, lvl, params.doubleEdge);
+				go.getError(m,n,d, maxError, maxErrorNodes, movingIndices, exactDisp ,periodicNormalVec1, p, params.multiLvl, lvl, params.doubleEdge);
 				std::cout << "error: \t"<< maxError <<" at node: \t" << maxErrorNodes(0)<< std::endl;
 
 				if(maxError < params.tol){
@@ -123,7 +123,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 		if(params.dataRed){
 
-			updateNodes(Phi_ibGrdy,n,defVec_b, d_step, alpha_step,ctrlPtr);
+			updateNodes(n,defVec_b, go.d_step, go.alpha_step, go.ctrlPtr);
 
 			go.correction(m,n, params.gamma, params.multiLvl);
 

@@ -26,7 +26,13 @@ public:
 
 	double maxErrorPrevLvl;
 
-	greedy();
+
+	Eigen::VectorXd* alpha_step;
+	Eigen::ArrayXXd* d_step;
+	Eigen::ArrayXi* ctrlPtr;
+
+
+	greedy(probParams& params, Eigen::VectorXd& alpha, Eigen::ArrayXXd& d);
 	void getError(Mesh& m, getNodeType& n, Eigen::ArrayXXd& d, double& maxError, Eigen::ArrayXi& maxErrorNodes,  Eigen::ArrayXi& movingIndices, Eigen::ArrayXXd& exactDisp,Eigen::VectorXd& pnVec, projection& p, bool multiLvl, int lvl, bool doubleEdge);
 	void getErrorSingleLvl(Mesh& m, getNodeType& n, Eigen::ArrayXd& errorAngle, Eigen::ArrayXXd& d, Eigen::ArrayXi& movingIndices, Eigen::ArrayXXd& exactDisp, Eigen::VectorXd& pnVec, projection& p);
 	void getErrorMultiLvl( getNodeType& n,  Eigen::ArrayXd& errorAngle,Eigen::ArrayXXd& d, Mesh& m, Eigen::ArrayXi& movingIndices, Eigen::VectorXd& pnVec, projection& p);

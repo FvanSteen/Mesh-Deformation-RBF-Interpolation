@@ -5,8 +5,17 @@
 #include <iterator>
 #include <chrono>
 #include <math.h>
-greedy::greedy()
-{}
+greedy::greedy(probParams& params, Eigen::VectorXd& alpha, Eigen::ArrayXXd& d)
+{
+	if(params.multiLvl){
+		alpha_step = &alphaGrdy;
+		d_step = &delta;
+		ctrlPtr = &ctrlNodesAll;
+	}else{
+		alpha_step = &alpha;
+		d_step = &d;
+	}
+}
 
 
 void greedy::getError(Mesh& m, getNodeType& n, Eigen::ArrayXXd& d, double& maxError, Eigen::ArrayXi& maxErrorNodes, Eigen::ArrayXi& movingIndices, Eigen::ArrayXXd& exactDisp, Eigen::VectorXd& pnVec, projection& p, bool multiLvl, int lvl, bool doubleEdge){
@@ -55,7 +64,7 @@ void greedy::getErrorSingleLvl(Mesh& m, getNodeType& n, Eigen::ArrayXd& errorAng
 	int edge;
 	// for all of the boundary nodes the error will be determined
 	for(i = 0; i< n.N_i; i++){
-
+//		std::cout << i << "/" << n.N_i << std::endl;
 		// finding index of the node in consideration among the nodes with predescribed displacement
 		idx_m = std::distance(std::begin(movingIndices), std::find(std::begin(movingIndices),std::end(movingIndices),(*n.iPtr)(i)));
 
@@ -86,9 +95,10 @@ void greedy::getErrorSingleLvl(Mesh& m, getNodeType& n, Eigen::ArrayXd& errorAng
 
 			project(m, (*n.iPtr)(i), i, d, pnVec, p, edge);
 		}else if(idx_ss != m.N_ss){
-//			std::cout << "sliding surf node" << std::endl;
+//			std::cout << "sliding surf node: " << (*n.iPtr)(i) <<  std::endl;
 			edge = 0;
 			project(m, (*n.iPtr)(i), i, d, pnVec, p, edge);
+
 		}
 
 		// if not the two above then the node is a static node with zero displacement. Therefore, its error is equal to the found displacement
@@ -363,19 +373,25 @@ void greedy::project(Mesh& m, int& node, int& idx, Eigen::ArrayXXd& disp,Eigen::
 //		std::cout << error.row(idx) << std::endl;
 
 	}else{
-
-		Eigen::RowVectorXd err;
-		Eigen::ArrayXXd dist;
-		if(edge){
-			dist = m.edgeMidPnts.rowwise() - (m.coords.row(node) + disp.row(idx));
+		int idxNode = std::distance(std::begin(m.periodicEdgeNodes), std::find(std::begin(m.periodicEdgeNodes),std::end(m.periodicEdgeNodes),node));
+		if(idxNode != m.N_pe){
+//			std::cout << idxNode << '\t' << m.N_pe << std::endl;
+			error.row(idx)  = disp.row(idx)*m.n_ss.row(m.N_ss-m.N_pe+idxNode);
 		}else{
-			dist = m.midPnts.rowwise() - (m.coords.row(node) + disp.row(idx));
+
+			Eigen::RowVectorXd err;
+			Eigen::ArrayXXd dist;
+			if(edge){
+				dist = m.edgeMidPnts.rowwise() - (m.coords.row(node) + disp.row(idx));
+			}else{
+				dist = m.midPnts.rowwise() - (m.coords.row(node) + disp.row(idx));
+			}
+
+
+			p.projectFun(m, err, dist,edge);
+
+			error.row(idx) = -err;
 		}
-
-
-		p.projectFun(m, err, dist,edge);
-
-		error.row(idx) = -err;
 	}
 }
 

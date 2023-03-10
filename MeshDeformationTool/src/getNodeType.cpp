@@ -39,8 +39,6 @@ void getNodeType::assignNodeTypes(Mesh& m){
 
 
 void getNodeType::assignNodeTypesGrdy(Mesh& m){
-
-
 	N_i = m.N_m + m.N_se + m.N_ss;
 	iNodes.resize(N_i);
 	iNodes << m.mNodes, m.seNodes, m.ssNodes;
@@ -133,13 +131,10 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 	if(idx <= (m.N_m-N_c)){
 		cNodesIdx(Eigen::seqN(N_c,N_s)) = cNodesIdx(Eigen::seqN(N_c-1,N_s)).eval();
 		cNodesIdx(N_c-1) = iNodesIdx(idx);
-
 	}else if(idx <= (m.N_m-N_c) + (m.N_se-N_se)){
-
 		cNodesIdx(Eigen::seqN(N_c+N_se,N_ss)) = cNodesIdx(Eigen::seqN(N_c+N_se-1,N_ss)).eval();
 		cNodesIdx(N_c+N_se-1) = iNodesIdx(idx);
 	}else{
-		std::cout << "SLIDING SURF NODE IN GETNODETYPE.CPP" << std::endl;
 		cNodesIdx(N_c+N_se+N_ss-1) = iNodesIdx(idx);
 	}
 

@@ -177,13 +177,39 @@ void Mesh::readMeshFile(probParams& params){
 	getIntNodes();
 //	std::cout << "internal Nodes: \n" << iNodes << std::endl;
 
+	if(nDims == 3 && params.smode == "ds" && (params.pmode == "fixed" || params.pmode == "moving")){
+		// adding the periodic edge nodes to the sliding surface nodes
+		N_ss += N_pe;
+		ssNodes.conservativeResize(N_ss);
+		ssNodes(Eigen::lastN(N_pe)) = periodicEdgeNodes;
+
+
+		// removing the periodic edge nodes from the sliding edge node selection
+		int cnt = 0;
+		for(int i=0; i < N_se; i++){
+			if(std::find(std::begin(periodicEdgeNodes), std::end(periodicEdgeNodes), seNodes(i)) == std::end(periodicEdgeNodes)){
+				seNodes(cnt) = seNodes(i);
+				cnt++;
+			}
+		}
+		N_se = cnt;
+		seNodes.conservativeResize(cnt);
+//		seNodes(Eigen::lastN(N_pe)) = periodicEdgeNodes;
+
+	}
+
 	if(params.smode != "none"){
-		getEdgeConnectivity(params.pmode);
+		getEdgeConnectivity(params.pmode, edgeConnectivity,seNodes,  N_se - N_periodic_vertices);
 		if(nDims == 3){
-			getExtBdryEdgeSegments();
+			getExtBdryEdgeSegments(); // todo check if N_pe should be considered or not
 			getSurfConnectivity();
+			if(params.pmode == "fixed" || "moving"){
+				getEdgeConnectivity(params.pmode, edgeConnectivityPeriodic, periodicEdgeNodes, N_pe);
+			}
 		}
 	}
+
+
 
 	if(params.pmode != "none"){
 		getCharPerLength(params.pDir);
@@ -324,7 +350,25 @@ void Mesh::getNodeTypes(probParams& params, int nMarker){
 					}
 				}
 			}
+		}else{
+			Eigen::ArrayXi idxPeriodicEdgeNodes(bdryNodesArr.size());
+			int cntPeriodicEdgeNodes = 0;
+
+			for(int i = 0; i < bdryNodesArr.size(); i++){
+				if ( (i< bdryNodesArr.size()-3 && bdryNodesArr(i) == bdryNodesArr(i+3))){
+					i+= 3;
+				}else if(i< bdryNodesArr.size()-1 && bdryNodesArr(i) == bdryNodesArr(i+1)){
+					idxPeriodicEdgeNodes(cntPeriodicEdgeNodes) = bdryNodesArr(i);
+					cntPeriodicEdgeNodes++;
+					i++;
+				}
+			}
+			periodicEdgeNodes.conservativeResize(periodicEdgeNodes.size()+cntPeriodicEdgeNodes);
+			periodicEdgeNodes(Eigen::lastN(cntPeriodicEdgeNodes)) = idxPeriodicEdgeNodes(Eigen::seqN(0,cntPeriodicEdgeNodes));
+
 		}
+
+
 
 //		std::cout << "moving nodes: \n" << idxMoving(Eigen::seqN(0,cntMoving)) << std::endl;
 //		std::cout << "slidingEdge: \n" << idxSlidingEdge(Eigen::seqN(0,cntSlidingEdge)) << std::endl;
@@ -375,6 +419,8 @@ void Mesh::getNodeTypes(probParams& params, int nMarker){
 	N_ss = ssNodes.size();
 	N_se = seNodes.size();
 	N_m = mNodes.size();
+	N_pe = periodicEdgeNodes.size();
+
 }
 
 
@@ -538,13 +584,13 @@ void Mesh::writeMeshFile(std::string& ifName, std::string& ofName){
  * If not then they are checked to find which other node is a sliding edge node.
  */
 
-void Mesh::getEdgeConnectivity(std::string& pmode){
+void Mesh::getEdgeConnectivity(std::string& pmode, Eigen::ArrayXXi& edgeConnectivity, Eigen::ArrayXi& seNodes, int size){
 	if(lvl>=1){
 		std::cout << "Obtaining edge connectivity" << std::endl;
 	}
 
 
-	int size = N_se - N_periodic_vertices;
+//	int size = N_se - N_periodic_vertices;
 
 	// resizing the array containing the connectivity information
 	edgeConnectivity.resize(size,2);
@@ -649,7 +695,7 @@ void Mesh::getSurfConnectivity(){
 //	}
 
 	// resizing of the surface connectivity information array. In case of an hexahedral mesh each sliding surface node is involved in four surfaces.
-	surfConnectivity.resize(N_ss, 4);
+	surfConnectivity.resize(N_ss-N_pe, 4);
 
 	// col is the variable used to iterate through the columns of the external boundary nodes array.
 	// cnt keeps track of how many elements are found.
@@ -657,7 +703,7 @@ void Mesh::getSurfConnectivity(){
 	int col,cnt,idx;
 
 	// for-loop going through each sliding surface node.
-	for(int i=0; i<N_ss; i++){
+	for(int i=0; i<N_ss-N_pe; i++){
 		col = 1;	// First column contain information on the element type and is therefore skipped.
 		cnt = 0;	// set count to zero.
 
@@ -707,7 +753,7 @@ void Mesh::getVecs(){
 		// resizing of the normal and tangential vector arrays.
 		n.resize(edgeConnectivity.rows(), nDims); t.resize(edgeConnectivity.rows(), nDims);
 		// Calling function to obtain the tangential vectors along the line segments at the sliding boundary node.
-		getEdgeTan(t);
+		getEdgeTan(t, edgeConnectivity, seNodes);
 
 
 		// Finding normal of 2D problems.
@@ -721,23 +767,57 @@ void Mesh::getVecs(){
 		t_se.resize(N_se,nDims); n1_se.resize(N_se,nDims); n2_se.resize(N_se,nDims);
 
 		// calling function to obtain the tangential vectors along the boundary line segments at each sliding edge node.
-		getEdgeTan(t_se);
+		getEdgeTan(t_se, edgeConnectivity, seNodes);
 
 		// set the type of element to edge and obtaining 2 vectors perpendicular to the tangential vectors.
 		type = "edge";
 		getPerpVecs(t_se, n1_se,n2_se);
 
 		// resizing of the sliding surface normal and tangential vectors.
-		n_ss.resize(N_ss,nDims); t1_ss.resize(N_ss,nDims); t2_ss.resize(N_ss,nDims);
+		n_ss.resize(N_ss-N_pe,nDims); t1_ss.resize(N_ss-N_pe,nDims); t2_ss.resize(N_ss-N_pe,nDims);
 
 		// calling function to get the normal vectors of the surface sliding nodes.
 		getSurfNormal();
-
-
 		// set the type of element to surface and calling a function to obtain the two vector perpendicular to the normal vectors.
 		getPerpVecs(n_ss, t1_ss,t2_ss);
+
+
+		if(N_pe != 0){
+			getSurfNormalPeriodic();
+		}
+
+
 	}
 
+}
+
+void Mesh::getSurfNormalPeriodic(){
+	Eigen::ArrayXXd t(N_pe,nDims);
+	getEdgeTan(t, edgeConnectivityPeriodic, periodicEdgeNodes);
+
+	Eigen::ArrayXd periodicVec(nDims);
+	periodicVec << 0,1,0; //todo remove this hardcoded periodic vector
+
+	Eigen::ArrayXXd tp(N_pe,nDims), n(N_pe, nDims);
+	for(int i = 0; i < N_pe; i++ ){
+		tp.row(i) = periodicVec;
+		t.row(i) =   t.row(i) - periodicVec.transpose() * t.row(i);
+	}
+
+
+
+	for(int i =0; i < nDims; i++){
+		n.col(i) =  t.col((i+1)%3)*tp.col((i+2)%3) - t.col( (i+2)%3 )*tp.col((i+1)%3);
+	}
+
+
+	n_ss.conservativeResize(N_ss,nDims);
+	t1_ss.conservativeResize(N_ss,nDims);
+	t2_ss.conservativeResize(N_ss,nDims);
+	n_ss(Eigen::lastN(N_pe),Eigen::all) = n;
+
+	t1_ss(Eigen::lastN(N_pe), Eigen::all) = t;
+	t2_ss(Eigen::lastN(N_pe), Eigen::all) = tp;
 }
 
 /* getEdgeTan function
@@ -751,7 +831,7 @@ void Mesh::getVecs(){
  * 		since the length of the vector is twice the distance to the midpoint.)
  */
 
-void Mesh::getEdgeTan(Eigen::ArrayXXd& t){
+void Mesh::getEdgeTan(Eigen::ArrayXXd& t, Eigen::ArrayXXi& edgeConnectivity, Eigen::ArrayXi& seNodes){
 
 //	if(lvl>=2){
 //		std::cout << "Obtaining edge tangential vectors" << std::endl;
@@ -806,8 +886,7 @@ void Mesh::getSurfNormal(){
 	Eigen::ArrayXd dMidPnt(nDims);
 
 	// looping through all sliding surface nodes
-	for(int i = 0; i<N_ss; i++){
-//		std::cout << i << '\t' << N_ss << std::endl;
+	for(int i = 0; i<N_ss-N_pe; i++){
 		// initialise a zero normal vector
 		n = Eigen::VectorXd::Zero(nDims);
 

@@ -21,9 +21,7 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 	exactDisp = exactDisp/params.steps; // deformation per step is more usefull then the total deformation.
 
 	getPeriodicParams();
-
-
-
+	PhiPtr = &Phis;
 }
 
 
@@ -43,14 +41,52 @@ void rbfGenFunc::getPhis(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_sc, Eigen
 	//			getPhi(Phi_sm, *n.sePtr, *n.mPtr); 	FOR 2D
 }
 
-// direct getPhis
-void rbfGenFunc::getPhis(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_cs, Eigen::MatrixXd& Phi_sc,Eigen::MatrixXd&  Phi_ss, Eigen::MatrixXd& Phi_ic, Eigen::MatrixXd& Phi_is, getNodeType& n){
-	getPhi(Phi_cc, n.cPtr,n.cPtr);
-	getPhi(Phi_cs, n.cPtr, n.sPtr);
-	getPhi(Phi_sc, n.sPtr, n.cPtr);
-	getPhi(Phi_ss, n.sPtr, n.sPtr);
+// direct getPhis 2D
+void rbfGenFunc::getPhis(getNodeType& n){
+	if(m.nDims == 2){
+		getPhi(Phis.Phi_cc, n.cPtr,n.cPtr);
+		getPhi(Phis.Phi_cs, n.cPtr, n.sPtr);
+		getPhi(Phis.Phi_sc, n.sPtr, n.cPtr);
+		getPhi(Phis.Phi_ss, n.sPtr, n.sPtr);
+		getPhi(Phis.Phi_ic, n.iPtr, n.cPtr);
+		getPhi(Phis.Phi_is, n.iPtr, n.sPtr);
+	} else if (m.nDims == 3){
+		getPhi(Phis.Phi_cc ,n.cPtr,n.cPtr);
+		getPhi(Phis.Phi_ce, n.cPtr, n.sePtr);
+		getPhi(Phis.Phi_cs, n.cPtr, n.ssPtr);
+
+		getPhi(Phis.Phi_ec, n.sePtr, n.cPtr);
+		getPhi(Phis.Phi_ee, n.sePtr, n.sePtr);
+		getPhi(Phis.Phi_es, n.sePtr, n.ssPtr);
+
+		getPhi(Phis.Phi_sc, n.ssPtr, n.cPtr);
+		getPhi(Phis.Phi_se, n.ssPtr, n.sePtr);
+		getPhi(Phis.Phi_ss, n.ssPtr, n.ssPtr);
+
+		getPhi(Phis.Phi_ic, n.iPtr, n.cPtr);
+		getPhi(Phis.Phi_ie, n.iPtr, n.sePtr);
+		getPhi(Phis.Phi_is, n.iPtr, n.ssPtr);
+	}
+
+
+}
+
+void rbfGenFunc::getPhis(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ce, Eigen::MatrixXd& Phi_cs, Eigen::MatrixXd& Phi_ec, Eigen::MatrixXd& Phi_ee, Eigen::MatrixXd& Phi_es, Eigen::MatrixXd& Phi_sc, Eigen::MatrixXd& Phi_se, Eigen::MatrixXd& Phi_ss, Eigen::MatrixXd& Phi_ic, Eigen::MatrixXd& Phi_ie, Eigen::MatrixXd& Phi_is , getNodeType& n){
+	getPhi(Phi_cc ,n.cPtr,n.cPtr);
+	getPhi(Phi_ce, n.cPtr, n.sePtr);
+	getPhi(Phi_cs, n.cPtr, n.ssPtr);
+
+	getPhi(Phi_ec, n.sePtr, n.cPtr);
+	getPhi(Phi_ee, n.sePtr, n.sePtr);
+	getPhi(Phi_es, n.sePtr, n.ssPtr);
+
+	getPhi(Phi_sc, n.ssPtr, n.cPtr);
+	getPhi(Phi_se, n.ssPtr, n.sePtr);
+	getPhi(Phi_ss, n.ssPtr, n.ssPtr);
+
 	getPhi(Phi_ic, n.iPtr, n.cPtr);
-	getPhi(Phi_is, n.iPtr, n.sPtr);
+	getPhi(Phi_ie, n.iPtr, n.sePtr);
+	getPhi(Phi_is, n.iPtr, n.ssPtr);
 }
 
 
@@ -71,7 +107,7 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::Ar
 				if(params.pmode != "none"){
 					dist = 0;
 					for(int dim = 0; dim < m.nDims; dim++){
-						if(pVec(dim)){
+						if(periodicVec(dim)){
 
 							dist += pow(m.lambda/M_PI*sin( (m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim))*M_PI/m.lambda),2);
 
@@ -101,7 +137,7 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::Ar
 //					std::cout << m.coords.row((*idxSet2)(j)) << std::endl;
 					for(int dim = 0; dim < m.nDims; dim++){
 
-						if(pVec(dim)){
+						if(periodicVec(dim)){
 							dist += pow(m.lambda/M_PI*sin( (m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim))*M_PI/m.lambda),2);
 //							std::cout << "here: " << pow(m.lambda/M_PI*sin( (m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim))*M_PI/m.lambda),2) << std::endl;
 						}else{
@@ -214,21 +250,22 @@ void rbfGenFunc::readDisplacementFile(){
 
 
 void rbfGenFunc::getPeriodicParams(){
-	pVec.resize(m.nDims);
-	pnVec.resize(m.nDims);
+	periodicVec.resize(m.nDims);
+	periodicNormalVec1.resize(m.nDims);
+	periodicNormalVec2.resize(m.nDims);
 	if(m.nDims==2){
 		if(params.pmode != "none"){
 			if(params.pDir == "x"){
-				pVec << 1,0;
-				pnVec << 0,1;
+				periodicVec << 1,0;
+				periodicNormalVec1 << 0,1;
 			}
 			else if(params.pDir == "y"){
-				pVec << 0,1;
-				pnVec << 1,0;
+				periodicVec << 0,1;
+				periodicNormalVec1 << 1,0;
 			}
 		}
 		else{
-			pVec << 0,0;
+			periodicVec << 0,0;
 		}
 
 	// todo define the pnVecs for 3D.
@@ -236,11 +273,17 @@ void rbfGenFunc::getPeriodicParams(){
 	else if(m.nDims==3){
 		if(params.pmode != "none"){
 			if(params.pDir == "x"){
-				pVec << 1,0,0;
+				periodicVec << 1,0,0;
+				periodicNormalVec1 << 0,1,0;
+				periodicNormalVec2 << 0,0,1;
 			}else if(params.pDir == "y"){
-				pVec << 0,1,0;
+				periodicVec << 0,1,0;
+				periodicNormalVec1 << 1,0,0;
+				periodicNormalVec2 << 0,0,1;
 			}else if(params.pDir == "z"){
-				pVec << 0,0,1;
+				periodicVec << 0,0,1;
+				periodicNormalVec1 << 1,0,0;
+				periodicNormalVec2 << 0,1,0;
 			}
 		}
 	}
@@ -293,7 +336,8 @@ void rbfGenFunc::performRBF(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ic, Ei
 	}
 }
 
-void rbfGenFunc::updateNodes(Eigen::MatrixXd& Phi_icGrdy, getNodeType& n, Eigen::VectorXd& defVec, Eigen::ArrayXXd* d_step, Eigen::VectorXd* alpha_step, Eigen::ArrayXi* ctrlPtr){
+void rbfGenFunc::updateNodes(getNodeType& n, Eigen::VectorXd& defVec, Eigen::ArrayXXd* d_step, Eigen::VectorXd* alpha_step, Eigen::ArrayXi* ctrlPtr){
+	Eigen::MatrixXd Phi_icGrdy;
 
 	int N_m;
 	Eigen::ArrayXi* ptr;
@@ -319,8 +363,6 @@ void rbfGenFunc::updateNodes(Eigen::MatrixXd& Phi_icGrdy, getNodeType& n, Eigen:
 
 
 	getPhi(Phi_icGrdy,n.iPtrGrdy,ptr);
-
-
 
 
 	m.coords(*n.iPtr, Eigen::all) += *d_step;
