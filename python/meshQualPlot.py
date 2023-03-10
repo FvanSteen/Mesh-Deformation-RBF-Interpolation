@@ -19,7 +19,7 @@ def meshQualPlot(fileNames,fNameInit, graphNames,alphas_0):
     for i in range(0,len(fileNames)):
     #    ax = fig.add_subplot(1,len(fileNames),i+1)
         ax = fig.add_subplot(1,1,i+1)
-        [f,v,elemType,_] = getPlotData(fileNames[i])  
+        [f,v,elemType,_,_,_,_] = getPlotData(fileNames[i])  
         
         quadIdx = np.where(elemType == 9)
         if np.size(quadIdx) != 0:
@@ -45,14 +45,14 @@ def meshQualPlot(fileNames,fNameInit, graphNames,alphas_0):
         
     #    v[:,0] = -v[:,0]
         pc = matplotlib.collections.PolyCollection(v[f[0:startQuadIdx,0:3]],cmap='seismic', facecolors=colors1, edgecolor="black",linewidth=0.1)
-        pc2 = matplotlib.collections.PolyCollection(v[f[startQuadIdx:,:]],cmap=cmapMatlab,  facecolors=colors2, edgecolor="black",linewidth=0.1)
+        pc2 = matplotlib.collections.PolyCollection(v[f[startQuadIdx:,0:4]],cmap=cmapMatlab,  facecolors=colors2, edgecolor="black",linewidth=0.1)
     #    pc3 = matplotlib.collections.PolyCollection(v[f[4365:4366]],cmap=cmapMatlab, facecolors='red', edgecolor="black",linewidth=0.25)
         
         polys = ax.add_collection(pc)
         polys = ax.add_collection(pc2)
     #    polys = ax.add_collection(pc3)
-        if(fileNames[i][0:10] == '/mesh_NACA'): 
-            ax.scatter(v[200][0],v[200][1],color='red') 
+#        if(fileNames[i][0:10] == '/mesh_NACA'): 
+#            ax.scatter(v[200][0],v[200][1],color='red') 
         pc.set_array(None)
         ax.autoscale()
         ax.set_aspect('equal')

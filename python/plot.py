@@ -1,35 +1,35 @@
 import os
 from bdryScatter import bdryScatterFuns
 from meshQualPlot import meshQualPlot
-from funs import getMeshQualParams,getPlotData
+from funs import getMeshQualParams,getPlotData, getMeshQualParams3D, getMeshQuals3D
 import matplotlib.pyplot as plt
-
-#plt.close('all')
+import numpy as np
+plt.close('all')
 # Setting directory to find .su2 files
-os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\Meshes')
+os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes')
 
-#fNameInit = '/LS89_turbine.su2'
-#fNameInit = '/mesh_NACA0012_inv.su2'
-#fNameInit = '/25x25.su2'
-#fNameInit = '/turbine_row.su2'
-fNameInit = '/5x5x5.su2'
+fNameInit = '/25x25.su2'
+#fNameInit = '/gis_nthx001_mesh.su2'
+#fileNames = ['/25x25_def_none.su2','/25x25_def_periodic.su2','/25x25_def_fixed.su2','/25x25_def_moving.su2']
+fileNames = ['/25x25_def.su2']
+[f_init,v_init,elemType,bdryPnts_init,_,_,_] = getPlotData(fNameInit)
 
-[f_init,v_init,elemType,bdryPnts_init] = getPlotData(fNameInit)
+[alphas_0,_,_,_] = getMeshQualParams(f_init,v_init,elemType)
+
+
 
 #[f,v,elemType,_] = getPlotData('/25x25.su2')  
 #[f_init, v_init, elemType, bdryPnts_init] = getPlotData('/mesh_NACA0012_inv.su2')
 #[f_init,v_init,elemType,bdryPnts_init] = getPlotData('/turbine_row.su2')
 #[f,v,elemType] = getPlotData('/su2mesh.su2')
 #[f,v,elemType] = getPlotData('/mesh_original.su2')
-[alphas_0,_,_,_] = getMeshQualParams(f_init,v_init,elemType)
-
 
 
 
 
 # Provide filenames of the meshes
 #fileNames = ['/25x25_def_ps_none_noCorrect_DataRed_e1.su2','/25x25_def_ps_none_noCorrect_DataRed_e2.su2','/25x25_def_ps_none_noCorrect_DataRed_e3.su2','/25x25_def_ps_none_noCorrect_DataRed_e4.su2','/25x25_def_ps_none_correct_DataRed_e1.su2','/25x25_def_ps_none_correct_DataRed_e2.su2','/25x25_def_ps_none_correct_DataRed_e3.su2','/25x25_def_ps_none_correct_DataRed_e4.su2']
-#fileNames = ['/25x25_def.su2']
+#fileNames = ['/375x375_def.su2']
 #fileNames = ['/mesh_NACA0012_inv_def.su2']
 #fileNames = ['/LS89_turbine_def.su2']
 #fileNames= ['/25x25_def_ref.su2','/25x25_def_err1.su2','/25x25_def_err2.su2','/25x25_def_err3.su2','/25x25_def_err4.su2','/25x25_def_err5.su2']
@@ -37,16 +37,18 @@ fNameInit = '/5x5x5.su2'
 #fileNames = ['/su2mesh_def_ps_ref.su2']
 #fileNames = ['/mesh_original.su2']
 #fileNames = ['/turbine_row_def.su2']
-#fileNames = ['/25x25x25.su2']
 
+graphNames = ['','', '']
+#fileNames = ['/gis_nthx001_mesh_def.su2']
 #graphNames = ['non-periodic', 'periodic in y', 'periodic in y,\nmoving boundaries, fixed vertices', 'periodic in y,\nmoving boundaries, moving vertices']
 #graphNames = ['','Regular RBF', 'Greedy 1e-1', 'Greedy 1e-2', 'Greedy 1e-3', 'Greedy 1e-4', 'Greedy 1e-5']
-graphNames = ['','','','']
+#graphNames = ['standard','periodic', 'fixed', 'moving']
 
 
 #%% Mesh Quality plots
 #import numpy as np
-#meshQualPlot(fileNames,fNameInit,graphNames,alphas_0)
+
+meshQualPlot(fileNames,fNameInit,graphNames,alphas_0)
 
 #x = np.argwhere(np.isnan(meshQual))
 
@@ -58,35 +60,69 @@ graphNames = ['','','','']
 ### without the initial mesh ###
 #bdryScatterFuns.bdryScatter(fileNames[0])
 
-#bdryScatterFuns.bdryScatter3D(fileNames[0])
 
+
+#%%
+#import numpy as np
+[f_init,v_init,elemType,bdryPnts_init,markerTags, nElemsMarks, FFD_pnts] = getPlotData("/9x9x9_def.su2")
+plotTag= ["FRONT","BACK","LOWER","UPPER","LEFT","RIGHT", "BLOCK"]
+bdryScatterFuns.bdryScatter3D(v_init, bdryPnts_init, markerTags, nElemsMarks, plotTag, FFD_pnts)
+
+
+#%%
+#pnts = []
+#for i in range(np.shape(v_init)[0]): 
+#    if v_init[i,0] < 1.5 and v_init[i,0] > -0.5 and v_init[i,2] < 0.25 and v_init[i,2] > -0.25 and v_init[i,1] >= 0 and v_init[i,1] <1.3:
+#        pnts.append(i)
+#    
+#fig = plt.figure()
+#ax = fig.add_subplot(projection='3d')
+#ax.scatter(v_init[pnts,0],v_init[pnts,1],v_init[pnts,2])
+# 
+#ax.set_xlabel('x')
+#ax.set_ylabel('y')
+#ax.set_zlabel('z')
 #%%
 #from mpl_toolkits import mplot3d
 #
 #fig = plt.figure()
 #ax = plt.axes(projection="3d")
+
 #ax.scatte3D()
-fname = '/5x5x5_def.su2'
-bdryScatterFuns.bdryScatter3D(fname)
+#fname = '/25x25x5_def.su2'
+#bdryScatterFuns.bdryScatter3D(fname)
 #%%
 import numpy as np
 import math
 import matplotlib.collections
-fileNames = ['/5x5x5_def.su2']
+from colMap import colMap
+
+cmapMatlab = colMap()
+fileNames = ['/9x9x9_def.su2']
+
+[f_init,v_init,elemType,bdryPnts_init,_,_,_] = getPlotData('/9x9x9.su2')
+
+
+
 cutAxis = 2
 cutPlaneLoc = 0.5
 
 dims = [0,1,2]
 dims.remove(cutAxis)
-[f,v,elemType,_] = getPlotData(fileNames[0]) 
+[f,v,elemType,_, markerTags, nElemsMarks,FFD_pnts] = getPlotData(fileNames[0]) 
 
 idxCutElems = np.array([],dtype = 'int')
-
+bdryPnts_init_unique = np.unique(bdryPnts_init)
 for i in range(len(f)):
     if np.any(v[f][i][:,cutAxis] < cutPlaneLoc) and np.any(v[f][i][:,cutAxis] >= cutPlaneLoc):
+        if set(f[i]).issubset(bdryPnts_init_unique) == False:
+            idxCutElems = np.append(idxCutElems, i)
         
-        idxCutElems = np.append(idxCutElems, i)
-        
+
+[alphas_0,_,_,_] = getMeshQualParams3D(f_init[idxCutElems,:],v_init,elemType[idxCutElems])
+
+#[f,v,elemType,_,_,_,_] = getPlotData(fileNames[0])
+meshQual = getMeshQuals3D(f[idxCutElems],v,alphas_0,elemType[idxCutElems])
 
 v1 = [0,1,2,3,0,1,2,3,4,5,6,7]
 v2 = [1,2,3,0,4,5,6,7,5,6,7,4]
@@ -105,27 +141,75 @@ for i in range(len(idxCutElems)):
             cutLoc[cnt,:] = edges[ii][0,dims] + delta[dims]*((cutPlaneLoc-edges[ii][0,cutAxis])/delta[cutAxis])
             cnt = cnt+1
 
-    midpoint = np.sum(cutLoc,axis=0)/np.size(cutLoc,axis=0)
+    midpoint = np.sum(cutLoc[0:cnt,:],axis=0)/cnt
+
     angles = np.empty(cnt,dtype=float)
     for ii in range(cnt):
-#        print(ii) 
         angles[ii] = math.atan2(cutLoc[ii,1]-midpoint[1],cutLoc[ii,0]-midpoint[0])*180/np.pi
-     
+
     cutLoc[0:cnt,:] = cutLoc[0:cnt,:][angles.argsort()]
-    
+
     v_cut[i][0:cnt,:] = cutLoc[0:cnt,:]
 #    print(cutLoc[0:cnt,:])
 
-#    plt.scatter(cutLoc[0:cnt,0],cutLoc[0:cnt,1], color= "blue")
+#    plt.scatter(cutLoc[0:cnt,0],cutLoc[0:cnt,1], color= "blue") 
             
 #    for ii in range(len(v1)):
             
 #        print(v[f][idxCutElems[i]][v1,cutAxis], v[f][idxCutElems[i]][v2,cutAxis])
         
-
+colors = cmapMatlab(plt.Normalize(0,1)(meshQual))
 fig = plt.figure()  
-pc = matplotlib.collections.PolyCollection(v_cut,cmap='seismic', facecolors='blue', edgecolor="black",linewidth=0.5)
+pc = matplotlib.collections.PolyCollection(v_cut,cmap=cmapMatlab, facecolors=colors, edgecolor="black",linewidth=0.1)
 ax = fig.add_subplot(1,1,1)
 
 polys = ax.add_collection(pc)
+pc.set_array(None)
+ax.autoscale()  
+ax.set_aspect('equal')
+polys.set_clim(0,1)
+plt.colorbar(polys, ax=ax, shrink=1.0/(np.size(graphNames)-1))
+plt.show()
+#%%
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+cutElems = v[f[idxCutElems]]
+for i in range(len(cutElems)):
+    ax.scatter(cutElems[i][:,0],cutElems[i][:,1],cutElems[i][:,2],marker = "1", color='blue')
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('z')
+ax.set_zlim(0,1)
+#plotTag = ["BLOCK", "LOWER","UPPER","FRONT","BACK","LEFT","RIGHT"]
+#bdryScatterFuns.bdryScatter3D(v, bdryPnts_init, markerTags, nElemsMarks, plotTag, FFD_pnts)
+
+
+#%%
+#import os 
+#import numpy as np
+#os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\Classical RBF\\defs')
+#x = os.getcwd()
+#o = open(x + "\\gis_nthx001_mesh_deformation.txt", "w")
+#i_base = open(x + "\\MoveSurface_baseline.txt", "r") 
+#i_def = open(x + "\\MoveSurface_deformed.txt", "r") 
+#
+#lines_base = i_base.read().splitlines()
+#lines_def = i_def.read().splitlines()
+#
+#delta = np.empty((len(lines_base), 2), dtype = float)
+#index = np.empty((len(lines_base),1), dtype = int)
+#for i in range(0,len(lines_base)):
+#    i_split_base = lines_base[i].split()
+#    i_split_def = lines_def[i].split()
+#    delta[i,0] = float(i_split_def[1]) - float(i_split_base[1])
+#    delta[i,1] = float(i_split_def[2]) - float(i_split_base[2])
+#    index[i] = int(i_split_def[0])
+##    print(i_split_base)
+##    delta[i,0] = i_split[]
+##    print(i.split()[0])
+#
+#
+#for idx, c1,c2 in zip(index[:,0],delta[:,0],delta[:,1]):
+#    o.write("{0}\t{1}\t{2}".format(idx, c1,c2) + "\n")
+#o.close()
 
