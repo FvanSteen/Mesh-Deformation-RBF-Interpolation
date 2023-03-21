@@ -12,15 +12,16 @@ public:
 	Mesh(probParams& params, const int& debugLvl);
 
 	int nNodes, nDims;
+
 	Eigen::ArrayXXd coords;
 
-	Eigen::ArrayXXd midPnts, edgeMidPnts;
+	Eigen::ArrayXXd surfMidPnts, edgeMidPnts;
 
 	Eigen::ArrayXXd n, t;
 	Eigen::ArrayXXd t_se, n1_se, n2_se, n_ss,t1_ss,t2_ss;
 
 
-	Eigen::ArrayXXd midPntNormals, edgeMidPntNormals1,edgeMidPntNormals2;
+	Eigen::ArrayXXd surfMidPntNormals, edgeMidPntNormals1,edgeMidPntNormals2;
 	Eigen::ArrayXi mNodes,seNodes,iNodes, ssNodes;
 
 	Eigen::ArrayXi intCorNodes;

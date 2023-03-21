@@ -71,23 +71,23 @@ void rbfGenFunc::getPhis(getNodeType& n){
 
 }
 
-void rbfGenFunc::getPhis(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ce, Eigen::MatrixXd& Phi_cs, Eigen::MatrixXd& Phi_ec, Eigen::MatrixXd& Phi_ee, Eigen::MatrixXd& Phi_es, Eigen::MatrixXd& Phi_sc, Eigen::MatrixXd& Phi_se, Eigen::MatrixXd& Phi_ss, Eigen::MatrixXd& Phi_ic, Eigen::MatrixXd& Phi_ie, Eigen::MatrixXd& Phi_is , getNodeType& n){
-	getPhi(Phi_cc ,n.cPtr,n.cPtr);
-	getPhi(Phi_ce, n.cPtr, n.sePtr);
-	getPhi(Phi_cs, n.cPtr, n.ssPtr);
-
-	getPhi(Phi_ec, n.sePtr, n.cPtr);
-	getPhi(Phi_ee, n.sePtr, n.sePtr);
-	getPhi(Phi_es, n.sePtr, n.ssPtr);
-
-	getPhi(Phi_sc, n.ssPtr, n.cPtr);
-	getPhi(Phi_se, n.ssPtr, n.sePtr);
-	getPhi(Phi_ss, n.ssPtr, n.ssPtr);
-
-	getPhi(Phi_ic, n.iPtr, n.cPtr);
-	getPhi(Phi_ie, n.iPtr, n.sePtr);
-	getPhi(Phi_is, n.iPtr, n.ssPtr);
-}
+//void rbfGenFunc::getPhis(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ce, Eigen::MatrixXd& Phi_cs, Eigen::MatrixXd& Phi_ec, Eigen::MatrixXd& Phi_ee, Eigen::MatrixXd& Phi_es, Eigen::MatrixXd& Phi_sc, Eigen::MatrixXd& Phi_se, Eigen::MatrixXd& Phi_ss, Eigen::MatrixXd& Phi_ic, Eigen::MatrixXd& Phi_ie, Eigen::MatrixXd& Phi_is , getNodeType& n){
+//	getPhi(Phi_cc ,n.cPtr,n.cPtr);
+//	getPhi(Phi_ce, n.cPtr, n.sePtr);
+//	getPhi(Phi_cs, n.cPtr, n.ssPtr);
+//
+//	getPhi(Phi_ec, n.sePtr, n.cPtr);
+//	getPhi(Phi_ee, n.sePtr, n.sePtr);
+//	getPhi(Phi_es, n.sePtr, n.ssPtr);
+//
+//	getPhi(Phi_sc, n.ssPtr, n.cPtr);
+//	getPhi(Phi_se, n.ssPtr, n.sePtr);
+//	getPhi(Phi_ss, n.ssPtr, n.ssPtr);
+//
+//	getPhi(Phi_ic, n.iPtr, n.cPtr);
+//	getPhi(Phi_ie, n.iPtr, n.sePtr);
+//	getPhi(Phi_is, n.iPtr, n.ssPtr);
+//}
 
 
 
@@ -221,7 +221,6 @@ void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec_b, Eigen::VectorXd& defVec, g
 		defVec_b(Eigen::seqN(dim*n.N_b,n.N_c)) = defVec(Eigen::seqN(dim*n.N_c,n.N_c));
 		defVec_b(Eigen::seqN(dim*n.N_b+n.N_c,n.N_s)) = finalDef.col(dim);
 	}
-
 }
 
 void rbfGenFunc::readDisplacementFile(){

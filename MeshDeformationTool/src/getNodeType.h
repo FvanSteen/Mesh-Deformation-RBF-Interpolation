@@ -28,6 +28,7 @@ public:
 	void addControlNode(int node, std::string& smode, Mesh& m);
 
 	void assignNodeTypesGrdy(Mesh& m);
+	void assignNodeTypesGrdy(Mesh& m, std::string& smode);
 private:
 	Eigen::ArrayXi iNodes, bNodes, cNodes, mNodes, seNodes,mNodesStd,ibNodes,esNodes, sNodes,ssNodes;
 
