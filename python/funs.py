@@ -18,13 +18,8 @@ def getMeshQuals(faces,vertices, alphas_0, elemType):
     f_skew = np.empty(np.size(elemType))
     f_skew[0:startQuadIdx] = -np.sqrt(3)*alphas[0:startQuadIdx,0]/(lambda_11[0:startQuadIdx,0]+lambda_22[0:startQuadIdx,0]-lambda_12[0:startQuadIdx,0])
     f_skew[startQuadIdx:] = np.abs(4/np.sum(np.sqrt(lambda_11[startQuadIdx:]*lambda_22[startQuadIdx:])/alphas[startQuadIdx:], axis=1))
-#    if elementType == 5:
-#        f_skew = np.sqrt(3)*alphas[:,0]/(lambda_11[:,0]+lambda_22[:,0]-lambda_12[:,0])
-#        
-#    elif elementType == 9:
-#        f_skew = 4/np.sum(np.sqrt(lambda_11*lambda_22)/alphas, axis=1)
-    f_ss = np.sqrt(f_size)*f_skew
     
+    f_ss = np.sqrt(f_size)*f_skew    
     return f_ss
 
 def getMeshQuals3D(faces,vertices, alphas_0, elemType):
@@ -112,8 +107,8 @@ def getMeshQualParams3D(faces,vertices,elemType):
 
 
 def getPlotData(fileName):
-    x = os.getcwd()
-    fileObj = open(x+fileName, "r") 
+
+    fileObj = open(fileName) 
     lines = fileObj.read().splitlines()
 
     fileObj.close()
@@ -128,7 +123,7 @@ def getPlotData(fileName):
         
         if line.strip().startswith('NDIME='):
             nDim = int(line[7:].split()[0])
-            nDimIdx = idx
+#            nDimIdx = idx
         elif line.strip().startswith('NELEM='):
             nElem = int(line[7:].split()[0])
             nElemIdx = idx
@@ -145,30 +140,9 @@ def getPlotData(fileName):
             nFFDCtrlPnts = int(line[19:].split()[0])
             FFDCtrlPntsIdx = idx+1
             
-            
-#        elif line.strip().startswith('MARKER_TAG= '+intBdryTag):
-#            intBdryIdx = idx+1
-        
+
         idx += 1
     print("Dimensions:\t", nDim, "\nElements:\t",nElem, "\nPoints:\t\t", nPnt)
-#    print(nDimIdx,nElemIdx,nPntIdx)
-    
-#    nLine = lines[intBdryIdx]
-#    nInElems = int(nLine[14:])
-#    f_in = np.empty([1,2*nInElems],dtype=int)
-#    
-#    for i in range(nInElems):
-#        lineData = lines[intBdryIdx+1+i].strip().split('\t')    
-#        f_in[0,2*i:2*i+2] = lineData[1:3]
-    
-    # Change the 3 and 4 here to be adjustable to the type of elements used in the mesh
-    
-#    if elementType == 5:
-#        nNodesElem = 3
-#    elif elementType == 9:
-#        nNodesElem = 4
-#    elif elementType == 12:
-#        nNodesElem = 8
     
     nNodesElem = 8
     
@@ -201,22 +175,18 @@ def getPlotData(fileName):
             elemType[i] = 10
             if maxNodesElem < 4:
                 maxNodesElem = 4
-#        f[i,:] = lineData[1:nNodesElem+1]
-#        print(f[i,:])
+
     
    
     f = np.delete(f, np.s_[maxNodesElem:nNodesElem], axis=1)  
    
-    
-        
-    
+
     v = np.empty((nPnt,nDim))
     for i in range(nPnt):
         lineData = lines[i+nPntIdx+1].strip().split()
         v[i,:] = lineData[:nDim]
 
     bdryType = int(lines[nMarkIndices[0]+1].strip().split()[0])
-    print(bdryType)
     if bdryType == 5:
         cols = 3
     elif bdryType == 9:
@@ -225,16 +195,12 @@ def getPlotData(fileName):
         cols = 2
         
     bdry = np.empty((np.sum(nElemsMarks),cols), dtype = int)
-    for ii in range(len(nMarkIndices)):        
-        for j in range(nElemsMarks[ii]):
-#            # first strip and then append
-            
-            lineData = lines[nMarkIndices[ii]+j+1].strip().split()
-            
-            bdry[int(np.sum(nElemsMarks[0:ii])+j),:] = np.array(lineData[1:], dtype = int)        
-    
-#    bdry = np.unique(bdry)
-    
+    for ii in range(len(nMarkIndices)):       
+        if markerTags[ii] != "SEND_RECEIVE":
+            for j in range(nElemsMarks[ii]):            
+                lineData = lines[nMarkIndices[ii]+j+1].strip().split()
+                bdry[int(np.sum(nElemsMarks[0:ii])+j),:] = np.array(lineData[1:], dtype = int)        
+   
     
     if FFDCtrlPntsIdx != -1:
         FFD_pnts = np.empty((nFFDCtrlPnts,nDim),dtype = float)
