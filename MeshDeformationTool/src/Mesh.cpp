@@ -7,6 +7,7 @@
 #include <math.h>
 #include <chrono>
 #include <Eigen/Dense>
+#include "SPDS.h"
 
 
 
@@ -19,6 +20,7 @@ std::cout << "RADIUS: " << r << std::endl;
 }
 
 // Main function for reading the .su2 mesh files
+
 void Mesh::readMeshFile(probParams& params){
 	if(lvl>=1){
 		std::cout << "Reading mesh file: " << params.mesh_ifName << std::endl;
@@ -177,7 +179,7 @@ void Mesh::readMeshFile(probParams& params){
 	getIntNodes();
 //	std::cout << "internal Nodes: \n" << iNodes << std::endl;
 
-	if(nDims == 3 && params.smode == "ds" && (params.pmode == "fixed" || params.pmode == "moving")){
+	if(nDims == 3 && (params.smode == "ds" || params.smode == "ps") && (params.pmode == "fixed" || params.pmode == "moving")){
 		// adding the periodic edge nodes to the sliding surface nodes
 		N_ss += N_pe;
 		ssNodes.conservativeResize(N_ss);
@@ -214,6 +216,14 @@ void Mesh::readMeshFile(probParams& params){
 	if(params.pmode != "none"){
 		getCharPerLength(params.pDir);
 	}
+
+//	if(params.dataRed){
+//		std::cout << mNodes << std::endl;
+//		std::cout << "HERE" << std::endl;
+//		std::exit(0);
+//	}
+
+
 
 //todo next part should be replaced by a kd tree implementation
 //	if(params.dataRed){
@@ -1042,7 +1052,9 @@ void Mesh::getExtBdryEdgeSegments(){
  */
 
 void Mesh::getMidPnts(probParams& params){
-	int nrElems = 0;
+
+	int nrElems = 0, size = 0;
+
 	Eigen::ArrayXi sTag(nrElemsBdry.size());
 	for (int i = 0; i<nrElemsBdry.size();i++){
 		if(std::find(std::begin(params.mTags),std::end(params.mTags),srtdTags[i]) == std::end(params.mTags) && (std::find(std::begin(params.pTags),std::end(params.pTags),srtdTags[i]) == std::end(params.pTags) || params.pmode == "none" || params.pmode == "periodic")){
@@ -1052,11 +1064,19 @@ void Mesh::getMidPnts(probParams& params){
 			sTag(i) = 0;
 		}
 	}
-//	std::cout << nrElems << std::endl;
-//	std::cout << sTag << std::endl;
 
-	midPnts.resize(nrElems,nDims);
-	midPntNormals.resize(nrElems,nDims);
+	if(nDims == 2){
+		edgeMidPnts.resize(nrElems,nDims);
+		edgeMidPntNormals1.resize(nrElems,nDims);
+	}else if (nDims==3){
+		surfMidPnts.resize(nrElems,nDims);
+		surfMidPntNormals.resize(nrElems,nDims);
+
+		size = extBdryEdgeSegments.rows();
+		edgeMidPnts.resize(size,nDims);
+		edgeMidPntNormals1.resize(size,nDims);
+		edgeMidPntNormals2.resize(size,nDims);
+	}
 
 
 	int startIdx = 0;
@@ -1067,25 +1087,21 @@ void Mesh::getMidPnts(probParams& params){
 			startIdx += nrElemsBdry(i);
 		}
 	}
-
 //	std::cout << indices << std::endl;
 	Eigen::VectorXd tan(nDims);
 
 	if(nDims == 2){
 		for(int i = 0; i < nrElems; i++){
-			midPnts.row(i) = (coords.row(bdryNodesMat(indices(i),1)) + coords.row(bdryNodesMat(indices(i),2)))/2;
+			edgeMidPnts.row(i) = (coords.row(bdryNodesMat(indices(i),1)) + coords.row(bdryNodesMat(indices(i),2)))/2;
 
 			tan = coords.row(bdryNodesMat(indices(i),2)) - coords.row(bdryNodesMat(indices(i),1));
 
-			midPntNormals.row(i) << tan(1),-tan(0);
+			edgeMidPntNormals1.row(i) << tan(1),-tan(0);
 
-			midPntNormals.row(i) = midPntNormals.row(i)/tan.norm();
+			edgeMidPntNormals1.row(i) = edgeMidPntNormals1.row(i)/tan.norm();
 		}
 	}else{
-		int size = extBdryEdgeSegments.rows();
-		edgeMidPnts.resize(size,nDims);
-		edgeMidPntNormals1.resize(size,nDims);
-		edgeMidPntNormals2.resize(size,nDims);
+
 		Eigen::ArrayXXd midPntTan(size,nDims);
 		for(int i = 0 ; i < size; i++ ){
 			edgeMidPnts.row(i) = (coords.row(extBdryEdgeSegments(i,0)) + coords.row(extBdryEdgeSegments(i,1)))/2;
@@ -1094,12 +1110,12 @@ void Mesh::getMidPnts(probParams& params){
 
 		getPerpVecs(midPntTan,edgeMidPntNormals1,edgeMidPntNormals2);
 
-
 		Eigen::VectorXd n(nDims), vec1(nDims), vec2(nDims);
 
 		for(int i = 0; i < nrElems; i++){
+
 			n = Eigen::VectorXd::Zero(nDims);
-			midPnts.row(i) = (coords.row(bdryNodesMat(indices(i),1)) + coords.row(bdryNodesMat(indices(i),2)) + coords.row(bdryNodesMat(indices(i),3))+ coords.row(bdryNodesMat(indices(i),4)))/4;
+			surfMidPnts.row(i) = (coords.row(bdryNodesMat(indices(i),1)) + coords.row(bdryNodesMat(indices(i),2)) + coords.row(bdryNodesMat(indices(i),3))+ coords.row(bdryNodesMat(indices(i),4)))/4;
 			vec1 = coords.row(bdryNodesMat(indices(i),2)) - coords.row(bdryNodesMat(indices(i),1));
 			vec2 = coords.row(bdryNodesMat(indices(i),4)) - coords.row(bdryNodesMat(indices(i),1));
 //			std::cout << vec1 << std::endl;
@@ -1108,7 +1124,7 @@ void Mesh::getMidPnts(probParams& params){
 				n(k) += (vec1((k+1)%3)*vec2((k+2)%3) - vec1((k+2)%3)*vec2((k+1)%3));
 			}
 //			std::cout << n << std::endl;
-			midPntNormals.row(i) = n/n.norm();
+			surfMidPntNormals.row(i) = n/n.norm();
 
 		}
 	}

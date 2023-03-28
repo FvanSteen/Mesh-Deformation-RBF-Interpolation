@@ -44,6 +44,8 @@ void rbf_ds::perform_rbf(getNodeType& n){
 			m.getVecs();
 			m.getMidPnts(params);
 		}
+
+
 		if(params.pmode == "moving"){
 			if(m.nDims == 2){
 				m.n.conservativeResize(m.N_se,m.nDims);
@@ -89,12 +91,14 @@ void rbf_ds::perform_rbf(getNodeType& n){
 				performRBF(PhiPtr->Phi_bb, PhiPtr->Phi_ib, defVec, n.bPtr, n.iPtr, n.N_b);
 			}else{
 				getPhiDS(Phi, PhiPtr ,n);
+
 				performRBF_DS(n, Phi, PhiPtr, defVec, defVec_b, p);
+
 			}
 
 
 			if(params.dataRed){
-				go.getError(m,n, d,maxError,maxErrorNodes,movingIndices, exactDisp,periodicNormalVec1,p, params.multiLvl, lvl, params.doubleEdge);
+				go.getError(m,n, d,maxError,maxErrorNodes,movingIndices, exactDisp,periodicVec,p, params.multiLvl, lvl, params.doubleEdge);
 				std::cout << "error: \t"<< maxError <<" at node: \t" << maxErrorNodes(0)<< std::endl;
 				if(maxError < params.tol){
 					iterating = false;

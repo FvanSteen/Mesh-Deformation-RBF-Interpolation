@@ -4,6 +4,7 @@
 #include <iostream>
 #include "greedy.h"
 #include "WriteResults.h"
+#include <ctime>
 //rbf_std::rbf_std(Mesh& meshObject, Eigen::VectorXd& dVec, Eigen::RowVectorXd& rotPnt, Eigen::VectorXd& rotVec, const int& steps, const std::string& smode, const bool& curved, const std::string& pDir)
 rbf_std::rbf_std(struct probParams& probParamsObject, Mesh& meshObject, getNodeType& n)
 :rbfGenFunc(meshObject, probParamsObject)
@@ -91,7 +92,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 
 			if(params.dataRed){
-				go.getError(m,n,d,maxError,maxErrorNodes, movingIndices, exactDisp,periodicNormalVec1,p, params.multiLvl, lvl, params.doubleEdge);
+				go.getError(m,n,d,maxError,maxErrorNodes, movingIndices, exactDisp,periodicVec,p, params.multiLvl, lvl, params.doubleEdge);
 				std::cout << "error: \t"<< maxError <<" at node: \t" << maxErrorNodes(0)<< std::endl;
 
 
@@ -195,8 +196,17 @@ void rbf_std::perform_rbf(getNodeType& n){
 //			}
 
 
+//			std::clock_t start = std::clock();
 			updateNodes(n,defVec, go.d_step, go.alpha_step, go.ctrlPtr);
 			go.correction(m,n,params.gamma, params.multiLvl);
+			// to do test the difference in the correction
+
+//			std::clock_t end = std::clock();
+//			long double time_elapsed_ms = 1000.0 * (end-start) / CLOCKS_PER_SEC;
+//			std::cout << "CPU time used: " << time_elapsed_ms << " ms\n";
+//			std::exit(0);
+
+
 		}
 
 	}

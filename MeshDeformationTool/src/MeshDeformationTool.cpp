@@ -8,11 +8,25 @@
 #include <Eigen/Dense>
 #include <vector>
 
-using namespace std;
+#include "SPDS.h"
+#include "nanoflann.hpp"
+#include <cstdlib>
+#include <ctime>
+#include <iostream>
 
+using namespace std;
 
 int main()
 {
+
+//	SPDS ds;
+//	ds.kdtree<double>(5,2);
+
+
+//	std::cout << "DONE ALL" << std::endl;
+//	std::exit(0);
+
+
 	// config file containing all information required to perform the mesh deformation
 	std::string configFile = "config_file.txt";
 
@@ -31,7 +45,8 @@ int main()
 	// initialising class object m, reads mesh input file in constructor.
 	Mesh meshOb(probParams, debugLvl);
 
-// todo ds with moving does not run with greedy
+
+
 
 	getNodeType n(probParams, meshOb);
 

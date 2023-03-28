@@ -5,7 +5,11 @@
 getNodeType::getNodeType(probParams& params, Mesh& m)
 {
 	if(params.dataRed){
+//		if(params.smode == "ps" && m.nDims ==3){
+//			assignNodeTypesGrdy(m, params.smode);
+//		}else{
 		assignNodeTypesGrdy(m);
+//		}
 	}else{
 		assignNodeTypes(m);
 	}
@@ -39,6 +43,8 @@ void getNodeType::assignNodeTypes(Mesh& m){
 
 
 void getNodeType::assignNodeTypesGrdy(Mesh& m){
+
+
 	N_i = m.N_m + m.N_se + m.N_ss;
 	iNodes.resize(N_i);
 	iNodes << m.mNodes, m.seNodes, m.ssNodes;
@@ -73,6 +79,42 @@ void getNodeType::assignNodeTypesGrdy(Mesh& m){
 	sPtr = &sNodes;
 }
 
+
+//void getNodeType::assignNodeTypesGrdy(Mesh& m, std::string& smode){
+//
+//	N_i = m.N_m + m.N_se;
+//	iNodes.resize(N_i);
+//	iNodes << m.mNodes, m.seNodes;
+//
+//	iPtr = &iNodes;
+//
+//	iNodesIdx = Eigen::ArrayXi::LinSpaced(N_i, 0, N_i-1);
+//	cNodesIdx.resize(0);
+//
+//	N_c = 0;
+//	cNodes.resize(N_c);
+//	cPtr = &cNodes;
+//
+//	N_se = 0;
+//	seNodes.resize(N_se);
+//	sePtr = &seNodes;
+//
+//	N_ss = 0;
+//	ssNodes.resize(N_ss);
+//	ssPtr = &ssNodes;
+//
+//
+//	iPtrGrdy = &m.iNodes;
+//	N_iGrdy = m.N_i;
+//
+//	N_b = 0;
+//	bNodes.resize(N_b);
+//	bPtr = &bNodes;
+//
+//	N_s = 0;
+//	sNodes.resize(N_s);
+//	sPtr = &sNodes;
+//}
 
 void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 
