@@ -80,53 +80,15 @@ void getNodeType::assignNodeTypesGrdy(Mesh& m){
 }
 
 
-//void getNodeType::assignNodeTypesGrdy(Mesh& m, std::string& smode){
-//
-//	N_i = m.N_m + m.N_se;
-//	iNodes.resize(N_i);
-//	iNodes << m.mNodes, m.seNodes;
-//
-//	iPtr = &iNodes;
-//
-//	iNodesIdx = Eigen::ArrayXi::LinSpaced(N_i, 0, N_i-1);
-//	cNodesIdx.resize(0);
-//
-//	N_c = 0;
-//	cNodes.resize(N_c);
-//	cPtr = &cNodes;
-//
-//	N_se = 0;
-//	seNodes.resize(N_se);
-//	sePtr = &seNodes;
-//
-//	N_ss = 0;
-//	ssNodes.resize(N_ss);
-//	ssPtr = &ssNodes;
-//
-//
-//	iPtrGrdy = &m.iNodes;
-//	N_iGrdy = m.N_i;
-//
-//	N_b = 0;
-//	bNodes.resize(N_b);
-//	bPtr = &bNodes;
-//
-//	N_s = 0;
-//	sNodes.resize(N_s);
-//	sPtr = &sNodes;
-//}
 
 void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
-
+	// check if the node is a moving node with known displacement
 	if (std::find(std::begin(m.mNodes),std::end(m.mNodes),node) != std::end(m.mNodes)){
 		N_c++;
 		cNodes.conservativeResize(N_c);
 		cNodes(N_c-1) = node;
-
-
-
+	// check if the node is among the sliding edge nodes
 	}else if(std::find(std::begin(m.seNodes),std::end(m.seNodes),node) != std::end(m.seNodes)){
-
 		N_se++;
 		seNodes.conservativeResize(N_se);
 		seNodes(N_se-1) = node;
@@ -134,6 +96,7 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 		N_s++;
 		sNodes.resize(N_s);
 		sNodes << seNodes, ssNodes;
+	// check is the node is a silding surface node
 	}else if(std::find(std::begin(m.ssNodes), std::end(m.ssNodes),node) != std::end(m.ssNodes)){
 
 		N_ss++;
@@ -152,10 +115,10 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 		N_b++;
 		bNodes.resize(N_b);
 		bNodes << cNodes, seNodes, ssNodes;
-
 	}
 
-	// reducing the iNodes array:
+
+	// removing the node from the iNodes array
 	int idx;
 	idx = std::distance(std::begin(iNodes), std::find(std::begin(iNodes), std::end(iNodes),node));
 
@@ -163,12 +126,8 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 	iNodes(Eigen::seqN(0,N_i)) << iNodes(Eigen::seqN(0,idx)), iNodes(Eigen::seq(idx+1,N_i));
 	iNodes.conservativeResize(N_i);
 
-
+	// cNodesIdx contains the order of the control node set (ordered as moving nodes, sliding edge nodes, sliding surf nodes)
 	cNodesIdx.conservativeResize(N_c+N_s);
-
-
-
-	//todo likely a bug when a sliding edge node is identified as moving node.
 
 	if(idx <= (m.N_m-N_c)){
 		cNodesIdx(Eigen::seqN(N_c,N_s)) = cNodesIdx(Eigen::seqN(N_c-1,N_s)).eval();
@@ -180,6 +139,7 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 		cNodesIdx(N_c+N_se+N_ss-1) = iNodesIdx(idx);
 	}
 
+	// remaining indices of the unselected boundary nodes
 	iNodesIdx(Eigen::seqN(0,N_i)) << iNodesIdx(Eigen::seqN(0,idx)), iNodesIdx(Eigen::seq(idx+1,N_i));
 	iNodesIdx.conservativeResize(N_i);
 
@@ -188,140 +148,3 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 
 
 
-
-//void getNodeType::greedyNodes(int node,std::string smode){
-////	std::cout << "in the greedyNodes function" << std::endl;
-////	std::cout << "Node added to greedy control nodes: \t" << node << std::endl;
-////	std::distance(std::begin(extBdryNodesMat.col(col)), std::find( std::begin(extBdryNodesMat.col(col)), std::end(extBdryNodesMat.col(col)), slidingSurfNodes(i)));
-//	auto iterI = std::find(std::begin(m.intBdryNodes),std::end(m.intBdryNodes),node);
-//	auto iterS = std::find(std::begin(m.slidingEdgeNodes),std::end(m.slidingEdgeNodes),node);
-//	auto iterES = std::find(std::begin(m.extStaticNodes),std::end(m.extStaticNodes),node);
-//	int idx;
-//	if( iterI != std::end(m.intBdryNodes)){
-//		// in case the added node is an internal boundary node
-////		std::cout << "yes int bdry" << std::endl;
-//
-//		// update the included internal boundary nodes
-//		N_ib++;
-//		ibNodes.conservativeResize(N_ib);
-//		ibNodes(N_ib-1) = node;
-//
-//
-//		// find index of the node in the iNodes array
-//		idx = std::distance(std::begin(iNodes),std::find(std::begin(iNodes),std::end(iNodes),node));
-//
-//		// shifting the nodes to remove the node from iNodes
-//		for(int i = idx; i<N_i-1;i++ ){
-//			iNodes(i) = iNodes(i+1);
-//		}
-//
-//		// updating size of the iNodes array
-//		N_i -= 1;
-//		iNodes.conservativeResize(N_i);
-////		std::cout << iNodes << std::endl;
-//
-//		// updating the moving nodes array
-//		N_m++;
-//		mNodes.resize(N_m);
-//		if(smode == "none"){
-//			mNodes << ibNodes, esNodes, sNodes;
-//		}else{
-//			mNodes << ibNodes, esNodes;
-//		}
-//
-//		// updating the nodes that are used in the std rbf interpolation
-//		N_mStd++;
-//		mNodesStd.resize(N_mStd);
-//		mNodesStd << ibNodes, esNodes, sNodes;
-//
-//	}else if( iterS != std::end(m.slidingEdgeNodes)){
-////		std::cout << "yes slide" << std::endl;
-//
-//		N_s++;
-//		sNodes.conservativeResize(N_s);
-//		sNodes(N_s-1) = node;
-//
-//		idx = std::distance(std::begin(iNodes),std::find(std::begin(iNodes),std::end(iNodes),node));
-//		// shifting the nodes to remove the node from iNodes
-//		for(int i = idx; i<N_i-1;i++ ){
-//			iNodes(i) = iNodes(i+1);
-//		}
-//		// updating size of the iNodes array
-//		N_i -= 1;
-//		iNodes.conservativeResize(N_i);
-//
-//		// updating the moving nodes array
-//		if(smode == "none"){
-//
-//			N_m++;
-//			mNodes.resize(N_m);
-//			mNodes << ibNodes,esNodes, sNodes;
-//		}
-////		N_m++;
-////		mNodes.resize(N_m);
-////		mNodes << ibNodes, esNodes;
-//
-//		// updating the nodes that are used in the std rbf interpolation
-//		//todo this part might not be used in case of standard rbf.
-//
-//		N_mStd++;
-//		mNodesStd.resize(N_mStd);
-//		mNodesStd << ibNodes, esNodes, sNodes;
-//
-////		std::cout << iNodes << std::endl;
-////		std::cout << std::endl;
-////		std::cout << sNodes << std::endl;
-////		std::cout << std::endl;
-////		std::cout << mNodes << std::endl;
-////		std::cout << std::endl;
-////		std::cout << mNodesStd << std::endl;
-//
-//	}else if( iterES != std::end(m.extStaticNodes)){
-//		// in case the added node is an internal boundary node
-////		std::cout << "yes ext stat" << std::endl;
-//
-//		// update the included internal boundary nodes
-//		N_es++;
-//		esNodes.conservativeResize(N_es);
-//		esNodes(N_es-1) = node;
-//
-//		// find index of the node in the iNodes array
-//		idx = std::distance(std::begin(iNodes),std::find(std::begin(iNodes),std::end(iNodes),node));
-//
-//		// shifting the nodes to remove the node from iNodes
-//		for(int i = idx; i<N_i-1;i++ ){
-//			iNodes(i) = iNodes(i+1);
-//		}
-//
-//		// updating size of the iNodes array
-//		N_i -= 1;
-//		iNodes.conservativeResize(N_i);
-////		std::cout << iNodes << std::endl;
-//
-//		// updating the moving nodes array
-//		N_m++;
-//		mNodes.resize(N_m);
-//		if(smode == "none"){
-//			mNodes << ibNodes, esNodes , sNodes;
-//		}else{
-//			mNodes << ibNodes, esNodes;
-//		}
-//
-//		// updating the nodes that are used in the std rbf interpolation
-//		N_mStd++;
-//		mNodesStd.resize(N_mStd);
-//		mNodesStd << ibNodes, esNodes, sNodes;
-//
-////				std::cout << iNodes << std::endl;
-////				std::cout << std::endl;
-////				std::cout << sNodes << std::endl;
-////				std::cout << std::endl;
-////				std::cout << mNodes << std::endl;
-////				std::cout << std::endl;
-////				std::cout << mNodesStd << std::endl;
-//	}
-//
-//
-//
-//}
-//

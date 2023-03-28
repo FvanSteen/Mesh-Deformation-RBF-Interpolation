@@ -25,71 +25,77 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 }
 
 
-//std getPhis
-void rbfGenFunc::getPhis(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ic, Eigen::ArrayXi* cPtr, Eigen::ArrayXi* iPtr){
-	getPhi(Phi_cc, cPtr, cPtr);
-	getPhi(Phi_ic, iPtr, cPtr);
-}
-
-// pseudo getPhis
-void rbfGenFunc::getPhis(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_sc, Eigen::MatrixXd& Phi_bb, Eigen::MatrixXd& Phi_ib, Eigen::ArrayXi* cPtr, Eigen::ArrayXi* sPtr, Eigen::ArrayXi* bPtr, Eigen::ArrayXi* iPtr){
-	getPhi(Phi_cc, cPtr, cPtr);
-
-	getPhi(Phi_sc, sPtr, cPtr);
-	getPhi(Phi_bb, bPtr, bPtr);
-	getPhi(Phi_ib, iPtr, bPtr);
-	//			getPhi(Phi_sm, *n.sePtr, *n.mPtr); 	FOR 2D
-}
-
-// direct getPhis 2D
 void rbfGenFunc::getPhis(getNodeType& n){
-	if(m.nDims == 2){
-		getPhi(Phis.Phi_cc, n.cPtr,n.cPtr);
-		getPhi(Phis.Phi_cs, n.cPtr, n.sPtr);
-		getPhi(Phis.Phi_sc, n.sPtr, n.cPtr);
-		getPhi(Phis.Phi_ss, n.sPtr, n.sPtr);
-		getPhi(Phis.Phi_ic, n.iPtr, n.cPtr);
-		getPhi(Phis.Phi_is, n.iPtr, n.sPtr);
-	} else if (m.nDims == 3){
-		getPhi(Phis.Phi_cc ,n.cPtr,n.cPtr);
-		getPhi(Phis.Phi_ce, n.cPtr, n.sePtr);
-		getPhi(Phis.Phi_cs, n.cPtr, n.ssPtr);
+	getPhi(Phis.Phi_cc, n.cPtr, n.cPtr);
 
-		getPhi(Phis.Phi_ec, n.sePtr, n.cPtr);
-		getPhi(Phis.Phi_ee, n.sePtr, n.sePtr);
-		getPhi(Phis.Phi_es, n.sePtr, n.ssPtr);
-
-		getPhi(Phis.Phi_sc, n.ssPtr, n.cPtr);
-		getPhi(Phis.Phi_se, n.ssPtr, n.sePtr);
-		getPhi(Phis.Phi_ss, n.ssPtr, n.ssPtr);
+	if(params.smode == "none"){
 
 		getPhi(Phis.Phi_ic, n.iPtr, n.cPtr);
-		getPhi(Phis.Phi_ie, n.iPtr, n.sePtr);
-		getPhi(Phis.Phi_is, n.iPtr, n.ssPtr);
 	}
 
+	else if(params.smode == "ps"){
+		getPhi(Phis.Phi_cc, n.cPtr, n.cPtr);
+		getPhi(Phis.Phi_sc, n.sPtr, n.cPtr);
+
+		getPhi(Phis.Phi_cs, n.cPtr, n.sPtr);
+		getPhi(Phis.Phi_ss, n.sPtr, n.sPtr);
+
+
+		Phis.Phi_bb.resize(n.N_c + n.N_s, n.N_c + n.N_s);
+		Phis.Phi_bb << Phis.Phi_cc, Phis.Phi_cs, Phis.Phi_sc, Phis.Phi_ss;
+
+
+		getPhi(Phis.Phi_ib, n.iPtr, n.bPtr);
+
+	}
+
+	else{
+		if(m.nDims == 2){
+			getPhi(Phis.Phi_cc, n.cPtr,n.cPtr);
+			getPhi(Phis.Phi_cs, n.cPtr, n.sPtr);
+			getPhi(Phis.Phi_sc, n.sPtr, n.cPtr);
+			getPhi(Phis.Phi_ss, n.sPtr, n.sPtr);
+			getPhi(Phis.Phi_ic, n.iPtr, n.cPtr);
+			getPhi(Phis.Phi_is, n.iPtr, n.sPtr);
+
+			Phis.Phi_bb.resize(n.N_b, n.N_b);
+			Phis.Phi_bb << Phis.Phi_cc, Phis.Phi_cs,
+							Phis.Phi_ss, Phis.Phi_sc;
+
+
+			Phis.Phi_ib.resize(n.N_i, n.N_b);
+			Phis.Phi_ib << Phis.Phi_ic, Phis.Phi_is;
+
+		} else if (m.nDims == 3){
+			getPhi(Phis.Phi_cc ,n.cPtr,n.cPtr);
+			getPhi(Phis.Phi_ce, n.cPtr, n.sePtr);
+			getPhi(Phis.Phi_cs, n.cPtr, n.ssPtr);
+
+			getPhi(Phis.Phi_ec, n.sePtr, n.cPtr);
+			getPhi(Phis.Phi_ee, n.sePtr, n.sePtr);
+			getPhi(Phis.Phi_es, n.sePtr, n.ssPtr);
+
+			getPhi(Phis.Phi_sc, n.ssPtr, n.cPtr);
+			getPhi(Phis.Phi_se, n.ssPtr, n.sePtr);
+			getPhi(Phis.Phi_ss, n.ssPtr, n.ssPtr);
+
+			getPhi(Phis.Phi_ic, n.iPtr, n.cPtr);
+			getPhi(Phis.Phi_ie, n.iPtr, n.sePtr);
+			getPhi(Phis.Phi_is, n.iPtr, n.ssPtr);
+
+			Phis.Phi_bb.resize(n.N_b,n.N_b);
+			Phis.Phi_bb << Phis.Phi_cc, Phis.Phi_ce, Phis.Phi_cs,
+						Phis.Phi_ec, Phis.Phi_ee, Phis.Phi_es,
+						Phis.Phi_sc, Phis.Phi_se, Phis.Phi_ss;
+
+			Phis.Phi_ib.resize(n.N_i, n.N_b);
+			Phis.Phi_ib << Phis.Phi_ic, Phis.Phi_ie, Phis.Phi_is;
+
+
+		}
+	}
 
 }
-
-//void rbfGenFunc::getPhis(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ce, Eigen::MatrixXd& Phi_cs, Eigen::MatrixXd& Phi_ec, Eigen::MatrixXd& Phi_ee, Eigen::MatrixXd& Phi_es, Eigen::MatrixXd& Phi_sc, Eigen::MatrixXd& Phi_se, Eigen::MatrixXd& Phi_ss, Eigen::MatrixXd& Phi_ic, Eigen::MatrixXd& Phi_ie, Eigen::MatrixXd& Phi_is , getNodeType& n){
-//	getPhi(Phi_cc ,n.cPtr,n.cPtr);
-//	getPhi(Phi_ce, n.cPtr, n.sePtr);
-//	getPhi(Phi_cs, n.cPtr, n.ssPtr);
-//
-//	getPhi(Phi_ec, n.sePtr, n.cPtr);
-//	getPhi(Phi_ee, n.sePtr, n.sePtr);
-//	getPhi(Phi_es, n.sePtr, n.ssPtr);
-//
-//	getPhi(Phi_sc, n.ssPtr, n.cPtr);
-//	getPhi(Phi_se, n.ssPtr, n.sePtr);
-//	getPhi(Phi_ss, n.ssPtr, n.ssPtr);
-//
-//	getPhi(Phi_ic, n.iPtr, n.cPtr);
-//	getPhi(Phi_ie, n.iPtr, n.sePtr);
-//	getPhi(Phi_is, n.iPtr, n.ssPtr);
-//}
-
-
 
 void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::ArrayXi* idxSet2){
 //	std::cout << "lambda: " << m.lambda << std::endl;
@@ -170,6 +176,8 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::Ar
 	}
 //	std::exit(0);
 }
+
+
 
 
 //void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, getNodeType& n, int lvl, Eigen::ArrayXXd& errorPrevLvl){
@@ -299,8 +307,6 @@ double rbfGenFunc::rbfEval(double distance){
 }
 
 
-
-//void rbfGenFunc::getDefVecMultiGreedy(Eigen::VectorXd& defVec, getNodeType& n, Eigen::ArrayXXd& errors, int N, Eigen::ArrayXi* cPtr){
 void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, getNodeType& n, Eigen::ArrayXXd& errors, int N_c){
 
 	defVec.resize(m.nDims*N_c);
@@ -318,14 +324,9 @@ void rbfGenFunc::performRBF(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ic, Ei
 	}
 
 	for(int dim = 0; dim < m.nDims; dim++){
-//		std::cout << "Solving for dimension: " << dim << std::endl;
-//		auto start = std::chrono::high_resolution_clock::now();
+
 		alpha(Eigen::seqN(dim*N,N)) = Phi_cc.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))); //fullPivHouseholderQr()
 
-//		auto stop = std::chrono::high_resolution_clock::now();
-//		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
-
-//		std::cout << "Time to solve for alpha: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
 		if(params.dataRed){
 			d.col(dim) = Phi_ic*alpha(Eigen::seqN(dim*N,N));
 		}else{
@@ -342,13 +343,12 @@ void rbfGenFunc::updateNodes(getNodeType& n, Eigen::VectorXd& defVec, Eigen::Arr
 	Eigen::ArrayXi* ptr;
 
 	if(params.multiLvl){
+		// in case of multilevel ptr is the go ptr that points to all the ctrl points that are selected so far
+
 		ptr = ctrlPtr;
 		N_m = (*ctrlPtr).size();
-
-//		m.coords(*n.iPtrGrdy,Eigen::all) += deltaInternal;
 	}else{
 		if(params.smode == "none"){
-
 			ptr = n.cPtr;
 			N_m = n.N_c;
 		}else{
@@ -357,8 +357,6 @@ void rbfGenFunc::updateNodes(getNodeType& n, Eigen::VectorXd& defVec, Eigen::Arr
 		}
 	}
 
-//	std::cout << *alpha_step << std::endl;
-	auto start = std::chrono::high_resolution_clock::now();
 
 
 	getPhi(Phi_icGrdy,n.iPtrGrdy,ptr);
@@ -374,15 +372,4 @@ void rbfGenFunc::updateNodes(getNodeType& n, Eigen::VectorXd& defVec, Eigen::Arr
 		}
 		m.coords(*n.iPtrGrdy,dim) +=  (Phi_icGrdy*(*alpha_step)(Eigen::seqN(dim*N_m,N_m))).array();
 	}
-
-	auto stop = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
-
-	std::cout << "Time for updating internal nodes: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
-
-
-//	auto stop = std::chrono::high_resolution_clock::now();
-//	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
-//	std::cout << "time: \t"<<  duration.count()/1e6 << " seconds"<< std::endl;
-
 }

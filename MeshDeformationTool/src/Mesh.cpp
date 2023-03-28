@@ -310,7 +310,6 @@ void Mesh::getNodeTypes(probParams& params, int nMarker){
 			// else its either a sliding or moving node
 			else{
 				for (int i= 0; i< bdryNodesArr.size();i++){
-
 					// for 3D, in case of 4 subsuquent equal nodes its a surface node
 					if(nDims == 3 && (i< bdryNodesArr.size()-3 && bdryNodesArr(i) == bdryNodesArr(i+3))){
 
@@ -331,6 +330,7 @@ void Mesh::getNodeTypes(probParams& params, int nMarker){
 						if(params.smode == "none"){
 							idxMoving(cntMoving) = bdryNodesArr(i);
 							cntMoving++;
+
 						}else{
 							idxSlidingEdge(cntSlidingEdge) = bdryNodesArr(i);
 							cntSlidingEdge++;
@@ -339,6 +339,7 @@ void Mesh::getNodeTypes(probParams& params, int nMarker){
 					}
 					// else in case there is a single occurence of the node in that bdry, its a corner node.
 					else{
+
 						if(params.pmode !=  "moving" || params.smode == "none"){
 							idxMoving(cntMoving) = bdryNodesArr(i);
 							cntMoving++;
@@ -1317,7 +1318,6 @@ void Mesh::getCharPerLength(std::string& pDir){
 	vals = vertices(indices(Eigen::seqN(0,cnt)),perDir);
 
 	lambda = vals.maxCoeff() - vals.minCoeff();
-
 }
 
 void Mesh::findStringBounds(int& first, int& last, std::string& line){

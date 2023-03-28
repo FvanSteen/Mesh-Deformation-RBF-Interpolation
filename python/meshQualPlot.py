@@ -46,10 +46,15 @@ def meshQualPlot(fileNames,fNameInit, graphNames,alphas_0):
     #    v[:,0] = -v[:,0]
         pc = matplotlib.collections.PolyCollection(v[f[0:startQuadIdx,0:3]],cmap='seismic', facecolors=colors1, edgecolor="black",linewidth=0.1)
         pc2 = matplotlib.collections.PolyCollection(v[f[startQuadIdx:,0:4]],cmap=cmapMatlab,  facecolors=colors2, edgecolor="black",linewidth=0.1)
+#        v[:,1] += 0.045
+#        pc3 = matplotlib.collections.PolyCollection(v[f[0:startQuadIdx,0:3]],cmap='seismic', facecolors=colors1, edgecolor="black",linewidth=0.05)
+#        pc4 = matplotlib.collections.PolyCollection(v[f[startQuadIdx:,0:4]],cmap=cmapMatlab,  facecolors=colors2, edgecolor="black",linewidth=0.05)
     #    pc3 = matplotlib.collections.PolyCollection(v[f[4365:4366]],cmap=cmapMatlab, facecolors='red', edgecolor="black",linewidth=0.25)
         
         polys = ax.add_collection(pc)
         polys = ax.add_collection(pc2)
+#        polys = ax.add_collection(pc3)
+#        polys = ax.add_collection(pc4)
     #    polys = ax.add_collection(pc3)
 #        if(fileNames[i][0:10] == '/mesh_NACA'): 
 #            ax.scatter(v[200][0],v[200][1],color='red') 
@@ -59,8 +64,8 @@ def meshQualPlot(fileNames,fNameInit, graphNames,alphas_0):
         polys.set_clim(0,1)
         plt.colorbar(polys, ax=ax, shrink=1.0/(np.size(graphNames)-1))
         ax.title.set_text(graphNames[i])
-#        ax.set_ylim([-0.035, -0.0165])
-#        ax.set_xlim([-0.1440, -0.12])
+#        ax.set_ylim([-0.031, -0.01])
+#        ax.set_xlim([-0.140, -0.126])
     plt.show()
     x = np.argwhere(np.isnan(meshQual))
     print(v[f[x]])

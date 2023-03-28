@@ -16,7 +16,7 @@ def getMeshQuals(faces,vertices, alphas_0, elemType):
         startQuadIdx = np.size(elemType)
     
     f_skew = np.empty(np.size(elemType))
-    f_skew[0:startQuadIdx] = -np.sqrt(3)*alphas[0:startQuadIdx,0]/(lambda_11[0:startQuadIdx,0]+lambda_22[0:startQuadIdx,0]-lambda_12[0:startQuadIdx,0])
+    f_skew[0:startQuadIdx] = np.sqrt(3)*alphas[0:startQuadIdx,0]/(lambda_11[0:startQuadIdx,0]+lambda_22[0:startQuadIdx,0]-lambda_12[0:startQuadIdx,0])
     f_skew[startQuadIdx:] = np.abs(4/np.sum(np.sqrt(lambda_11[startQuadIdx:]*lambda_22[startQuadIdx:])/alphas[startQuadIdx:], axis=1))
 #    if elementType == 5:
 #        f_skew = np.sqrt(3)*alphas[:,0]/(lambda_11[:,0]+lambda_22[:,0]-lambda_12[:,0])

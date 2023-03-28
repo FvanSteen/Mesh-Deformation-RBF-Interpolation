@@ -28,10 +28,9 @@ public:
 	Eigen::VectorXd alpha;
 
 	rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject);
-	void getPhis(Eigen::MatrixXd& Phi_mm, Eigen::MatrixXd& Phi_im, Eigen::ArrayXi* mPtr, Eigen::ArrayXi* iPtr);
-	void getPhis(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_sc, Eigen::MatrixXd& Phi_bb, Eigen::MatrixXd& Phi_ib, Eigen::ArrayXi* cPtr, Eigen::ArrayXi* sPtr, Eigen::ArrayXi* bPtr, Eigen::ArrayXi* iPtr);
+
 	void getPhis(getNodeType& n);
-	void getPhis(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ce, Eigen::MatrixXd& Phi_cs, Eigen::MatrixXd& Phi_ec, Eigen::MatrixXd& Phi_ee, Eigen::MatrixXd& Phi_es, Eigen::MatrixXd& Phi_sc, Eigen::MatrixXd& Phi_se, Eigen::MatrixXd& Phi_ss, Eigen::MatrixXd& Phi_ic, Eigen::MatrixXd& Phi_ie, Eigen::MatrixXd& Phi_is , getNodeType& n);
+
 	void getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::ArrayXi* idxSet2);
 
 //	void getDefVec(Eigen::VectorXd& defVec, getNodeType& n, int lvl, Eigen::ArrayXXd& errorPrevLvl);
