@@ -8,6 +8,7 @@ public:
 
 	double maxError;
 	Eigen::ArrayXi maxErrorNodes;
+	Eigen::ArrayXi* errIdxPtr;
 
 	Eigen::ArrayXXd delta;
 	Eigen::ArrayXXd deltaInternal;
@@ -33,10 +34,13 @@ public:
 	Eigen::VectorXd* pVec;
 
 	Mesh* mPtr;
+	getNodeType* nPtr; // todo add this?
 
 	greedy(Mesh& m, probParams& params, Eigen::ArrayXXd& disp, Eigen::ArrayXi& movingIndices,  Eigen::VectorXd& alpha, Eigen::ArrayXXd& d,Eigen::VectorXd& perVec);
-	void getError(Mesh& m, getNodeType& n, Eigen::ArrayXXd& d, int lvl);
-	void getErrorSingleLvl(Mesh& m, getNodeType& n,  Eigen::ArrayXXd& d);
+
+
+	void getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl);
+	void getErrorSingleLvl(getNodeType& n,  Eigen::ArrayXXd& d);
 	void getErrorMultiLvl( getNodeType& n,  Eigen::ArrayXXd& d);
 
 	void correction(Mesh& m, getNodeType& n, double& gamma, bool& multiLvl);
@@ -44,8 +48,8 @@ public:
 
 	int getDoubleEdgeError(int idxMax, int N_i, Eigen::ArrayXXd& error);
 
-	void setLevelParams(Mesh& m, getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::VectorXd& alpha, Eigen::VectorXd& defVec, Eigen::ArrayXi* cPtr, int N_c);
-	void setInitMaxErrorNodes(Mesh& m);
+	void setLevelParams(getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::VectorXd& alpha, Eigen::VectorXd& defVec, Eigen::ArrayXi* cPtr, int N_c);
+	void setInitMaxErrorNodes();
 
 	void getAlphaIdx(Eigen::ArrayXi& mNodes, Eigen::ArrayXi* mNodesGrdy, int N, Eigen::ArrayXi& idxAlpha);
 	void getAlphaVector();

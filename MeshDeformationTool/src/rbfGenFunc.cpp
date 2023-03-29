@@ -26,6 +26,8 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 
 
 void rbfGenFunc::getPhis(getNodeType& n){
+	std::cout << "here" << std::endl;
+	std::cout << n.idxNewNodes << std::endl;
 	getPhi(Phis.Phi_cc, n.cPtr, n.cPtr);
 
 	if(params.smode == "none"){
@@ -100,6 +102,7 @@ void rbfGenFunc::getPhis(getNodeType& n){
 void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::ArrayXi* idxSet2){
 //	std::cout << "lambda: " << m.lambda << std::endl;
 	Phi.resize((*idxSet1).size(), (*idxSet2).size());
+
 	double dist;
 	for(int i=0; i<(*idxSet1).size();i++){
 		for(int j=0; j<(*idxSet2).size();j++){
@@ -344,7 +347,6 @@ void rbfGenFunc::updateNodes(getNodeType& n, Eigen::VectorXd& defVec, Eigen::Arr
 
 	if(params.multiLvl){
 		// in case of multilevel ptr is the go ptr that points to all the ctrl points that are selected so far
-
 		ptr = ctrlPtr;
 		N_m = (*ctrlPtr).size();
 	}else{

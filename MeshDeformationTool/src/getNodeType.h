@@ -18,6 +18,7 @@ public:
 	Eigen::ArrayXi* ssPtr;
 
 	Eigen::ArrayXi iNodesIdx, cNodesIdx;
+	Eigen::ArrayXi idxNewNodes;
 
 	int N_i,N_se,N_ib,N_es,N_iGrdy, N_s, N_ss;
 	int N_c, N_b;
@@ -25,12 +26,15 @@ public:
 
 	getNodeType(probParams& params, Mesh& m);
 	void assignNodeTypes(Mesh& m);
-	void addControlNode(int node, std::string& smode, Mesh& m);
+
+	void addControlNodes(Eigen::ArrayXi& nodes, std::string& smode, Mesh& m);
+	int addControlNode(int node, std::string& smode, Mesh& m);
 
 	void assignNodeTypesGrdy(Mesh& m);
 	void assignNodeTypesGrdy(Mesh& m, std::string& smode);
 private:
 	Eigen::ArrayXi iNodes, bNodes, cNodes, mNodes, seNodes,mNodesStd,ibNodes,esNodes, sNodes,ssNodes;
+
 
 };
 

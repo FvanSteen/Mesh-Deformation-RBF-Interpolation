@@ -79,14 +79,24 @@ void getNodeType::assignNodeTypesGrdy(Mesh& m){
 	sPtr = &sNodes;
 }
 
+void getNodeType::addControlNodes(Eigen::ArrayXi& nodes, std::string& smode, Mesh& m){
 
+	idxNewNodes.resize(nodes.size());
 
-void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
+	for(int i = 0; i < nodes.size(); i++){
+		idxNewNodes[i] = addControlNode(nodes(i), smode, m);
+	}
+}
+
+int getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 	// check if the node is a moving node with known displacement
+	int index;
 	if (std::find(std::begin(m.mNodes),std::end(m.mNodes),node) != std::end(m.mNodes)){
 		N_c++;
 		cNodes.conservativeResize(N_c);
 		cNodes(N_c-1) = node;
+		index = N_c;
+
 	// check if the node is among the sliding edge nodes
 	}else if(std::find(std::begin(m.seNodes),std::end(m.seNodes),node) != std::end(m.seNodes)){
 		N_se++;
@@ -143,6 +153,7 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m){
 	iNodesIdx(Eigen::seqN(0,N_i)) << iNodesIdx(Eigen::seqN(0,idx)), iNodesIdx(Eigen::seq(idx+1,N_i));
 	iNodesIdx.conservativeResize(N_i);
 
+	return index;
 }
 
 

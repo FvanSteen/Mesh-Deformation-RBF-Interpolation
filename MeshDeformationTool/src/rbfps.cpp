@@ -36,7 +36,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 		lvl = 0;
 
 		if((params.dataRed && i==0) || params.multiLvl ){
-			go.setInitMaxErrorNodes(m);
+			go.setInitMaxErrorNodes();
 		}
 
 		iterating = true;
@@ -48,9 +48,9 @@ void rbf_ps::perform_rbf(getNodeType& n){
 		while(iterating){
 
 			if(params.dataRed){
-				for(int node = 0; node < maxErrorNodes.size(); node++){
-					n.addControlNode(maxErrorNodes(node), params.smode, m);
-				}
+//				for(int node = 0; node < maxErrorNodes.size(); node++){
+//					n.addControlNode(maxErrorNodes(node), params.smode, m);
+//				}
 			}
 
 			getPhis(n);
@@ -71,7 +71,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 			if(params.dataRed){
 
 //				std::cout << "getting error" << std::endl;
-				go.getError(m,n,d, lvl);
+				go.getError(n,d, lvl);
 				std::cout << "error: \t"<< maxError <<" at node: \t" << maxErrorNodes(0)<< std::endl;
 
 				if(maxError < params.tol){
@@ -85,7 +85,7 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 			if(params.multiLvl && (maxError/go.maxErrorPrevLvl < params.tolCrit || iterating == false)){
 
-				go.setLevelParams(m,n,lvl, d, alpha, defVec_b, n.bPtr, n.N_b);
+				go.setLevelParams(n,lvl, d, alpha, defVec_b, n.bPtr, n.N_b);
 
 				std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" << std::endl;
 				lvl++;

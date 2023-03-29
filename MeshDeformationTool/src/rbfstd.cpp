@@ -10,12 +10,7 @@ rbf_std::rbf_std(struct probParams& probParamsObject, Mesh& meshObject, getNodeT
 :rbfGenFunc(meshObject, probParamsObject)
 {
 	if(params.dataRed){
-		std::clock_t s = std::clock();
 		greedy g(m, params, exactDisp, movingIndices, alpha, d, periodicVec);
-		std::clock_t e = std::clock();
-		long double time_elapsed_ms =  1000.0*(e-s) / CLOCKS_PER_SEC;
-		std::cout << "CPU time: " << time_elapsed_ms/1000 << " ms\n";
-		std::exit(0);
 		perform_rbf(n,g);
 	}else{
 		perform_rbf(n);
@@ -58,7 +53,7 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 
 
 
-	for(int i=0; i<params.steps; i++){
+	for(int i=0; i < params.steps; i++){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 
 		iter = 0;
@@ -66,13 +61,15 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 
 		while(iterating){
 
-			for(int node = 0; node < g.maxErrorNodes.size(); node++){
-				n.addControlNode(g.maxErrorNodes(node), params.smode, m);
-			}
 
+			n.addControlNodes(g.maxErrorNodes, params.smode, m);
+//			for(int node = 0; node < g.maxErrorNodes.size(); node++){
+//				n.addControlNode(g.maxErrorNodes(node), params.smode, m);
+//			}
+//			std::cout << "control nodes:\n" << *n.cPtr << std::endl;
 			getPhis(n);
-
-
+//			std::cout << Phis.Phi_cc << std::endl;
+			std::exit(0);
 			if(lvl > 0){
 				getDefVec(defVec, n, g.errorPrevLvl, n.N_c);
 			}else if(i==0){
@@ -82,7 +79,7 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 			performRBF(Phis.Phi_cc, Phis.Phi_ic, defVec, n.cPtr, n.iPtr, n.N_c);
 
 
-			g.getError(m, n, d, lvl);
+			g.getError(n, d, lvl);
 			std::cout << "error: \t"<< g.maxError <<" at node: \t" << g.maxErrorNodes(0)<< std::endl;
 
 
@@ -96,7 +93,7 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 
 			if(params.multiLvl && (g.maxError/g.maxErrorPrevLvl < params.tolCrit || iterating == false)){
 
-				g.setLevelParams(m, n, lvl, d, alpha, defVec, n.cPtr, n.N_c);
+				g.setLevelParams( n, lvl, d, alpha, defVec, n.cPtr, n.N_c);
 
 
 //				w.setIntResults(i, lvl, maxError, abs(go.error).mean(), duration.count()/1e6, params.convHistFile, n.N_m);

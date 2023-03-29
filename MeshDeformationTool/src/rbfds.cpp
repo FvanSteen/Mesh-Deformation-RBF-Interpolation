@@ -34,7 +34,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 		lvl = 0;
 
 		if((params.dataRed && i==0) || params.multiLvl ){
-			go.setInitMaxErrorNodes(m);
+			go.setInitMaxErrorNodes();
 		}
 
 		if(params.curved || i==0){
@@ -69,7 +69,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 
 			if(params.dataRed){
 				for(int node = 0; node < maxErrorNodes.size(); node++){
-					n.addControlNode(maxErrorNodes(node), params.smode, m);
+//					n.addControlNode(maxErrorNodes(node), params.smode, m);
 				}
 			}
 
@@ -95,7 +95,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 
 
 			if(params.dataRed){
-				go.getError(m,n, d, lvl);
+				go.getError(n, d, lvl);
 				std::cout << "error: \t"<< maxError <<" at node: \t" << maxErrorNodes(0)<< std::endl;
 				if(maxError < params.tol){
 					iterating = false;
@@ -107,7 +107,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 
 
 			if(params.multiLvl && (maxError/go.maxErrorPrevLvl < 0.1 || iterating == false)){
-				go.setLevelParams(m,n,lvl, d, alpha, defVec,n.cPtr, n.N_c);
+				go.setLevelParams(n,lvl, d, alpha, defVec,n.cPtr, n.N_c);
 //				std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" << std::endl;
 				lvl++;
 
