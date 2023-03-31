@@ -56,7 +56,7 @@ private:
 
 protected:
 	struct PhiStruct{
-		Eigen::MatrixXd Phi_cc, Phi_cs, Phi_sc, Phi_ss, Phi_ic, Phi_is;
+		Eigen::MatrixXd Phi_cc, Phi_cs, Phi_sc, Phi_ss, Phi_ic;
 		Eigen::MatrixXd Phi_ce, Phi_ec, Phi_es,Phi_ee,Phi_se,Phi_ie;
 		Eigen::MatrixXd Phi_bb, Phi_ib;
 	};

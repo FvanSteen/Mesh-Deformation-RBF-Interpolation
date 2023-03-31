@@ -38,7 +38,7 @@ public:
 	void assignNodeTypesGrdy(Mesh& m);
 	void assignNodeTypesGrdy(Mesh& m, std::string& smode);
 private:
-	Eigen::ArrayXi iNodes, bNodes, mNodes, seNodes,mNodesStd,ibNodes,esNodes, sNodes,ssNodes;
+	Eigen::ArrayXi iNodes, bNodes, mNodes, seNodes,mNodesStd,ibNodes,esNodes,ssNodes;
 
 
 };

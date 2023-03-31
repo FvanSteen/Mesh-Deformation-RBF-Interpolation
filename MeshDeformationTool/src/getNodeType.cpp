@@ -32,12 +32,6 @@ void getNodeType::assignNodeTypes(Mesh& m){
 	bNodes.resize(N_b);
 	bNodes << m.mNodes, m.seNodes, m.ssNodes;
 	bPtr = &bNodes;
-
-
-//	N_s = m.N_se+m.N_ss;
-//	sNodes.resize(N_s);
-//	sNodes << m.seNodes, m.ssNodes;
-//	sPtr = &sNodes;
 }
 
 
@@ -65,17 +59,12 @@ void getNodeType::assignNodeTypesGrdy(Mesh& m){
 	ssNodes.resize(N_ss);
 	ssPtr = &ssNodes;
 
-
 	iPtrGrdy = &m.iNodes;
 	N_iGrdy = m.N_i;
 
 	N_b = 0;
 	bNodes.resize(N_b);
 	bPtr = &bNodes;
-
-//	N_s = 0;
-//	sNodes.resize(N_s);
-//	sPtr = &sNodes;
 }
 
 void getNodeType::addControlNodes(Eigen::ArrayXi& nodes, std::string& smode, Mesh& m){
@@ -107,9 +96,7 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m, int i){
 		addedNodes.idx[i] = N_se-1;
 		addedNodes.type[i] = 1;
 
-//		N_s++;
-//		sNodes.resize(N_s);
-//		sNodes << seNodes, ssNodes;
+
 	// check is the node is a silding surface node
 	}else if(std::find(std::begin(m.ssNodes), std::end(m.ssNodes),node) != std::end(m.ssNodes)){
 
@@ -117,9 +104,6 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m, int i){
 		ssNodes.conservativeResize(N_ss);
 		ssNodes(N_ss-1) = node;
 
-//		N_s++;
-//		sNodes.resize(N_s);
-//		sNodes << seNodes, ssNodes;
 
 	}
 

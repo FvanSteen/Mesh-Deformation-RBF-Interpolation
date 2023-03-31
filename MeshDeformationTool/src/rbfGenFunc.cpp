@@ -67,18 +67,20 @@ void rbfGenFunc::getPhisFull(getNodeType& n){
 			getPhi(Phis.Phi_cs, n.mPtr, n.sePtr);
 			getPhi(Phis.Phi_sc, n.sePtr, n.mPtr);
 			getPhi(Phis.Phi_ss, n.sePtr, n.sePtr);
-			getPhi(Phis.Phi_ic, n.iPtr, n.mPtr);
-			getPhi(Phis.Phi_is, n.iPtr, n.sePtr);
+//			getPhi(Phis.Phi_ic, n.iPtr, n.mPtr);
+//			getPhi(Phis.Phi_is, n.iPtr, n.sePtr);
 
 			Phis.Phi_bb.resize(n.N_b, n.N_b);
 			Phis.Phi_bb << Phis.Phi_cc, Phis.Phi_cs,
 							Phis.Phi_ss, Phis.Phi_sc;
 
 
-			Phis.Phi_ib.resize(n.N_i, n.N_b);
-			Phis.Phi_ib << Phis.Phi_ic, Phis.Phi_is;
+			getPhi(Phis.Phi_ib, n.iPtr, n.bPtr);
+//			Phis.Phi_ib.resize(n.N_i, n.N_b);
+//			Phis.Phi_ib << Phis.Phi_ic, Phis.Phi_is;
 
 		} else if (m.nDims == 3){
+			//todo
 			getPhi(Phis.Phi_cc ,n.mPtr,n.mPtr);
 			getPhi(Phis.Phi_ce, n.mPtr, n.sePtr);
 			getPhi(Phis.Phi_cs, n.mPtr, n.ssPtr);
@@ -91,17 +93,17 @@ void rbfGenFunc::getPhisFull(getNodeType& n){
 			getPhi(Phis.Phi_se, n.ssPtr, n.sePtr);
 			getPhi(Phis.Phi_ss, n.ssPtr, n.ssPtr);
 
-			getPhi(Phis.Phi_ic, n.iPtr, n.mPtr);
-			getPhi(Phis.Phi_ie, n.iPtr, n.sePtr);
-			getPhi(Phis.Phi_is, n.iPtr, n.ssPtr);
+//			getPhi(Phis.Phi_ic, n.iPtr, n.mPtr);
+//			getPhi(Phis.Phi_ie, n.iPtr, n.sePtr);
+//			getPhi(Phis.Phi_is, n.iPtr, n.ssPtr);
 
 			Phis.Phi_bb.resize(n.N_b,n.N_b);
 			Phis.Phi_bb << Phis.Phi_cc, Phis.Phi_ce, Phis.Phi_cs,
 						Phis.Phi_ec, Phis.Phi_ee, Phis.Phi_es,
 						Phis.Phi_sc, Phis.Phi_se, Phis.Phi_ss;
 
-			Phis.Phi_ib.resize(n.N_i, n.N_b);
-			Phis.Phi_ib << Phis.Phi_ic, Phis.Phi_ie, Phis.Phi_is;
+//			Phis.Phi_ib.resize(n.N_i, n.N_b);
+//			Phis.Phi_ib << Phis.Phi_ic, Phis.Phi_ie, Phis.Phi_is;
 
 
 		}
@@ -122,7 +124,7 @@ void rbfGenFunc::getPhisReduced(getNodeType& n){
 			}
 		}
 	}
-	else if(params.smode == "ps"){
+	else{
 
 		getReducedPhi(Phis.Phi_ib, n);
 
@@ -146,9 +148,6 @@ void rbfGenFunc::getPhisReduced(getNodeType& n){
 
 		Phis.Phi_bb.resize(n.N_m + n.N_se, n.N_m + n.N_se);
 		Phis.Phi_bb << Phis.Phi_cc, Phis.Phi_cs, Phis.Phi_sc, Phis.Phi_ss;
-	}else{
-		std::cout << "IMPLEMENT THE SLIDING HERE" << std::endl;
-		std::exit(0);
 	}
 
 
