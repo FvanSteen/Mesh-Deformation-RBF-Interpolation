@@ -47,14 +47,13 @@ MARKER_PERIODIC = (upper, lower)
 %MARKER_PERIODIC = (FRONT, BACK)
  
 %(none, pseudo, direct)
-SLIDING_MODE = none
-
+SLIDING_MODE = ds
 
 %(none,periodic,fixed_vertices,moving_vertices)
 PERIODIC_MODE = none
 
 PERIODIC_DIRECTION = y
-STEPS = 1
+STEPS = 20
 
 INFLUENCE_FACTOR = 2.5
 
@@ -70,8 +69,8 @@ DEFORMATION_FILENAME = 25x25_deformation.txt
 %DEFORMATION_FILENAME = gis_nthx001_mesh_deformation.txt
  
 CURVED = NO
-DATA_REDUCTION = YES
-DATA_RED_TOLERANCE = 1e-2
+DATA_REDUCTION = NO
+DATA_RED_TOLERANCE = 1e-3
 % 0.0000074815
 GAMMA = 25
 DOUBLE_EDGE = YES

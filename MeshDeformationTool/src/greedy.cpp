@@ -7,8 +7,8 @@
 #include <math.h>
 #include "SPDS.h"
 #include "nanoflann.hpp"
-#include "SPDS.h"
-greedy::greedy(Mesh& m, probParams& params,Eigen::ArrayXXd& disp, Eigen::ArrayXi& movingIndices, Eigen::VectorXd& alpha, Eigen::ArrayXXd& d, Eigen::VectorXd& perVec)
+
+greedy::greedy(Mesh& m, probParams& params,Eigen::ArrayXXd& disp, Eigen::ArrayXi& movingIndices, Eigen::VectorXd& alpha, Eigen::ArrayXXd& d)
 {
 
 
@@ -19,7 +19,7 @@ greedy::greedy(Mesh& m, probParams& params,Eigen::ArrayXXd& disp, Eigen::ArrayXi
 	mIdxPtr = &movingIndices;
 
 	p = &params;
-	pVec = &perVec;
+	pVec = &m.periodicVec;
 	if((*p).multiLvl){
 		alpha_step = &alphaGrdy;
 		d_step = &delta;
@@ -104,7 +104,7 @@ void greedy::getErrorSingleLvl(getNodeType& n, Eigen::ArrayXXd& d){
 
 
 	size_t m_end, se_end, ss_end;
-	m_end = (*mPtr).N_m-n.N_c;
+	m_end = (*mPtr).N_m-n.N_m;
 	se_end = m_end + (*mPtr).N_se-n.N_se;
 
 	getErrorMovingNodes(n.iPtr,  d,  m_end);

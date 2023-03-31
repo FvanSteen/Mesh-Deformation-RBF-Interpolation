@@ -55,6 +55,7 @@ double SPDS::rbfEval(double distance, double radius){
 	return f_xi;
 }
 
+//todo remove pVec as argument since m is also included
 void SPDS::project(Mesh& m, getNodeType&n, Eigen::ArrayXXd& array_in, Eigen::ArrayXXd& array_out, Eigen::VectorXd& pVec){
 //	std::cout << "SPDS project\n";
 	if(n.N_se > 0){

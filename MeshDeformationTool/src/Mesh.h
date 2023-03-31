@@ -30,6 +30,8 @@ public:
 
 	Eigen::ArrayXi periodicEdgeNodes;
 
+	Eigen::VectorXd periodicVec, periodicNormalVec1,periodicNormalVec2;
+
 	int N_pe;
 
 //	struct Domains{
@@ -60,7 +62,7 @@ public:
 	void getEdgeConnectivity(std::string& pmode, Eigen::ArrayXXi& edgeConnectivity,Eigen::ArrayXi& seNodes, int size);
 	void getSurfConnectivity();
 
-	void getVecs();
+	void getVecs(probParams& params);
 	void getPerpVecs(Eigen::ArrayXXd& vecs, Eigen::ArrayXXd& p1, Eigen::ArrayXXd& p2);
 	void getEdgeTan(Eigen::ArrayXXd& t,Eigen::ArrayXXi& edgeConnectivity, Eigen::ArrayXi& seNodes);
 	void getSurfNormal();
@@ -79,6 +81,8 @@ public:
 
 	void writeMeshFile(std::string& ifName, std::string& ofName);
 	void findStringBounds(int& first, int& last, std::string& line);
+
+	void getPeriodicParams(probParams& params);
 //	void getInternalCorrectionNodes(Eigen::ArrayXi& subDomains,  Eigen::ArrayXi& subDomsLen, Eigen::ArrayXXd& bdryCoord);
 private:
 	Eigen::ArrayXXi edgeConnectivity, edgeConnectivityPeriodic, surfConnectivity, bdryNodesMat, extBdryEdgeSegments;

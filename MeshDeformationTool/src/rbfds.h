@@ -1,10 +1,3 @@
-/*
- * rbfds.h
- *
- *  Created on: 17 nov. 2022
- *      Author: floyd
- */
-
 #ifndef RBFDS_H_
 #define RBFDS_H_
 #include "Mesh.h"
@@ -25,6 +18,7 @@ public:
 
 	rbf_ds(struct probParams& probParamsObject, Mesh& meshObject, getNodeType& n);
 	void perform_rbf(getNodeType& n);
+	void perform_rbf(getNodeType& n, greedy& g);
 	void performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi, PhiStruct* PhiPtr, Eigen::VectorXd& defVec, Eigen::VectorXd& defVec_b);
 	void getPhiDS(Eigen::MatrixXd& Phi,PhiStruct* PhiPtr ,getNodeType& n);
 	void getIdxSlidingNodes(Eigen::ArrayXi* sPtr, Eigen::ArrayXi& idx, int type);

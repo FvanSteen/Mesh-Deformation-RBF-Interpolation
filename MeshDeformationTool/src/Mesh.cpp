@@ -17,6 +17,7 @@ Mesh::Mesh(probParams& params, const int& debugLvl)
 readMeshFile(params);
 r = params.rFac*getCharDomLength();
 std::cout << "RADIUS: " << r << std::endl;
+getPeriodicParams(params);
 }
 
 // Main function for reading the .su2 mesh files
@@ -750,7 +751,7 @@ void Mesh::getSurfConnectivity(){
  *
  */
 
-void Mesh::getVecs(){
+void Mesh::getVecs(probParams& params){
 	if(lvl>=1){
 //		std::cout << "Obtaining normal and tangential vectors " << std::endl;
 	}
@@ -770,7 +771,14 @@ void Mesh::getVecs(){
 		// Finding normal of 2D problems.
 		n << t.col(1), -t.col(0);
 
-
+		if(params.pmode == "moving"){
+			n.conservativeResize(N_se,nDims);
+			t.conservativeResize(N_se,nDims);
+			for(int i = N_se - periodicVerticesNodes.size(); i< N_se; i++){
+				n.row(i) = periodicNormalVec1;
+				t.row(i) = periodicVec;
+			}
+		}
 	}
 	// else in case of 3D
 	else if(nDims == 3){
@@ -797,7 +805,16 @@ void Mesh::getVecs(){
 			getSurfNormalPeriodic();
 		}
 
-
+		if(params.pmode == "moving"){
+			n1_se.conservativeResize(N_se,nDims);
+			n2_se.conservativeResize(N_se, nDims);
+			t_se.conservativeResize(N_se, nDims);
+			for(int i = N_se - periodicVerticesNodes.size(); i< N_se; i++){
+				n1_se.row(i) = periodicNormalVec1;
+				n2_se.row(i) = periodicNormalVec2;
+				t_se.row(i) = periodicVec;
+			}
+		}
 	}
 
 }
@@ -1334,5 +1351,44 @@ void Mesh::findStringBounds(int& first, int& last, std::string& line){
 
 	if(first == last){
 		last++;
+	}
+}
+
+
+void Mesh::getPeriodicParams(probParams& params){
+	periodicVec.resize(nDims);
+	periodicNormalVec1.resize(nDims);
+	periodicNormalVec2.resize(nDims);
+	if(nDims==2){
+		if(params.pmode != "none"){
+			if(params.pDir == "x"){
+				periodicVec << 1,0;
+				periodicNormalVec1 << 0,1;
+			}
+			else if(params.pDir == "y"){
+				periodicVec << 0,1;
+				periodicNormalVec1 << 1,0;
+			}
+		}
+		else{
+			periodicVec << 0,0;
+		}
+	}
+	else if(nDims==3){
+		if(params.pmode != "none"){
+			if(params.pDir == "x"){
+				periodicVec << 1,0,0;
+				periodicNormalVec1 << 0,1,0;
+				periodicNormalVec2 << 0,0,1;
+			}else if(params.pDir == "y"){
+				periodicVec << 0,1,0;
+				periodicNormalVec1 << 1,0,0;
+				periodicNormalVec2 << 0,0,1;
+			}else if(params.pDir == "z"){
+				periodicVec << 0,0,1;
+				periodicNormalVec1 << 1,0,0;
+				periodicNormalVec2 << 0,1,0;
+			}
+		}
 	}
 }

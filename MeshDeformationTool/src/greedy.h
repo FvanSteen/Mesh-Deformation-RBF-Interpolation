@@ -1,6 +1,5 @@
 #ifndef GREEDY_H_
 #define GREEDY_H_
-#include "rbfps.h"
 #include "getNodeType.h"
 #include "Mesh.h"
 class greedy {
@@ -36,7 +35,7 @@ public:
 	Mesh* mPtr;
 	getNodeType* nPtr; // todo add this?
 
-	greedy(Mesh& m, probParams& params, Eigen::ArrayXXd& disp, Eigen::ArrayXi& movingIndices,  Eigen::VectorXd& alpha, Eigen::ArrayXXd& d,Eigen::VectorXd& perVec);
+	greedy(Mesh& m, probParams& params, Eigen::ArrayXXd& disp, Eigen::ArrayXi& movingIndices,  Eigen::VectorXd& alpha, Eigen::ArrayXXd& d);
 
 
 	void getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl);
