@@ -28,7 +28,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 		if(i == 0){
 			getDefVec(defVec, n.N_m, n.mPtr);
 		}
-		performRBF(Phis.Phi_cc, Phis.Phi_ic, defVec, n.mPtr, n.iPtr, n.N_m);
+		performRBF(Phis.Phi_mm, Phis.Phi_im, defVec, n.mPtr, n.iPtr, n.N_m);
 	}
 
 	std::cout << "number of control nodes: " << n.N_m << std::endl;
@@ -75,7 +75,7 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 			}
 
 
-			performRBF(Phis.Phi_cc, Phis.Phi_ic, defVec, n.mPtr, n.iPtr, n.N_m);
+			performRBF(Phis.Phi_mm, Phis.Phi_im, defVec, n.mPtr, n.iPtr, n.N_m);
 
 
 			g.getError(n, d, lvl);

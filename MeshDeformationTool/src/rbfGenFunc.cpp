@@ -39,73 +39,91 @@ void rbfGenFunc::getPhisFull(getNodeType& n){
 
 	// no sliding
 	if(params.smode == "none"){
-		getPhi(Phis.Phi_cc, n.mPtr, n.mPtr);
-		getPhi(Phis.Phi_ic, n.iPtr, n.mPtr);
+		getPhi(Phis.Phi_mm, n.mPtr, n.mPtr);
+		getPhi(Phis.Phi_im, n.iPtr, n.mPtr);
 
 	}
 	// pseudo sliding
 	else if(params.smode == "ps"){
 
-		getPhi(Phis.Phi_cc, n.mPtr, n.mPtr);
-		getPhi(Phis.Phi_sc, n.sePtr, n.mPtr);
-
-		getPhi(Phis.Phi_cs, n.mPtr, n.sePtr);
-		getPhi(Phis.Phi_ss, n.sePtr, n.sePtr);
-
-
-		Phis.Phi_bb.resize(n.N_m + n.N_se, n.N_m + n.N_se);
-		Phis.Phi_bb << Phis.Phi_cc, Phis.Phi_cs, Phis.Phi_sc, Phis.Phi_ss;
+		getPhi(Phis.Phi_mm, n.mPtr, n.mPtr);
+		getPhi(Phis.Phi_me, n.mPtr, n.sePtr);
+		getPhi(Phis.Phi_em, n.sePtr, n.mPtr);
+		getPhi(Phis.Phi_ee, n.sePtr, n.sePtr);
 
 
-		getPhi(Phis.Phi_ib, n.iPtr, n.bPtr);
+		Phis.Phi_cc.resize(n.N_m + n.N_se, n.N_m + n.N_se);
+		Phis.Phi_cc << Phis.Phi_mm, Phis.Phi_me, Phis.Phi_em, Phis.Phi_ee;
+
+
+		getPhi(Phis.Phi_ic, n.iPtr, n.cPtr);
 
 	}
 	// direct sliding
 	else{
 		if(m.nDims == 2){
-			getPhi(Phis.Phi_cc, n.mPtr,n.mPtr);
-			getPhi(Phis.Phi_cs, n.mPtr, n.sePtr);
-			getPhi(Phis.Phi_sc, n.sePtr, n.mPtr);
-			getPhi(Phis.Phi_ss, n.sePtr, n.sePtr);
-//			getPhi(Phis.Phi_ic, n.iPtr, n.mPtr);
-//			getPhi(Phis.Phi_is, n.iPtr, n.sePtr);
+			// moving nodes
+			getPhi(Phis.Phi_mm, n.mPtr,n.mPtr);
 
-			Phis.Phi_bb.resize(n.N_b, n.N_b);
-			Phis.Phi_bb << Phis.Phi_cc, Phis.Phi_cs,
-							Phis.Phi_ss, Phis.Phi_sc;
+			// moving nodes and edge nodes
+			getPhi(Phis.Phi_me, n.mPtr, n.sePtr);
+			getPhi(Phis.Phi_em, n.sePtr, n.mPtr);
 
+			// edge nodes
+			getPhi(Phis.Phi_ee, n.sePtr, n.sePtr);
 
-			getPhi(Phis.Phi_ib, n.iPtr, n.bPtr);
-//			Phis.Phi_ib.resize(n.N_i, n.N_b);
-//			Phis.Phi_ib << Phis.Phi_ic, Phis.Phi_is;
+			// internal nodes and control nodes
+			getPhi(Phis.Phi_ic, n.iPtr, n.cPtr);
+
+			if(n.N_ss > 0){
+				// moving and surface ndoes
+				getPhi(Phis.Phi_ms, n.mPtr, n.ssPtr);
+				getPhi(Phis.Phi_sm, n.ssPtr, n.mPtr);
+
+				// edge nodes and surface nodes
+				getPhi(Phis.Phi_es, n.sePtr, n.ssPtr);
+				getPhi(Phis.Phi_se, n.ssPtr, n.sePtr);
+
+				// surface nodes
+				getPhi(Phis.Phi_ss, n.ssPtr, n.ssPtr);
+			}
+
+			// control nodes
+			if(params.curved){
+				if(m.nDims == 2){
+					Phis.Phi_cc.resize(n.N_c, n.N_c);
+					Phis.Phi_cc << Phis.Phi_mm, Phis.Phi_me,
+									Phis.Phi_em, Phis.Phi_ee;
+				}else if(m.nDims == 3){
+					Phis.Phi_cc << Phis.Phi_mm, Phis.Phi_me, Phis.Phi_ms,
+								Phis.Phi_em, Phis.Phi_ee, Phis.Phi_es,
+								Phis.Phi_sm, Phis.Phi_se, Phis.Phi_ss;
+				}
+			}
 
 		} else if (m.nDims == 3){
 			//todo
-			getPhi(Phis.Phi_cc ,n.mPtr,n.mPtr);
-			getPhi(Phis.Phi_ce, n.mPtr, n.sePtr);
-			getPhi(Phis.Phi_cs, n.mPtr, n.ssPtr);
+			getPhi(Phis.Phi_mm ,n.mPtr,n.mPtr);
+			getPhi(Phis.Phi_me, n.mPtr, n.sePtr);
+			getPhi(Phis.Phi_ms, n.mPtr, n.ssPtr);
 
-			getPhi(Phis.Phi_ec, n.sePtr, n.mPtr);
+			getPhi(Phis.Phi_em, n.sePtr, n.mPtr);
 			getPhi(Phis.Phi_ee, n.sePtr, n.sePtr);
 			getPhi(Phis.Phi_es, n.sePtr, n.ssPtr);
 
-			getPhi(Phis.Phi_sc, n.ssPtr, n.mPtr);
+			getPhi(Phis.Phi_sm, n.ssPtr, n.mPtr);
 			getPhi(Phis.Phi_se, n.ssPtr, n.sePtr);
 			getPhi(Phis.Phi_ss, n.ssPtr, n.ssPtr);
 
-//			getPhi(Phis.Phi_ic, n.iPtr, n.mPtr);
-//			getPhi(Phis.Phi_ie, n.iPtr, n.sePtr);
-//			getPhi(Phis.Phi_is, n.iPtr, n.ssPtr);
-
-			Phis.Phi_bb.resize(n.N_b,n.N_b);
-			Phis.Phi_bb << Phis.Phi_cc, Phis.Phi_ce, Phis.Phi_cs,
-						Phis.Phi_ec, Phis.Phi_ee, Phis.Phi_es,
-						Phis.Phi_sc, Phis.Phi_se, Phis.Phi_ss;
-
-//			Phis.Phi_ib.resize(n.N_i, n.N_b);
-//			Phis.Phi_ib << Phis.Phi_ic, Phis.Phi_ie, Phis.Phi_is;
+			getPhi(Phis.Phi_ic, n.iPtr, n.cPtr);
 
 
+			if(params.curved){
+				Phis.Phi_cc.resize(n.N_c,n.N_c);
+				Phis.Phi_cc << Phis.Phi_mm, Phis.Phi_me, Phis.Phi_ms,
+							Phis.Phi_em, Phis.Phi_ee, Phis.Phi_es,
+							Phis.Phi_sm, Phis.Phi_se, Phis.Phi_ss;
+			}
 		}
 	}
 }
@@ -115,46 +133,47 @@ void rbfGenFunc::getPhisReduced(getNodeType& n){
 	// no sliding
 	if(params.smode == "none"){
 
-		getReducedPhi(Phis.Phi_ic, n);
+		getReducedPhi(Phis.Phi_im, n);
 
 		for(int i = 0; i < n.addedNodes.idx.size(); i++){
 			if(n.addedNodes.type[i] == 0){
-				getPhi(Phis.Phi_cc, n.mPtr, n.mPtr, n.addedNodes.idx[i], 2);
-				getPhi(Phis.Phi_ic, n.iPtr, n.mPtr, n.addedNodes.idx[i], 1);
+				getPhi(Phis.Phi_mm, n.mPtr, n.mPtr, n.addedNodes.idx[i], 2);
+				getPhi(Phis.Phi_im, n.iPtr, n.mPtr, n.addedNodes.idx[i], 1);
 			}
 		}
 	}
 	else{
 
-		getReducedPhi(Phis.Phi_ib, n);
+		getReducedPhi(Phis.Phi_ic, n);
 
 		for(int i = 0; i < n.addedNodes.idx.size(); i++){
 			if(n.addedNodes.type[i] == 0){
-				getPhi(Phis.Phi_cc, n.mPtr, n.mPtr, n.addedNodes.idx[i], 2);
-				getPhi(Phis.Phi_sc, n.sePtr, n.mPtr, n.addedNodes.idx[i], 1);
-				getPhi(Phis.Phi_cs, n.mPtr, n.sePtr, n.addedNodes.idx[i], 0);
-				getPhi(Phis.Phi_ib, n.iPtr, n.bPtr, n.addedNodes.idx[i], 1);
+				getPhi(Phis.Phi_mm, n.mPtr, n.mPtr, n.addedNodes.idx[i], 2);
+				getPhi(Phis.Phi_em, n.sePtr, n.mPtr, n.addedNodes.idx[i], 1);
+				getPhi(Phis.Phi_me, n.mPtr, n.sePtr, n.addedNodes.idx[i], 0);
+				getPhi(Phis.Phi_ic, n.iPtr, n.cPtr, n.addedNodes.idx[i], 1);
 			}else if(n.addedNodes.type[i] == 1){
-				getPhi(Phis.Phi_ss, n.sePtr, n.sePtr, n.addedNodes.idx[i], 2);
-				getPhi(Phis.Phi_sc, n.sePtr, n.mPtr, n.addedNodes.idx[i], 0);
-				getPhi(Phis.Phi_cs, n.mPtr, n.sePtr, n.addedNodes.idx[i], 1);
-				getPhi(Phis.Phi_ib, n.iPtr, n.bPtr, n.addedNodes.idx[i]+n.N_m, 1);
+				getPhi(Phis.Phi_ee, n.sePtr, n.sePtr, n.addedNodes.idx[i], 2);
+				getPhi(Phis.Phi_em, n.sePtr, n.mPtr, n.addedNodes.idx[i], 0);
+				getPhi(Phis.Phi_me, n.mPtr, n.sePtr, n.addedNodes.idx[i], 1);
+				getPhi(Phis.Phi_ic, n.iPtr, n.cPtr, n.addedNodes.idx[i]+n.N_m, 1);
 			}else{
-
+				std::cout << "adding a surface node\n";
+				std::exit(0);
 			}
 
 
 		}
-
-		Phis.Phi_bb.resize(n.N_m + n.N_se, n.N_m + n.N_se);
-		Phis.Phi_bb << Phis.Phi_cc, Phis.Phi_cs, Phis.Phi_sc, Phis.Phi_ss;
+		if(params.curved || params.smode == "ps"){
+			Phis.Phi_cc.resize(n.N_m + n.N_se, n.N_m + n.N_se);
+			Phis.Phi_cc << Phis.Phi_mm, Phis.Phi_me, Phis.Phi_em, Phis.Phi_ee;
+		}
 	}
 
 
 }
 
 void rbfGenFunc::getReducedPhi(Eigen::MatrixXd& Phi, getNodeType& n){
-
 	for(int i = 0; i < n.addedNodes.idx_i.size(); i++){
 		Phi.middleRows(n.addedNodes.idx_i[i],Phi.rows()-n.addedNodes.idx_i[i]-1) = Phi.bottomRows(Phi.rows()-n.addedNodes.idx_i[i]-1);
 	}
@@ -325,11 +344,11 @@ void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, int N_m, Eigen::ArrayXi* mPt
 }
 
 void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec_b, Eigen::VectorXd& defVec, getNodeType& n,Eigen::ArrayXXd& finalDef){
-	defVec_b = Eigen::VectorXd::Zero(n.N_b*m.nDims);
+	defVec_b = Eigen::VectorXd::Zero(n.N_c*m.nDims);
 
 	for(int dim = 0; dim< m.nDims; dim++){
-		defVec_b(Eigen::seqN(dim*n.N_b,n.N_m)) = defVec(Eigen::seqN(dim*n.N_m,n.N_m));
-		defVec_b(Eigen::seqN(dim*n.N_b+n.N_m,n.N_se+n.N_ss)) = finalDef.col(dim);
+		defVec_b(Eigen::seqN(dim*n.N_c,n.N_m)) = defVec(Eigen::seqN(dim*n.N_m,n.N_m));
+		defVec_b(Eigen::seqN(dim*n.N_c+n.N_m,n.N_se+n.N_ss)) = finalDef.col(dim);
 	}
 }
 
@@ -411,8 +430,8 @@ void rbfGenFunc::updateNodes(getNodeType& n, Eigen::VectorXd& defVec, Eigen::Arr
 			ptr = n.mPtr;
 			N_m = n.N_m;
 		}else{
-			ptr = n.bPtr;
-			N_m = n.N_b;
+			ptr = n.cPtr;
+			N_m = n.N_c;
 		}
 	}
 

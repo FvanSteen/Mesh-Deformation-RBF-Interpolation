@@ -80,13 +80,13 @@ void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 			getPhis(n, iter);
 
 			if(lvl > 0){
-				getDefVec(defVec_b, n, g.errorPrevLvl, n.N_b);
+				getDefVec(defVec_b, n, g.errorPrevLvl, n.N_c);
 			}else{
 				getDefVec(defVec, n.N_m, n.mPtr);
 			}
 
 			if(lvl!=0){
-				performRBF(Phis.Phi_bb, Phis.Phi_ib, defVec_b, n.bPtr, n.iPtr, n.N_b);
+				performRBF(Phis.Phi_cc, Phis.Phi_ic, defVec_b, n.cPtr, n.iPtr, n.N_c);
 			}else{
 				performRBF_PS(PhiPtr, defVec, delta, finalDef, defVec_b, n);
 			}
@@ -104,7 +104,7 @@ void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 
 			if(params.multiLvl && (g.maxError/g.maxErrorPrevLvl < params.tolCrit || iterating == false)){
 
-				g.setLevelParams(n,lvl, d, alpha, defVec_b, n.bPtr, n.N_b);
+				g.setLevelParams(n,lvl, d, alpha, defVec_b, n.cPtr, n.N_c);
 
 				std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" << std::endl;
 				lvl++;
@@ -126,7 +126,7 @@ void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 		g.correction(m,n, params.gamma, params.multiLvl);
 		iterating = true;
 
-		std::cout << "number of control nodes: " << n.N_b << std::endl;
+		std::cout << "number of control nodes: " << n.N_c << std::endl;
 
 	}
 	std::clock_t e = std::clock();
@@ -148,7 +148,7 @@ void rbf_ps::performRBF_PS(PhiStruct* PhiPtr, Eigen::VectorXd& defVec,Eigen::Arr
 	finalDef.resize(n.N_se,m.nDims);
 
 	for(int dim = 0; dim < m.nDims; dim++){
-		delta.col(dim) = (PhiPtr->Phi_sc*(PhiPtr->Phi_cc.fullPivLu().solve(defVec(Eigen::seqN(dim*n.N_m,n.N_m))))).array();
+		delta.col(dim) = (PhiPtr->Phi_em*(PhiPtr->Phi_mm.fullPivLu().solve(defVec(Eigen::seqN(dim*n.N_m,n.N_m))))).array();
 	}
 
 
@@ -167,7 +167,7 @@ void rbf_ps::performRBF_PS(PhiStruct* PhiPtr, Eigen::VectorXd& defVec,Eigen::Arr
 
 	getDefVec(defVec_b, defVec, n, finalDef);
 	std::cout << "obtained defVec for the std rbf" << std::endl;
-	performRBF(PhiPtr->Phi_bb,PhiPtr->Phi_ib,defVec_b,n.bPtr,n.iPtr,n.N_b);
+	performRBF(PhiPtr->Phi_cc,PhiPtr->Phi_ic,defVec_b,n.cPtr,n.iPtr,n.N_c);
 	std::cout << "performed rbf" << std::endl;
 }
 

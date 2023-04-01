@@ -28,10 +28,10 @@ void getNodeType::assignNodeTypes(Mesh& m){
 	N_ss = m.N_ss;
 	ssPtr = &m.ssNodes;
 
-	N_b = m.N_m + m.N_se + m.N_ss;
-	bNodes.resize(N_b);
-	bNodes << m.mNodes, m.seNodes, m.ssNodes;
-	bPtr = &bNodes;
+	N_c = m.N_m + m.N_se + m.N_ss;
+	cNodes.resize(N_c);
+	cNodes << m.mNodes, m.seNodes, m.ssNodes;
+	cPtr = &cNodes;
 }
 
 
@@ -62,9 +62,9 @@ void getNodeType::assignNodeTypesGrdy(Mesh& m){
 	iPtrGrdy = &m.iNodes;
 	N_iGrdy = m.N_i;
 
-	N_b = 0;
-	bNodes.resize(N_b);
-	bPtr = &bNodes;
+	N_c = 0;
+	cNodes.resize(N_c);
+	cPtr = &cNodes;
 }
 
 void getNodeType::addControlNodes(Eigen::ArrayXi& nodes, std::string& smode, Mesh& m){
@@ -108,11 +108,11 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m, int i){
 	}
 
 
-
+	// todo can this if statement be omitted somehow?
 	if(smode != "none"){
-		N_b++;
-		bNodes.resize(N_b);
-		bNodes << mNodes, seNodes, ssNodes;
+		N_c++;
+		cNodes.resize(N_c);
+		cNodes << mNodes, seNodes, ssNodes;
 	}
 
 	// removing the node from the iNodes array

@@ -8,22 +8,19 @@ class getNodeType {
 public:
 
 
-//	Eigen::ArrayXi* cPtr;
 	Eigen::ArrayXi* mPtr;
-	Eigen::ArrayXi* bPtr;
+	Eigen::ArrayXi* cPtr;
 	Eigen::ArrayXi* iPtr;
 	Eigen::ArrayXi* iPtrGrdy;
 	Eigen::ArrayXi* sePtr;
-//	Eigen::ArrayXi* mStdPtr;
-//	Eigen::ArrayXi* sPtr;
 	Eigen::ArrayXi* ssPtr;
 
 	Eigen::ArrayXi iNodesIdx, cNodesIdx;
 
 
-	int N_i,N_se,N_ib,N_es,N_iGrdy, N_ss;
+	int N_i,N_se,N_iGrdy, N_ss;
 //	int N_c, N_b;
-	int N_m, N_b;
+	int N_m, N_c;
 
 	struct addedNodesData{
 		Eigen::ArrayXi idx, idx_i, type;
@@ -38,7 +35,7 @@ public:
 	void assignNodeTypesGrdy(Mesh& m);
 	void assignNodeTypesGrdy(Mesh& m, std::string& smode);
 private:
-	Eigen::ArrayXi iNodes, bNodes, mNodes, seNodes,mNodesStd,ibNodes,esNodes,ssNodes;
+	Eigen::ArrayXi iNodes, cNodes, mNodes, seNodes,ssNodes;
 
 
 };
