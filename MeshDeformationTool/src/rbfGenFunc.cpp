@@ -87,9 +87,9 @@ void rbfGenFunc::getPhisFull(getNodeType& n){
 
 
 			// control nodes
+			Phis.Phi_cc.resize(n.N_c, n.N_c);
 			if(params.curved){
 				if(m.nDims == 2){
-					Phis.Phi_cc.resize(n.N_c, n.N_c);
 					Phis.Phi_cc << Phis.Phi_mm, Phis.Phi_me,
 									Phis.Phi_em, Phis.Phi_ee;
 				}else if(m.nDims == 3){
@@ -137,8 +137,8 @@ void rbfGenFunc::getPhisReduced(getNodeType& n){
 				getPhi(Phis.Phi_se, n.ssPtr, n.sePtr, n.addedNodes.idx[i], 1);
 
 				getPhi(Phis.Phi_ic, n.iPtr, n.cPtr, n.addedNodes.idx[i]+n.N_m, 1);
-			}else{
-				// ms, sm, es, se, ss
+			}else if(n.addedNodes.type[i] == 2){
+
 				getPhi(Phis.Phi_ms, n.mPtr, n.ssPtr, n.addedNodes.idx[i], 1);
 				getPhi(Phis.Phi_sm, n.ssPtr, n.mPtr, n.addedNodes.idx[i], 0);
 
@@ -153,8 +153,14 @@ void rbfGenFunc::getPhisReduced(getNodeType& n){
 
 		}
 		if(params.curved || params.smode == "ps"){
-			Phis.Phi_cc.resize(n.N_m + n.N_se, n.N_m + n.N_se);
-			Phis.Phi_cc << Phis.Phi_mm, Phis.Phi_me, Phis.Phi_em, Phis.Phi_ee;
+			Phis.Phi_cc.resize(n.N_c, n.N_c);
+			if(m.nDims == 2){
+				Phis.Phi_cc << Phis.Phi_mm, Phis.Phi_me, Phis.Phi_em, Phis.Phi_ee;
+			}else if (m.nDims == 3){
+				Phis.Phi_cc << Phis.Phi_mm, Phis.Phi_me, Phis.Phi_ms,
+								Phis.Phi_em, Phis.Phi_ee, Phis.Phi_es,
+								Phis.Phi_sm, Phis.Phi_se, Phis.Phi_ss;
+			}
 		}
 	}
 

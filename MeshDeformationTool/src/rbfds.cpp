@@ -160,70 +160,32 @@ void rbf_ds::performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi,  PhiStruct* Phi
 		d.resize(n.N_i,m.nDims);
 	}
 
-	if(m.nDims == 2){
-		if(params.curved){
-			Eigen::ArrayXXd delta(n.N_se, m.nDims), finalDef(n.N_se,m.nDims);
+	if(params.curved){
+		Eigen::ArrayXXd delta(n.N_se+n.N_ss, m.nDims), finalDef(n.N_se+n.N_ss,m.nDims);
 
-			for (int dim = 0; dim < m.nDims; dim++){
-				delta.col(dim) = (PhiPtr->Phi_em*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_ee*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se))).array();
-			}
-
-
-			p.project(m,n,delta, finalDef, m.periodicVec);
-			getDefVec(defVec_b, defVec, n, finalDef);
-
-			performRBF(PhiPtr->Phi_cc,PhiPtr->Phi_ic,defVec_b,n.cPtr, n.iPtr, n.N_c);
-
+		for (int dim = 0; dim < m.nDims; dim++){
+			delta(Eigen::seqN(0,n.N_se),dim) = (PhiPtr->Phi_em*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_ee*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se)) + PhiPtr->Phi_es*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m+n.N_se, n.N_ss))).array();
+			delta(Eigen::seqN(n.N_se,n.N_ss),dim) = (PhiPtr->Phi_sm*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_se*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se)) + PhiPtr->Phi_ss*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m+n.N_se, n.N_ss))).array();
 		}
-		else{
-			for (int dim = 0; dim < m.nDims; dim++){
 
-				if(params.dataRed){
+		p.project(m, n, delta, finalDef, m.periodicVec);
 
-					d.col(dim) = PhiPtr->Phi_ic*alpha(Eigen::seqN(dim*n.N_c,n.N_c));
-				}
-				else{
-					m.coords(*n.iPtr, dim) += (PhiPtr->Phi_ic*alpha(Eigen::seqN(dim*n.N_c, n.N_c))).array();
+		getDefVec(defVec_b, defVec, n, finalDef);
 
-					m.coords(*n.sePtr, dim) += (PhiPtr->Phi_em*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_ee*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se))).array();
+		performRBF(PhiPtr->Phi_cc,PhiPtr->Phi_ic,defVec_b,n.cPtr, n.iPtr, n.N_c);
 
-					m.coords(*n.mPtr, dim) += (defVec(Eigen::seqN(dim*n.N_m,n.N_m))).array();
+	}else{
+		for (int dim = 0; dim < m.nDims; dim++){
+			if(params.dataRed){
+				d.col(dim) = PhiPtr->Phi_ic*alpha(Eigen::seqN(dim*n.N_c,n.N_c));
 
-				}
-			}
-		}
-	}else if(m.nDims == 3){
-		if(params.curved){
-			Eigen::ArrayXXd delta(n.N_se+n.N_ss, m.nDims), finalDef(n.N_se+n.N_ss,m.nDims);
-
-
-			for (int dim = 0; dim < m.nDims; dim++){
-				delta(Eigen::seqN(0,n.N_se),dim) = (PhiPtr->Phi_em*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_ee*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se)) + PhiPtr->Phi_es*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m+n.N_se, n.N_ss))).array();
-				delta(Eigen::seqN(n.N_se,n.N_ss),dim) = (PhiPtr->Phi_sm*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_se*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se)) + PhiPtr->Phi_ss*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m+n.N_se, n.N_ss))).array();
+			}else{
+				m.coords(*n.iPtr, dim) += (PhiPtr->Phi_ic*alpha(Eigen::seqN(dim*n.N_c, n.N_c))).array();
+				m.coords(*n.sePtr, dim) += (PhiPtr->Phi_em*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_ee*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se)) + PhiPtr->Phi_es*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m+n.N_se, n.N_ss)) ).array();
+				m.coords(*n.ssPtr, dim) += (PhiPtr->Phi_sm*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_se*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se)) + PhiPtr->Phi_ss*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m+n.N_se, n.N_ss)) ).array();
+				m.coords(*n.mPtr, dim) += (defVec(Eigen::seqN(dim*n.N_m,n.N_m))).array();
 			}
 
-
-
-			p.project(m, n, delta, finalDef, m.periodicVec);
-
-			getDefVec(defVec_b, defVec, n, finalDef);
-
-			performRBF(PhiPtr->Phi_cc,PhiPtr->Phi_ic,defVec_b,n.cPtr, n.iPtr, n.N_c);
-
-		}else{
-			for (int dim = 0; dim < m.nDims; dim++){
-				if(params.dataRed){
-					d.col(dim) = PhiPtr->Phi_ic*alpha(Eigen::seqN(dim*n.N_c,n.N_c));
-
-				}else{
-
-					m.coords(*n.iPtr, dim) += (PhiPtr->Phi_ic*alpha(Eigen::seqN(dim*n.N_c, n.N_c))).array();
-					m.coords(*n.sePtr, dim) += (PhiPtr->Phi_em*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_ee*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se)) + PhiPtr->Phi_es*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m+n.N_se, n.N_ss)) ).array();
-					m.coords(*n.ssPtr, dim) += (PhiPtr->Phi_sm*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_se*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se)) + PhiPtr->Phi_ss*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m+n.N_se, n.N_ss)) ).array();
-					m.coords(*n.mPtr, dim) += (defVec(Eigen::seqN(dim*n.N_m,n.N_m))).array();
-				}
-
-			}
 		}
 	}
 }
