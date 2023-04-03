@@ -17,7 +17,6 @@ public:
 
 	Eigen::ArrayXXd surfMidPnts, edgeMidPnts;
 
-	Eigen::ArrayXXd n, t;
 	Eigen::ArrayXXd t_se, n1_se, n2_se, n_ss,t1_ss,t2_ss;
 
 

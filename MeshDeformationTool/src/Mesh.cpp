@@ -763,20 +763,20 @@ void Mesh::getVecs(probParams& params){
 	// in case of 2D
 	if(nDims == 2){
 		// resizing of the normal and tangential vector arrays.
-		n.resize(edgeConnectivity.rows(), nDims); t.resize(edgeConnectivity.rows(), nDims);
+		n1_se.resize(edgeConnectivity.rows(), nDims); t_se.resize(edgeConnectivity.rows(), nDims);
 		// Calling function to obtain the tangential vectors along the line segments at the sliding boundary node.
-		getEdgeTan(t, edgeConnectivity, seNodes);
+		getEdgeTan(t_se, edgeConnectivity, seNodes);
 
 
 		// Finding normal of 2D problems.
-		n << t.col(1), -t.col(0);
+		n1_se << t_se.col(1), -t_se.col(0);
 
 		if(params.pmode == "moving"){
-			n.conservativeResize(N_se,nDims);
-			t.conservativeResize(N_se,nDims);
+			n1_se.conservativeResize(N_se,nDims);
+			t_se.conservativeResize(N_se,nDims);
 			for(int i = N_se - periodicVerticesNodes.size(); i< N_se; i++){
-				n.row(i) = periodicNormalVec1;
-				t.row(i) = periodicVec;
+				n1_se.row(i) = periodicNormalVec1;
+				t_se.row(i) = periodicVec;
 			}
 		}
 	}

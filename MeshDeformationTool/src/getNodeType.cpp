@@ -104,6 +104,8 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m, int i){
 		ssNodes.conservativeResize(N_ss);
 		ssNodes(N_ss-1) = node;
 
+		addedNodes.idx[i] = N_ss-1;
+		addedNodes.type[i] = 2;
 
 	}
 

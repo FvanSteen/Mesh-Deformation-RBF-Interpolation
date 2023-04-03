@@ -11,17 +11,18 @@ import matplotlib.collections
 figPath = os.path.dirname(os.path.abspath(__file__)) + "/figs/"
 os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes')
 
-fNameInit = '/25x25.su2'
-#fNameInit = '/turbine_row.su2'
-#fNameInit = '/mesh_NACA0012_inv.su2'
-#fNameInit = '/gis_nthx001_mesh.su2'
-#fileNames = ['/25x25_def_none.su2','/25x25_def_periodic.su2','/25x25_def_fixed.su2','/25x25_def_moving.su2']
-fileNames = ['/25x25_def.su2']
-
-#fileNames = ['/mesh_NACA0012_inv_def.su2']
-[f_init,v_init,elemType,bdryPnts_init,_,_,_] = getPlotData(fNameInit)
-
-[alphas_0,_,_,_] = getMeshQualParams(f_init,v_init,elemType)
+if(0):
+    fNameInit = '/25x25.su2'
+    #fNameInit = '/turbine_row.su2'
+    #fNameInit = '/mesh_NACA0012_inv.su2'
+    #fNameInit = '/gis_nthx001_mesh.su2'
+    #fileNames = ['/25x25_def_none.su2','/25x25_def_periodic.su2','/25x25_def_fixed.su2','/25x25_def_moving.su2']
+    fileNames = ['/25x25_def.su2']
+    
+    #fileNames = ['/mesh_NACA0012_inv_def.su2']
+    [f_init,v_init,elemType,bdryPnts_init,_,_,_] = getPlotData(fNameInit)
+    
+    [alphas_0,_,_,_] = getMeshQualParams(f_init,v_init,elemType)
 #%%
 #a = v_init[98320]
 #b = v_init[97661]
@@ -114,13 +115,13 @@ fileNames = ['/25x25_def.su2']
 
 
 #%% Mesh Quality plots
-#import numpy as np
-graphNames = ['','']
-#fileNames = ['/turbine_row_d.su2']
-meshQualPlot(fileNames,fNameInit,graphNames,alphas_0)
-#plt.scatter(qc[0],qc[1])
-#x = np.argwhere(np.isnan(meshQual))
-#plt.savefig(figPath + "turbine_row_ps_fixed_zoom.png", dpi=800,bbox_inches='tight')
+    #import numpy as np
+    graphNames = ['','']
+    #fileNames = ['/turbine_row_d.su2']
+    meshQualPlot(fileNames,fNameInit,graphNames,alphas_0)
+    #plt.scatter(qc[0],qc[1])
+    #x = np.argwhere(np.isnan(meshQual))
+    #plt.savefig(figPath + "turbine_row_ps_fixed_zoom.png", dpi=800,bbox_inches='tight')
 #%% MAKING A SCATTER PLOT OF THE BOUNDARY POINTS
 
 ### with the initial mesh ###
@@ -133,9 +134,9 @@ if(0):
 
 
 #%%
-if(0):
+if(1):
     #import numpy as np
-    [f_init,v_init,elemType,bdryPnts_init,markerTags, nElemsMarks, FFD_pnts] = getPlotData("/25x25x25_def.su2")
+    [f_init,v_init,elemType,bdryPnts_init,markerTags, nElemsMarks, FFD_pnts] = getPlotData("/9x9x9_def.su2")
     plotTag= ["FRONT","BACK","LOWER","UPPER","LEFT","RIGHT", "BLOCK"]
     #plotTag = ["UPPER"]
     bdryScatterFuns.bdryScatter3D(v_init, bdryPnts_init, markerTags, nElemsMarks, plotTag, FFD_pnts)
@@ -164,19 +165,19 @@ if(0):
 #fname = '/25x25x5_def.su2'
 #bdryScatterFuns.bdryScatter3D(fname)
 #%%
-if(0):
+if(1):
     import numpy as np
     import math
     import matplotlib.collections
     from colMap import colMap
     
     cmapMatlab = colMap()
-    fileNames = ['/25x25x25_def.su2']
+    fileNames = ['/9x9x9_def.su2']
     
-    [f_init,v_init,elemType,bdryPnts_init,_,_,_] = getPlotData('/25x25x25.su2')
+    [f_init,v_init,elemType,bdryPnts_init,_,_,_] = getPlotData('/9x9x9.su2')
     
     
-    
+    graphNames = ["",""]
     cutAxis = 2
     cutPlaneLoc = 0.5
     

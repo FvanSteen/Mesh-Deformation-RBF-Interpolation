@@ -45,7 +45,7 @@ void rbfGenFunc::getPhisFull(getNodeType& n){
 	}
 	// pseudo sliding
 	else if(params.smode == "ps"){
-
+		// todo can probably be together with ds
 		getPhi(Phis.Phi_mm, n.mPtr, n.mPtr);
 		getPhi(Phis.Phi_me, n.mPtr, n.sePtr);
 		getPhi(Phis.Phi_em, n.sePtr, n.mPtr);
@@ -59,34 +59,32 @@ void rbfGenFunc::getPhisFull(getNodeType& n){
 		getPhi(Phis.Phi_ic, n.iPtr, n.cPtr);
 
 	}
-	// direct sliding
+	// direct sliding todo can be added to previous ps
 	else{
-		if(m.nDims == 2){
+
 			// moving nodes
 			getPhi(Phis.Phi_mm, n.mPtr,n.mPtr);
 
 			// moving nodes and edge nodes
 			getPhi(Phis.Phi_me, n.mPtr, n.sePtr);
 			getPhi(Phis.Phi_em, n.sePtr, n.mPtr);
-
 			// edge nodes
 			getPhi(Phis.Phi_ee, n.sePtr, n.sePtr);
 
 			// internal nodes and control nodes
 			getPhi(Phis.Phi_ic, n.iPtr, n.cPtr);
 
-			if(n.N_ss > 0){
-				// moving and surface ndoes
-				getPhi(Phis.Phi_ms, n.mPtr, n.ssPtr);
-				getPhi(Phis.Phi_sm, n.ssPtr, n.mPtr);
+			// moving nodes and surface nodes
+			getPhi(Phis.Phi_ms, n.mPtr, n.ssPtr);
+			getPhi(Phis.Phi_sm, n.ssPtr, n.mPtr);
 
-				// edge nodes and surface nodes
-				getPhi(Phis.Phi_es, n.sePtr, n.ssPtr);
-				getPhi(Phis.Phi_se, n.ssPtr, n.sePtr);
+			// edge nodes and surface nodes
+			getPhi(Phis.Phi_es, n.sePtr, n.ssPtr);
+			getPhi(Phis.Phi_se, n.ssPtr, n.sePtr);
 
-				// surface nodes
-				getPhi(Phis.Phi_ss, n.ssPtr, n.ssPtr);
-			}
+			// surface nodes
+			getPhi(Phis.Phi_ss, n.ssPtr, n.ssPtr);
+
 
 			// control nodes
 			if(params.curved){
@@ -100,31 +98,6 @@ void rbfGenFunc::getPhisFull(getNodeType& n){
 								Phis.Phi_sm, Phis.Phi_se, Phis.Phi_ss;
 				}
 			}
-
-		} else if (m.nDims == 3){
-			//todo
-			getPhi(Phis.Phi_mm ,n.mPtr,n.mPtr);
-			getPhi(Phis.Phi_me, n.mPtr, n.sePtr);
-			getPhi(Phis.Phi_ms, n.mPtr, n.ssPtr);
-
-			getPhi(Phis.Phi_em, n.sePtr, n.mPtr);
-			getPhi(Phis.Phi_ee, n.sePtr, n.sePtr);
-			getPhi(Phis.Phi_es, n.sePtr, n.ssPtr);
-
-			getPhi(Phis.Phi_sm, n.ssPtr, n.mPtr);
-			getPhi(Phis.Phi_se, n.ssPtr, n.sePtr);
-			getPhi(Phis.Phi_ss, n.ssPtr, n.ssPtr);
-
-			getPhi(Phis.Phi_ic, n.iPtr, n.cPtr);
-
-
-			if(params.curved){
-				Phis.Phi_cc.resize(n.N_c,n.N_c);
-				Phis.Phi_cc << Phis.Phi_mm, Phis.Phi_me, Phis.Phi_ms,
-							Phis.Phi_em, Phis.Phi_ee, Phis.Phi_es,
-							Phis.Phi_sm, Phis.Phi_se, Phis.Phi_ss;
-			}
-		}
 	}
 }
 
@@ -151,15 +124,30 @@ void rbfGenFunc::getPhisReduced(getNodeType& n){
 				getPhi(Phis.Phi_mm, n.mPtr, n.mPtr, n.addedNodes.idx[i], 2);
 				getPhi(Phis.Phi_em, n.sePtr, n.mPtr, n.addedNodes.idx[i], 1);
 				getPhi(Phis.Phi_me, n.mPtr, n.sePtr, n.addedNodes.idx[i], 0);
+				getPhi(Phis.Phi_ms, n.mPtr, n.ssPtr, n.addedNodes.idx[i], 0);
+				getPhi(Phis.Phi_sm, n.ssPtr, n.mPtr, n.addedNodes.idx[i], 1);
+
 				getPhi(Phis.Phi_ic, n.iPtr, n.cPtr, n.addedNodes.idx[i], 1);
 			}else if(n.addedNodes.type[i] == 1){
 				getPhi(Phis.Phi_ee, n.sePtr, n.sePtr, n.addedNodes.idx[i], 2);
 				getPhi(Phis.Phi_em, n.sePtr, n.mPtr, n.addedNodes.idx[i], 0);
 				getPhi(Phis.Phi_me, n.mPtr, n.sePtr, n.addedNodes.idx[i], 1);
+
+				getPhi(Phis.Phi_es, n.sePtr, n.ssPtr, n.addedNodes.idx[i], 0);
+				getPhi(Phis.Phi_se, n.ssPtr, n.sePtr, n.addedNodes.idx[i], 1);
+
 				getPhi(Phis.Phi_ic, n.iPtr, n.cPtr, n.addedNodes.idx[i]+n.N_m, 1);
 			}else{
-				std::cout << "adding a surface node\n";
-				std::exit(0);
+				// ms, sm, es, se, ss
+				getPhi(Phis.Phi_ms, n.mPtr, n.ssPtr, n.addedNodes.idx[i], 1);
+				getPhi(Phis.Phi_sm, n.ssPtr, n.mPtr, n.addedNodes.idx[i], 0);
+
+				getPhi(Phis.Phi_es, n.sePtr, n.ssPtr, n.addedNodes.idx[i], 1);
+
+				getPhi(Phis.Phi_se, n.ssPtr, n.sePtr, n.addedNodes.idx[i], 0);
+				getPhi(Phis.Phi_ss, n.ssPtr, n.ssPtr, n.addedNodes.idx[i], 2);
+
+				getPhi(Phis.Phi_ic, n.iPtr, n.cPtr, n.addedNodes.idx[i]+n.N_m+n.N_se, 1);
 			}
 
 
@@ -221,7 +209,9 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::Ar
 				distance = getDistance((*idxSet1)[newNode],(*idxSet2)[j]);
 				Phi(lastRow,j) = rbfEval(distance);
 			}
+
 			Phi.col(lastRow) = Phi.row(lastRow);
+
 		}
 }
 
