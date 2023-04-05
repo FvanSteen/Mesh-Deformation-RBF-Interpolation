@@ -11,7 +11,7 @@ import matplotlib.collections
 figPath = os.path.dirname(os.path.abspath(__file__)) + "/figs/"
 os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes')
 
-if(0):
+if(1):
     fNameInit = '/25x25.su2'
     #fNameInit = '/turbine_row.su2'
     #fNameInit = '/mesh_NACA0012_inv.su2'
@@ -134,7 +134,7 @@ if(0):
 
 
 #%%
-if(1):
+if(0):
     #import numpy as np
     [f_init,v_init,elemType,bdryPnts_init,markerTags, nElemsMarks, FFD_pnts] = getPlotData("/9x9x9_def.su2")
     plotTag= ["FRONT","BACK","LOWER","UPPER","LEFT","RIGHT", "BLOCK"]
@@ -165,7 +165,7 @@ if(1):
 #fname = '/25x25x5_def.su2'
 #bdryScatterFuns.bdryScatter3D(fname)
 #%%
-if(1):
+if(0):
     import numpy as np
     import math
     import matplotlib.collections
@@ -194,9 +194,12 @@ if(1):
             
     
     [alphas_0,_,_,_] = getMeshQualParams3D(f_init[idxCutElems,:],v_init,elemType[idxCutElems])
-    
+
     #[f,v,elemType,_,_,_,_] = getPlotData(fileNames[0])
     meshQual = getMeshQuals3D(f[idxCutElems],v,alphas_0,elemType[idxCutElems])
+    print("Min mesh quality: \t", round(np.min(meshQual),5)) 
+    print("Max mesh quality: \t", round(np.max(meshQual),5)) 
+    print("Mean mesh quality: \t", round(np.mean(meshQual),5))
     
     v1 = [0,1,2,3,0,1,2,3,4,5,6,7]
     v2 = [1,2,3,0,4,5,6,7,5,6,7,4]

@@ -77,8 +77,13 @@ void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 
 			n.addControlNodes(g.maxErrorNodes, params.smode, m);
 
-			getPhis(n, iter);
 
+//			std::cout << "\n" <<  n.addedNodes.type << "\n" << std::endl;
+			getPhis(n, iter);
+//			if(Phis.Phi_cc.cols() >= 8){
+//				std::cout << Phis.Phi_cc << std::endl;
+//				std::exit(0);
+//			}
 			if(lvl > 0){
 				getDefVec(defVec_b, n, g.errorPrevLvl, n.N_c);
 			}else{
@@ -167,6 +172,8 @@ void rbf_ps::performRBF_PS(PhiStruct* PhiPtr, Eigen::VectorXd& defVec,Eigen::Arr
 
 	getDefVec(defVec_b, defVec, n, finalDef);
 	std::cout << "obtained defVec for the std rbf" << std::endl;
+//	std::cout << defVec_b << "\n" << std::endl;
+//	std::cout << PhiPtr->Phi_cc << "\n\n" << PhiPtr->Phi_ic << std::endl;
 	performRBF(PhiPtr->Phi_cc,PhiPtr->Phi_ic,defVec_b,n.cPtr,n.iPtr,n.N_c);
 	std::cout << "performed rbf" << std::endl;
 }

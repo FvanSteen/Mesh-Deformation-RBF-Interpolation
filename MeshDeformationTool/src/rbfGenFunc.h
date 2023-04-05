@@ -48,8 +48,11 @@ public:
 	void getPhisReduced(getNodeType& n);
 	void getPhisFull(getNodeType& n);
 	double getDistance(int node1, int node2);
-	void getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::ArrayXi* idxSet2,  int newNode, int type);
+	void getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::ArrayXi* idxSet2, int newNode, int type);
 	void getReducedPhi(Eigen::MatrixXd& Phi, getNodeType& n);
+
+	void adjustPhi(Eigen::MatrixXd& Phi, getNodeType& n, int type);
+	void getPhi2(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::ArrayXi* idxSet2, int idx, int type);
 private:
 
 
@@ -59,6 +62,7 @@ protected:
 		Eigen::MatrixXd Phi_mm, Phi_me, Phi_em, Phi_ee, Phi_im;
 		Eigen::MatrixXd Phi_ms, Phi_sm, Phi_ss, Phi_es,Phi_se;
 		Eigen::MatrixXd Phi_cc, Phi_ic;
+		Eigen::MatrixXd Phi_mc, Phi_ec, Phi_sc;
 	};
 	PhiStruct Phis;
 	PhiStruct* PhiPtr;

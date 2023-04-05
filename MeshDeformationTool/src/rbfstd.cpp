@@ -26,9 +26,9 @@ void rbf_std::perform_rbf(getNodeType& n){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 		getPhis(n, 0);
 		if(i == 0){
-			getDefVec(defVec, n.N_m, n.mPtr);
+			getDefVec(defVec, n.N_c, n.cPtr);
 		}
-		performRBF(Phis.Phi_mm, Phis.Phi_im, defVec, n.mPtr, n.iPtr, n.N_m);
+		performRBF(Phis.Phi_cc, Phis.Phi_ic, defVec, n.cPtr, n.iPtr, n.N_m);
 	}
 
 	std::cout << "number of control nodes: " << n.N_m << std::endl;
@@ -71,11 +71,11 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 			if(lvl > 0){
 				getDefVec(defVec, n, g.errorPrevLvl, n.N_m);
 			}else{
-				getDefVec(defVec, n.N_m, n.mPtr);
+				getDefVec(defVec, n.N_c, n.cPtr);
 			}
 
 
-			performRBF(Phis.Phi_mm, Phis.Phi_im, defVec, n.mPtr, n.iPtr, n.N_m);
+			performRBF(Phis.Phi_cc, Phis.Phi_ic, defVec, n.cPtr, n.iPtr, n.N_m);
 
 
 			g.getError(n, d, lvl);
@@ -95,7 +95,7 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 
 			if(params.multiLvl && (g.maxError/g.maxErrorPrevLvl < params.tolCrit || iterating == false)){
 
-				g.setLevelParams( n, lvl, d, alpha, defVec, n.mPtr, n.N_m);
+				g.setLevelParams( n, lvl, d, alpha, defVec, n.cPtr, n.N_c);
 
 
 //				w.setIntResults(i, lvl, maxError, abs(go.error).mean(), duration.count()/1e6, params.convHistFile, n.N_m);
@@ -125,7 +125,7 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 
 	}
 	std::cout << "Number of different control nodes: " << g.ctrlNodesAll.size() << std::endl;
-	std::cout << "number of control nodes: " << n.N_m << std::endl;
+	std::cout << "number of control nodes: " << n.N_c << std::endl;
 
 
 	std::clock_t e = std::clock();

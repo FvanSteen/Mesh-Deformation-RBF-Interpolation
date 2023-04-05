@@ -111,11 +111,11 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m, int i){
 
 
 	// todo can this if statement be omitted somehow?
-	if(smode != "none"){
-		N_c++;
-		cNodes.resize(N_c);
-		cNodes << mNodes, seNodes, ssNodes;
-	}
+
+	N_c++;
+	cNodes.resize(N_c);
+	cNodes << mNodes, seNodes, ssNodes;
+
 
 	// removing the node from the iNodes array
 	int idx;
@@ -123,6 +123,7 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m, int i){
 	addedNodes.idx_i[i] = idx;
 
 	N_i --;
+	// todo check why this happens twice
 	iNodes(Eigen::seqN(0,N_i)) << iNodes(Eigen::seqN(0,idx)), iNodes(Eigen::seq(idx+1,N_i));
 	iNodes.conservativeResize(N_i);
 
