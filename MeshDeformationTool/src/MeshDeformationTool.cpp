@@ -50,6 +50,8 @@ int main()
 
 	getNodeType n(probParams, meshOb);
 
+	std::clock_t s = std::clock();
+
 	if(probParams.smode == "none"){
 		rbf_std rbf(probParams, meshOb, n);
 	}else if(probParams.smode == "ps"){
@@ -57,6 +59,13 @@ int main()
 	}else{
 		rbf_ds rbf(probParams, meshOb, n);
 	}
+
+
+	std::clock_t e = std::clock();
+	long double time_elapsed_ms =  1000.0*(e-s) / CLOCKS_PER_SEC;
+	std::cout << "CPU time: " << time_elapsed_ms/1000 << " ms\n";
+
+
 	meshOb.writeMeshFile(probParams.mesh_ifName, probParams.mesh_ofName);
 
 

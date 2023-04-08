@@ -63,7 +63,8 @@ void SPDS::project(Mesh& m, getNodeType&n, Eigen::ArrayXXd& array_in, Eigen::Arr
 //		std::cout << "edge projection is done\n";
 	}
 
-	if(n.N_ss > 0){
+//	if(n.N_ss > 0){
+	if(array_in.rows() > n.N_se){
 		projectSurf(m, n.ssPtr, array_in, array_out, pVec, n.N_se, n.N_se + n.N_ss, 1);
 //		std::cout << "surf projection is done\n";
 	}

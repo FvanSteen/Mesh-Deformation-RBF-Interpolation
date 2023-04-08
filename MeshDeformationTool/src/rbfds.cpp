@@ -18,7 +18,7 @@ rbf_ds::rbf_ds(struct probParams& probParamsObject, Mesh& meshObject, getNodeTyp
 
 void rbf_ds::perform_rbf(getNodeType& n){
 	std::cout << "Performing RBF DS without data reduction" << std::endl;
-	std::clock_t s = std::clock();
+
 
 	Eigen::MatrixXd Phi;
 	Eigen::VectorXd defVec, defVec_b;
@@ -42,17 +42,11 @@ void rbf_ds::perform_rbf(getNodeType& n){
 		performRBF_DS(n, Phi, PhiPtr, defVec, defVec_b);
 	}
 
-	std::clock_t e = std::clock();
-	long double time_elapsed_ms =  1000.0*(e-s) / CLOCKS_PER_SEC;
-	std::cout << "CPU time: " << time_elapsed_ms/1000 << " ms\n";
-
 }
 
 void rbf_ds::perform_rbf(getNodeType& n, greedy& g){
 	std::cout << "Performing RBF DS " << std::endl;
 
-
-	std::clock_t s = std::clock();
 	Eigen::MatrixXd Phi;
 	Eigen::VectorXd defVec, defVec_b;
 
@@ -129,32 +123,22 @@ void rbf_ds::perform_rbf(getNodeType& n, greedy& g){
 		}
 
 		updateNodes(n, defVec_b, g.d_step, g.alpha_step, g.ctrlPtr);
+
 		g.correction( m,n,params.gamma, params.multiLvl);
+
 		iterating = true;
 	}
-
-	std::clock_t e = std::clock();
-	long double time_elapsed_ms =  1000.0*(e-s) / CLOCKS_PER_SEC;
-	std::cout << "CPU time: " << time_elapsed_ms/1000 << " ms\n";
 }
 
 void rbf_ds::setDefVec_b(Eigen::VectorXd& defVec, Eigen::VectorXd& defVec_b, getNodeType& n, PhiStruct* PhiPtr ){
 	Eigen::ArrayXXd ds(n.N_se+n.N_ss,m.nDims);
-//	if(m.nDims == 2){
-//		for(int dim = 0; dim < m.nDims; dim++){
-//			ds.col(dim) = (PhiPtr->Phi_em*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_ee*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se))).array();
-//		}
-//	} else if(m.nDims == 3){
-//		for(int dim = 0; dim < m.nDims; dim++){
-////			ds(Eigen::seqN(0, n.N_se),dim) = (PhiPtr->Phi_em*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_ee*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se)) + PhiPtr->Phi_es*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m+n.N_se, n.N_ss))).array();
-////			ds(Eigen::seqN(n.N_se, n.N_ss),dim) = (PhiPtr->Phi_sm*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_se*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se)) + PhiPtr->Phi_ss*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m+n.N_se, n.N_ss))).array();
-//		}
-//	}
+
 	for(int dim = 0; dim < m.nDims; dim++){
-		ds = ds(Eigen::seqN(0, n.N_se),dim) = (PhiPtr->Phi_ec*alpha(Eigen::seqN(dim*(n.N_c),n.N_c)) ).array();
+		ds(Eigen::seqN(0, n.N_se),dim) = (PhiPtr->Phi_ec*alpha(Eigen::seqN(dim*(n.N_c),n.N_c)) ).array();
 		ds(Eigen::seqN(n.N_se, n.N_ss),dim) = (PhiPtr->Phi_sc*alpha(Eigen::seqN(dim*(n.N_c),n.N_c)) ).array();
 	}
-	getDefVec(defVec_b,defVec,n,ds);
+
+	getDefVec(defVec_b,defVec,n,ds, n.N_c, n.N_m);
 }
 
 void rbf_ds::performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi,  PhiStruct* PhiPtr , Eigen::VectorXd& defVec, Eigen::VectorXd& defVec_b){
@@ -168,15 +152,13 @@ void rbf_ds::performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi,  PhiStruct* Phi
 		Eigen::ArrayXXd delta(n.N_se+n.N_ss, m.nDims), finalDef(n.N_se+n.N_ss,m.nDims);
 
 		for (int dim = 0; dim < m.nDims; dim++){
-//			delta(Eigen::seqN(0,n.N_se),dim) = (PhiPtr->Phi_em*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_ee*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se)) + PhiPtr->Phi_es*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m+n.N_se, n.N_ss))).array();
-//			delta(Eigen::seqN(n.N_se,n.N_ss),dim) = (PhiPtr->Phi_sm*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_se*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se)) + PhiPtr->Phi_ss*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m+n.N_se, n.N_ss))).array();
 			delta(Eigen::seqN(0,n.N_se),dim) = (PhiPtr->Phi_ec*alpha(Eigen::seqN(dim*(n.N_c),n.N_c))).array();
 			delta(Eigen::seqN(n.N_se,n.N_ss),dim) = (PhiPtr->Phi_sc*alpha(Eigen::seqN(dim*(n.N_c),n.N_c)) ).array();
 		}
 
 		p.project(m, n, delta, finalDef, m.periodicVec);
 
-		getDefVec(defVec_b, defVec, n, finalDef);
+		getDefVec(defVec_b, defVec, n, finalDef, n.N_c, n.N_m);
 
 		performRBF(PhiPtr->Phi_cc,PhiPtr->Phi_ic,defVec_b,n.cPtr, n.iPtr, n.N_c);
 
@@ -184,16 +166,12 @@ void rbf_ds::performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi,  PhiStruct* Phi
 		for (int dim = 0; dim < m.nDims; dim++){
 			if(params.dataRed){
 				d.col(dim) = PhiPtr->Phi_ic*alpha(Eigen::seqN(dim*n.N_c,n.N_c));
-
 			}else{
 				m.coords(*n.iPtr, dim) += (PhiPtr->Phi_ic*alpha(Eigen::seqN(dim*n.N_c, n.N_c))).array();
-//				m.coords(*n.sePtr, dim) += (PhiPtr->Phi_em*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_ee*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se)) + PhiPtr->Phi_es*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m+n.N_se, n.N_ss)) ).array();
 				m.coords(*n.sePtr, dim) += (PhiPtr->Phi_ec*alpha(Eigen::seqN(dim*(n.N_c),n.N_c))).array();
-//				m.coords(*n.ssPtr, dim) += (PhiPtr->Phi_sm*alpha(Eigen::seqN(dim*(n.N_c),n.N_m)) + PhiPtr->Phi_se*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m, n.N_se)) + PhiPtr->Phi_ss*alpha(Eigen::seqN(dim*(n.N_c)+n.N_m+n.N_se, n.N_ss)) ).array();
 				m.coords(*n.ssPtr, dim) += (PhiPtr->Phi_sc*alpha(Eigen::seqN(dim*(n.N_c),n.N_c)) ).array();
 				m.coords(*n.mPtr, dim) += (defVec(Eigen::seqN(dim*n.N_m,n.N_m))).array();
 			}
-
 		}
 	}
 }
@@ -213,48 +191,33 @@ void rbf_ds::getPhiDS(Eigen::MatrixXd& Phi, PhiStruct* PhiPtr, getNodeType& n){
 
 	Eigen::VectorXd diagonalEdge(n.N_se), diagonalSurf(n.N_ss);
 	for(int dim = 0; dim < m.nDims; dim++){
-//		// blocks related to the known displacements
-//		Phi.block(dim*n.N_m, dim*(n.N_c), n.N_m, n.N_m) = PhiPtr->Phi_mm;
-//		Phi.block(dim*n.N_m, dim*(n.N_c)+n.N_m, n.N_m, n.N_se) = PhiPtr->Phi_me;
-//		Phi.block(dim*n.N_m, dim*(n.N_c)+n.N_m+ n.N_se, n.N_m, n.N_ss) = PhiPtr->Phi_ms;
-
+		// block related to the known displacements
 		Phi.block(dim*n.N_m, dim*n.N_c, n.N_m, n.N_c) = PhiPtr->Phi_mc;
 
 
-
-//		//blocks related to the first zero normal displacement condition of the sliding edge nodes
-//		Phi.block(m.nDims*n.N_m, dim*(n.N_c),					n.N_se, n.N_m ) = PhiPtr->Phi_em.array().colwise() * m.n1_se(seIndices, dim);
-//		Phi.block(m.nDims*n.N_m, dim*(n.N_c) + n.N_m,			n.N_se, n.N_se ) = PhiPtr->Phi_ee.array().colwise() * m.n1_se(seIndices,dim);
-//		Phi.block(m.nDims*n.N_m, dim*(n.N_c) + n.N_m + n.N_se,	n.N_se,	n.N_ss ) = PhiPtr->Phi_es.array().colwise() * m.n1_se(seIndices, dim);
-
+		// blocks related to the zero normal displacement conditions of the sliding edge nodes
+		// first zero normal condition
 		Phi.block(m.nDims*n.N_m, dim*n.N_c,	n.N_se,	n.N_c) = PhiPtr->Phi_ec.array().colwise() * m.n1_se(seIndices, dim);
 
-//		Phi.block(m.nDims*n.N_m, dim*n.N_c, n.N_se, n.N_c) = PhiPtr->Phi_ec.array().colwise() * m.n1_se(seIndices, dim);
-
-//		//blocks realted to the second zero normal displacement condition of the sliding edge nodes
+		// second zero normal condition (only in 3D)
 		if(m.nDims == 3){
-//			Phi.block(m.nDims*n.N_m+n.N_se, dim*(n.N_c),					n.N_se, n.N_m ) = PhiPtr->Phi_em.array().colwise() * m.n2_se(seIndices, dim);
-//			Phi.block(m.nDims*n.N_m+n.N_se, dim*(n.N_c) + n.N_m,			n.N_se, n.N_se ) = PhiPtr->Phi_ee.array().colwise() * m.n2_se(seIndices, dim);
-//			Phi.block(m.nDims*n.N_m+n.N_se, dim*(n.N_c) + n.N_m + n.N_se,	n.N_se,	n.N_ss ) = PhiPtr->Phi_es.array().colwise() * m.n2_se(seIndices, dim);
 			Phi.block(m.nDims*n.N_m+n.N_se, dim*n.N_c,	n.N_se,	n.N_c ) = PhiPtr->Phi_ec.array().colwise() * m.n2_se(seIndices, dim);
 		}
-//		// blocks related to the zero tangential contribution of the sliding edge nodes
+
+		// block related to the zero tangential contribution of the sliding edge nodes
 		diagonalEdge = m.t_se(seIndices,dim);
 		Phi.block(m.nDims*n.N_m+(m.nDims-1)*n.N_se, dim*(n.N_c) + n.N_m, n.N_se, n.N_se) = diagonalEdge.asDiagonal();
 
-//		// blocks related to the zero normal displacement condition of the sliding surface nodes
-//		Phi.block(m.nDims*n.N_m+m.nDims*n.N_se, dim*(n.N_c),		n.N_ss,n.N_m) = PhiPtr->Phi_sm.array().colwise() * m.n_ss(ssIndices,dim);
-//		Phi.block(m.nDims*n.N_m+m.nDims*n.N_se, dim*(n.N_c)+n.N_m,	n.N_ss,n.N_se) = PhiPtr->Phi_se.array().colwise() * m.n_ss(ssIndices,dim);
-//		Phi.block(m.nDims*n.N_m+m.nDims*n.N_se, dim*(n.N_c)+n.N_m+n.N_se,	n.N_ss,n.N_ss) = PhiPtr->Phi_ss.array().colwise() * m.n_ss(ssIndices, dim);
 
+		// block related to the zero normal displacement condition of the sliding surface nodes
 		Phi.block(m.nDims*n.N_m+m.nDims*n.N_se, dim*n.N_c,	n.N_ss,n.N_c) = PhiPtr->Phi_sc.array().colwise() * m.n_ss(ssIndices, dim);
 
 		// blocks related to the zero tangential contribution of the sliding surface nodes.
-		// first tangential
+		// first tangential condition
 		diagonalSurf = m.t1_ss(ssIndices,dim);
 		Phi.block(m.nDims*n.N_m+m.nDims*n.N_se+n.N_ss, dim*(n.N_c)+n.N_m+n.N_se, n.N_ss,n.N_ss) = diagonalSurf.asDiagonal();
 
-		//second diagional
+		// second tangential condition
 		diagonalSurf= m.t2_ss(ssIndices,dim);
 		Phi.block(m.nDims*n.N_m+m.nDims*n.N_se+(m.nDims-1)*n.N_ss, dim*(n.N_c)+n.N_m+n.N_se, n.N_ss,n.N_ss) = diagonalSurf.asDiagonal();
 

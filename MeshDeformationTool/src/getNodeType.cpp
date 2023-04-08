@@ -28,6 +28,7 @@ void getNodeType::assignNodeTypes(Mesh& m){
 	N_ss = m.N_ss;
 	ssPtr = &m.ssNodes;
 
+
 	N_c = m.N_m + m.N_se + m.N_ss;
 	cNodes.resize(N_c);
 	cNodes << m.mNodes, m.seNodes, m.ssNodes;
@@ -43,6 +44,10 @@ void getNodeType::assignNodeTypesGrdy(Mesh& m){
 	iNodes.resize(N_i);
 	iNodes << m.mNodes, m.seNodes, m.ssNodes;
 	iPtr = &iNodes;
+//	N_i = m.N_m + m.N_se;
+//	iNodes.resize(N_i);
+//	iNodes << m.mNodes, m.seNodes;
+//	iPtr = &iNodes;
 
 	iNodesIdx = Eigen::ArrayXi::LinSpaced(N_i, 0, N_i-1);
 	cNodesIdx.resize(0);

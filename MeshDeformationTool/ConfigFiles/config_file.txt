@@ -1,50 +1,50 @@
-MESH_FILENAME = 25x25.su2
+%MESH_FILENAME = 25x25.su2
 %MESH_FILENAME = mesh_NACA0012_inv.su2
 %MESH_FILENAME = LS89_turbine.su2
 %MESH_FILENAME = turbine_row.su2
 %MESH_FILENAME = 25x25x25.su2
-%MESH_FILENAME = 9x9x9.su2
+MESH_FILENAME = 9x9x9.su2
 %MESH_FILENAME = 375x375.su2
 %MESH_FILENAME = ONERAM6_FFD.su2
 %MESH_FILENAME = OneraM6_fixed.su2
 %MESH_FILENAME = gis_nthx001_mesh.SU2
 
 
-MESH_OUT_FILENAME = 25x25_def.su2
+%MESH_OUT_FILENAME = 25x25_def.su2
 %MESH_OUT_FILENAME = mesh_NACA0012_inv_def.su2
 %MESH_OUT_FILENAME = LS89_turbine_def.su2
 %MESH_OUT_FILENAME = turbine_row_def.su2
 %MESH_OUT_FILENAME = 25x25x25_def.su25
-%MESH_OUT_FILENAME = 9x9x9_def.su2
+MESH_OUT_FILENAME = 9x9x9_def.su2
 %MESH_OUT_FILENAME = 375x375_def.su2
 %MESH_OUT_FILENAME = ONERAM6_FFD_def.su2
 %MESH_OUT_FILENAME = OneraM6_fixed_def.su2
 %MESH_OUT_FILENAME = gis_nthx001_mesh_def.SU2
 
 %
-MARKER_BDRY = (block, lower, right, upper,left)
+%MARKER_BDRY = (block, lower, right, upper,left)
 %MARKER_BDRY = (airfoil, farfield)
 %MARKER_BDRY = (airfoil, inflow, outflow, periodic_1, periodic_2)
 %MARKER_BDRY = (inflow, outflow, wall1, periodic1, periodic2)
-%MARKER_BDRY = (FRONT, BACK, LEFT, RIGHT, LOWER, UPPER, BLOCK)
+MARKER_BDRY = (FRONT, BACK, LEFT, RIGHT, LOWER, UPPER, BLOCK)
 %MARKER_BDRY = (LEFT, RIGHT, UPPER, LOWER, BLOCK)
 %MARKER_BDRY = (FRONT, BACK, ROOT, TIP, LOWER, UPPER)
 %MARKER_BDRY = (LOWER_SIDE,UPPER_SIDE,TIP, XNORMAL_FACES, YNORMAL_FACES, ZNORMAL_FACES, SYMMETRY_FACE)
 %MARKER_BDRY = (LOWER_SIDE,UPPER_SIDE,TIP)
 %MARKER_BDRY = (inlet, outlet, periodic_lower, periodic_upper, tube1, tube2, tube3, tube4, tube5, tube6, tube7, tube8, tube9, tube10)
 
-MARKER_MOVING = (block)
+%MARKER_MOVING = (block)
 %MARKER_MOVING = (airfoil)
 %MARKER_MOVING = (wall1)
-%MARKER_MOVING = (BLOCK)
+MARKER_MOVING = (BLOCK)
 %MARKER_MOVING = (FRONT,BACK,ROOT,TIP,LOWER, UPPER)
 %MARKER_MOVING = (LOWER_SIDE,UPPER_SIDE,TIP)
 %MARKER_MOVING = (tube1,tube2,tube3,tube4,tube5,tube6,tube7, tube8,tube9, tube10)
 
-MARKER_PERIODIC = (upper, lower) 
+%MARKER_PERIODIC = (upper, lower) 
 %MARKER_PERIODIC = (periodic_1,periodic_2)
 %MARKER_PERIODIC  (periodic1, periodic2)
-%MARKER_PERIODIC = (FRONT, BACK)
+MARKER_PERIODIC = (FRONT, BACK)
  
 %(none, pseudo, direct)
 SLIDING_MODE = ps
@@ -53,23 +53,23 @@ SLIDING_MODE = ps
 PERIODIC_MODE = none
 
 PERIODIC_DIRECTION = y
-STEPS = 20
+STEPS = 2
 
 INFLUENCE_FACTOR = 2.5
 
-DEFORMATION_FILENAME = 25x25_deformation.txt
+%DEFORMATION_FILENAME = 25x25_deformation.txt
 %DEFORMATION_FILENAME = mesh_NACA0012_inv_deformation.txt 
 %DEFORMATION_FILENAME = LS89_turbine_deformation.txt
 %DEFORMATION_FILENAME = turbine_row_deformation.txt
-%DEFORMATION_FILENAME = 9x9x9_deformation.txt
+DEFORMATION_FILENAME = 9x9x9_deformation.txt
 %DEFORMATION_FILENAME = 25x25x25_deformation.txt 
 %DEFORMATION_FILENAME = 375x375_deformation.txt
 %DEFORMATION_FILENAME = ONERAM6_deformation.txt
 %DEFORMATION_FILENAME = ONERAM6_FFD_deformation.txt
 %DEFORMATION_FILENAME = gis_nthx001_mesh_deformation.txt
  
-CURVED = NO
-DATA_REDUCTION = YES
+CURVED = no
+DATA_REDUCTION = no
 DATA_RED_TOLERANCE = 1e-3
 % 0.0000074815
 GAMMA = 25

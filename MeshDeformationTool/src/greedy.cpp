@@ -37,8 +37,8 @@ greedy::greedy(Mesh& m, probParams& params,Eigen::ArrayXXd& disp, Eigen::ArrayXi
 
 void greedy::getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl){
 
-	error.resize(n.N_i,(*mPtr).nDims);
-	errorAngle.resize(n.N_i, (*mPtr).nDims-1);
+	error.resize(d.rows(),(*mPtr).nDims);
+	errorAngle.resize(d.rows(), (*mPtr).nDims-1);
 	// defining array for the error directions
 //	Eigen::ArrayXXd errorAngle(n.N_i, m.nDims-1);
 
@@ -58,11 +58,13 @@ void greedy::getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl){
 	// and the maximum error magnitude
 	maxError = error.row(idxMax).matrix().norm();
 
-
 	// from here
 	if((*p).doubleEdge){
-		getErrorAngle((*mPtr).nDims, n.N_i);
+		// todo remove second argument
+		getErrorAngle((*mPtr).nDims, d.rows());
+
 		int idxMaxAngle = getDoubleEdgeError(idxMax, n.N_i, error);
+
 
 		if(idxMaxAngle == -1){
 			maxErrorNodes.resize(1);
@@ -75,6 +77,7 @@ void greedy::getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl){
 		maxErrorNodes.resize(1);
 		maxErrorNodes << (*n.iPtr)(idxMax);
 	}
+
 }
 
 void greedy::getErrorMovingNodes(Eigen::ArrayXi* nodes, Eigen::ArrayXXd& d, size_t N){
@@ -108,13 +111,16 @@ void greedy::getErrorSingleLvl(getNodeType& n, Eigen::ArrayXXd& d){
 	se_end = m_end + (*mPtr).N_se-n.N_se;
 
 	getErrorMovingNodes(n.iPtr,  d,  m_end);
-//	std::cout << "obtained error moving nodes\n";
+
+
+	//todo call class somewhere else
 	SPDS SPDSobj;
-	if(m_end != size_t(n.N_i)){
+	if(m_end != size_t(d.rows())){
 		SPDSobj.projectEdge(*mPtr, n.iPtr, d, error, *pVec, m_end, se_end, 0);
 	}
-//	std::cout << "obtained error sliding edge nodes\n";
-	if(se_end != size_t(n.N_i)){
+
+	if(se_end != size_t(d.rows())){
+
 		ss_end = se_end + (*mPtr).N_ss-n.N_ss;
 		SPDSobj.projectSurf(*mPtr, n.iPtr, d, error, *pVec, se_end, ss_end, 0);
 	}
@@ -133,9 +139,9 @@ int greedy::getDoubleEdgeError(int idxMax, int N_i, Eigen::ArrayXXd& error){
 	errorAngle.rowwise() -= maxErrorAngle.transpose();
 
 	// array containing the errors of the nodes that have an angle > 90 deg w.r.t. the max magnitude error direction
-	Eigen::ArrayXd largeAngleError(N_i-1);
+	Eigen::ArrayXd largeAngleError(error.rows()-1);
 	// corresponding indices
-	Eigen::ArrayXi largeAngleIdx(N_i-1);
+	Eigen::ArrayXi largeAngleIdx(error.rows()-1);
 	// Size of these arrays is unknown beforehand, but has a maximum of N_i-1 elements
 
 
@@ -148,7 +154,7 @@ int greedy::getDoubleEdgeError(int idxMax, int N_i, Eigen::ArrayXXd& error){
 	double refAngle2 = 3*refAngle;
 
 	// for each boundary node
-	for(int i=0; i<N_i; i++){
+	for(int i=0; i<error.rows(); i++){
 		// if the relative angle is between 90 and 270 degrees the squared norm is included in the array and its index is saved.
 		if (errorAngle.cols() == 1){
 			if(abs(errorAngle(i,0)) >= refAngle && abs(errorAngle(i,0)) <= refAngle2){
@@ -169,7 +175,7 @@ int greedy::getDoubleEdgeError(int idxMax, int N_i, Eigen::ArrayXXd& error){
 
 
 	if (cnt == 0 && errorAngle.cols() == 2){
-		for(int i=0; i<N_i; i++){
+		for(int i=0; i<error.rows(); i++){
 			if(abs(errorAngle(i,0)) >= refAngle && abs(errorAngle(i,0)) <= refAngle2){
 				largeAngleError(cnt) = error.row(i).matrix().squaredNorm();
 				largeAngleIdx(cnt) = i;

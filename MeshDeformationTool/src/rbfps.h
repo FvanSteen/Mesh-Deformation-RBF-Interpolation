@@ -22,7 +22,7 @@ public:
 	rbf_ps(struct probParams& probParamsObject, Mesh& meshObject, getNodeType& n);
 	void perform_rbf(getNodeType& n);
 	void perform_rbf(getNodeType& n, greedy& g);
-	void performRBF_PS(PhiStruct* PhiPtr, Eigen::VectorXd& defVec,Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef, Eigen::VectorXd& defVec_b, getNodeType& n);
+	void performRBF_PS(PhiStruct* PhiPtr, Eigen::VectorXd& defVec,Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef, getNodeType& n, int N_i, int N_c, int shape_type, Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ic);
 
 
 };

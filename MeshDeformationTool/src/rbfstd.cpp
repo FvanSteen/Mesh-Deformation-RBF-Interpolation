@@ -19,7 +19,7 @@ rbf_std::rbf_std(struct probParams& probParamsObject, Mesh& meshObject, getNodeT
 
 
 void rbf_std::perform_rbf(getNodeType& n){
-	std::clock_t s = std::clock();
+
 	Eigen::VectorXd defVec;
 
 	for(int i=0; i<params.steps; i++){
@@ -32,9 +32,7 @@ void rbf_std::perform_rbf(getNodeType& n){
 	}
 
 	std::cout << "number of control nodes: " << n.N_m << std::endl;
-	std::clock_t e = std::clock();
-	long double time_elapsed_ms =  1000.0*(e-s) / CLOCKS_PER_SEC;
-	std::cout << "CPU time: " << time_elapsed_ms/1000 << " ms\n";
+
 
 }
 
@@ -44,8 +42,6 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 
 	WriteResults w;
 	w.createConvHistFile(params.convHistFile);
-
-	std::clock_t s = std::clock();
 
 	Eigen::VectorXd defVec;
 
@@ -126,11 +122,6 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 	}
 	std::cout << "Number of different control nodes: " << g.ctrlNodesAll.size() << std::endl;
 	std::cout << "number of control nodes: " << n.N_c << std::endl;
-
-
-	std::clock_t e = std::clock();
-	long double time_elapsed_ms =  1000.0*(e-s) / CLOCKS_PER_SEC;
-	std::cout << "CPU time: " << time_elapsed_ms/1000 << " ms\n";
 
 }
 
