@@ -61,7 +61,7 @@ protected:
 		Eigen::MatrixXd Phi_mm, Phi_em;
 		Eigen::MatrixXd Phi_cc, Phi_ic;
 		Eigen::MatrixXd Phi_mc, Phi_ec, Phi_sc;
-		Eigen::MatrixXd Phi_meme, Phi_sme;
+		Eigen::MatrixXd Phi_meme, Phi_sme, Phi_ic_reduced;
 	};
 	PhiStruct Phis;
 	PhiStruct* PhiPtr;

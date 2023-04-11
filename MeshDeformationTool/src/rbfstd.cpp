@@ -90,7 +90,7 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 			}
 
 			if(params.multiLvl && (g.maxError/g.maxErrorPrevLvl < params.tolCrit || iterating == false)){
-
+				std::cout << "multi lvl criterium reached\n";
 				g.setLevelParams( n, lvl, d, alpha, defVec, n.cPtr, n.N_c);
 
 
@@ -102,10 +102,10 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 				iter = -1;
 				// reset the nodetypes for the next level
 				n.assignNodeTypesGrdy(m);
-
 				// if the tolerance is reached,
 				if(iterating == false){
 					g.getAlphaVector();
+					g.setInitMaxErrorNodes();
 				}
 			}
 			iter++;

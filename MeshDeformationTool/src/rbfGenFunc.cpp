@@ -46,6 +46,8 @@ void rbfGenFunc::getPhis(getNodeType& n, int iter){
 
 			Phis.Phi_sme.resize(n.N_ss, n.N_m+n.N_se);
 			Phis.Phi_sme = Phis.Phi_cc.block(n.N_m+n.N_se, 0, n.N_ss, n.N_m+n.N_se);
+
+			Phis.Phi_ic_reduced = Phis.Phi_ic.block(0,0,n.N_i- m.N_ss + n.N_ss, n.N_m+n.N_se);
 		}
 
 	}else if(params.smode == "ds"){
@@ -59,7 +61,6 @@ void rbfGenFunc::getPhis(getNodeType& n, int iter){
 		Phis.Phi_sc.resize(n.N_ss, n.N_c);
 		Phis.Phi_sc = Phis.Phi_cc.block(n.N_m+n.N_se,0,n.N_ss, n.N_c);
 	}
-
 }
 
 void rbfGenFunc::getPhisFull(getNodeType& n){
@@ -102,6 +103,7 @@ void rbfGenFunc::getPhisReduced(getNodeType& n){
 				getPhi(Phis.Phi_ic, n.iPtr, n.cPtr, n.addedNodes.idx[i]+n.N_m+n.N_se, 1);
 				break;
 		}
+
 	}
 }
 
@@ -127,17 +129,27 @@ void rbfGenFunc::adjustPhi(Eigen::MatrixXd& Phi, getNodeType& n,  int type){
 			break;
 	}
 
+
 	for(int i = 0; i < n.addedNodes.idx.size(); i++){
+		int idx_shift = 0;
+		if(n.addedNodes.idx.size() > 1 && n.addedNodes.type[1] < n.addedNodes.type[0]){
+			idx_shift = -1;
+		}
+
 		switch(n.addedNodes.type[i]){
 		case 0:
 			idx = n.addedNodes.idx[i];
 			break;
 		case 1:
-			idx = n.addedNodes.idx[i] + n.N_m;
+			idx = n.addedNodes.idx[i] + n.N_m + idx_shift;
 			break;
 		case 2:
-			idx = n.addedNodes.idx[i] + n.N_m + n.N_se;
+			idx = n.addedNodes.idx[i] + n.N_m + n.N_se + idx_shift;
 			break;
+		}
+
+		if(idx < 0){
+			idx = 0;
 		}
 
 		if( type > 0){
@@ -272,7 +284,7 @@ double rbfGenFunc::getDistance(int node1, int node2){
 
 
 void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, int N_m, Eigen::ArrayXi* mPtr){
-//	std::cout << "determinging std defvec"  << std::endl;
+
 	defVec = Eigen::VectorXd::Zero(N_m*m.nDims);
 	int idx;
 	int size = (*mPtr).size();
@@ -290,10 +302,7 @@ void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, int N_m, Eigen::ArrayXi* mPt
 
 void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec_b, Eigen::VectorXd& defVec, getNodeType& n,Eigen::ArrayXXd& finalDef, int N, int N_init){
 	defVec_b = Eigen::VectorXd::Zero(N*m.nDims);
-	int size = defVec.size()/m.nDims;
-	std::cout << size << std::endl;
-	std::cout << N-size << std::endl;
-	std::cout << n.N_m << std::endl;
+
 	for(int dim = 0; dim< m.nDims; dim++){
 		defVec_b(Eigen::seqN(dim*N,N_init)) = defVec(Eigen::seqN(dim*N_init,N_init));
 		defVec_b(Eigen::seqN(dim*N+N_init,N-N_init)) = finalDef.col(dim);

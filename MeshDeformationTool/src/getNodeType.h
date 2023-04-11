@@ -14,6 +14,7 @@ public:
 	Eigen::ArrayXi* iPtrGrdy;
 	Eigen::ArrayXi* sePtr;
 	Eigen::ArrayXi* ssPtr;
+	Eigen::ArrayXi* iPtr_reduced;
 
 	Eigen::ArrayXi iNodesIdx, cNodesIdx;
 
@@ -35,7 +36,8 @@ public:
 	void assignNodeTypesGrdy(Mesh& m);
 	void assignNodeTypesGrdy(Mesh& m, std::string& smode);
 private:
-	Eigen::ArrayXi iNodes, cNodes, mNodes, seNodes,ssNodes;
+	bool pseudo;
+	Eigen::ArrayXi iNodes, cNodes, mNodes, seNodes,ssNodes, iNodesReduced;
 
 
 };

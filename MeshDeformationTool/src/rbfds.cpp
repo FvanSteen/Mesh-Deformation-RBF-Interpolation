@@ -21,7 +21,7 @@ void rbf_ds::perform_rbf(getNodeType& n){
 
 
 	Eigen::MatrixXd Phi;
-	Eigen::VectorXd defVec, defVec_b;
+
 
 	for (int i = 0; i < params.steps; i++){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
@@ -32,25 +32,20 @@ void rbf_ds::perform_rbf(getNodeType& n){
 		}
 
 		if(i==0){
-			getDefVec(defVec, n.N_c, n.mPtr);
+			getDefVec(defVec_ds, n.N_c, n.mPtr);
 		}
 
 		getPhis(n, 0);
 
-		getPhiDS(Phi, PhiPtr ,n);
+		getPhiDS(n, PhiPtr);
 
-		performRBF_DS(n, Phi, PhiPtr, defVec, defVec_b);
+		performRBF_DS(n, PhiPtr);
 	}
 
 }
 
 void rbf_ds::perform_rbf(getNodeType& n, greedy& g){
 	std::cout << "Performing RBF DS " << std::endl;
-
-	Eigen::MatrixXd Phi;
-	Eigen::VectorXd defVec, defVec_b;
-
-
 
 	int iter, lvl;
 	bool iterating = true;
@@ -69,20 +64,18 @@ void rbf_ds::perform_rbf(getNodeType& n, greedy& g){
 		while(iterating){
 
 			n.addControlNodes(g.maxErrorNodes, params.smode, m);
-//			std::cout << g.maxErrorNodes << "\n\n\n\n" << *n.cPtr << "\n\n\n" << std::endl;
+
 			// obtaining the interpolation matrices
 			getPhis(n, iter);
 
 			// obtaining the deformation vector
-
-			getDefVec(defVec, n.N_c, n.mPtr);
 			if(lvl!=0){
-				getPhi(PhiPtr->Phi_cc, n.cPtr,n.cPtr);
-				getPhi(PhiPtr->Phi_ic, n.iPtr,n.cPtr);
-				performRBF(PhiPtr->Phi_cc, PhiPtr->Phi_ic, defVec, n.cPtr, n.iPtr, n.N_c);
+				getDefVec(defVec_all, n, g.errorPrevLvl, n.N_c);
+				performRBF(PhiPtr->Phi_cc, PhiPtr->Phi_ic, defVec_all, n.cPtr, n.iPtr, n.N_c);
 			}else{
-				getPhiDS(Phi, PhiPtr ,n);
-				performRBF_DS(n, Phi, PhiPtr, defVec, defVec_b);
+				getDefVec(defVec_ds, n.N_c, n.mPtr);
+				getPhiDS(n, PhiPtr);
+				performRBF_DS(n, PhiPtr);
 			}
 
 
@@ -99,12 +92,17 @@ void rbf_ds::perform_rbf(getNodeType& n, greedy& g){
 			}
 
 			if(params.multiLvl && (g.maxError/g.maxErrorPrevLvl < params.tolCrit || iterating == false)){
-				// todo direct sliding with multi level
 				std::cout << "LEVEL: " << lvl << " HAS BEEN DONE" << std::endl;
-				g.setLevelParams(n,lvl, d, alpha, defVec_b,n.cPtr, n.N_c);
+
+				if(lvl == 0){
+					setDefVec_all(n, PhiPtr);
+				}
+
+				g.setLevelParams(n,lvl, d, alpha, defVec_all,n.cPtr, n.N_c);
 
 				lvl++;
 				iter = -1;
+
 
 				n.assignNodeTypesGrdy(m);
 
@@ -118,31 +116,31 @@ void rbf_ds::perform_rbf(getNodeType& n, greedy& g){
 		}
 
 
-		if(params.curved == false){
-			setDefVec_b(defVec, defVec_b, n, PhiPtr);
+		if(params.curved == false && params.multiLvl == false){
+			setDefVec_all(n, PhiPtr);
 		}
-
-		updateNodes(n, defVec_b, g.d_step, g.alpha_step, g.ctrlPtr);
-
+		std::cout << "updating nodes\n";
+		updateNodes(n, defVec_all, g.d_step, g.alpha_step, g.ctrlPtr);
+		std::cout << "performing correction\n";
 		g.correction( m,n,params.gamma, params.multiLvl);
-
 		iterating = true;
 	}
 }
 
-void rbf_ds::setDefVec_b(Eigen::VectorXd& defVec, Eigen::VectorXd& defVec_b, getNodeType& n, PhiStruct* PhiPtr ){
+void rbf_ds::setDefVec_all(getNodeType& n, PhiStruct* PhiPtr){
 	Eigen::ArrayXXd ds(n.N_se+n.N_ss,m.nDims);
 
 	for(int dim = 0; dim < m.nDims; dim++){
 		ds(Eigen::seqN(0, n.N_se),dim) = (PhiPtr->Phi_ec*alpha(Eigen::seqN(dim*(n.N_c),n.N_c)) ).array();
 		ds(Eigen::seqN(n.N_se, n.N_ss),dim) = (PhiPtr->Phi_sc*alpha(Eigen::seqN(dim*(n.N_c),n.N_c)) ).array();
+
 	}
 
-	getDefVec(defVec_b,defVec,n,ds, n.N_c, n.N_m);
+	getDefVec(defVec_all,defVec_ds,n,ds, n.N_c, n.N_m);
 }
 
-void rbf_ds::performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi,  PhiStruct* PhiPtr , Eigen::VectorXd& defVec, Eigen::VectorXd& defVec_b){
-	alpha = Phi.colPivHouseholderQr().solve(defVec);
+void rbf_ds::performRBF_DS(getNodeType& n, PhiStruct* PhiPtr){
+	alpha = Phi.colPivHouseholderQr().solve(defVec_ds);
 
 	if(params.dataRed){
 		d.resize(n.N_i,m.nDims);
@@ -158,9 +156,9 @@ void rbf_ds::performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi,  PhiStruct* Phi
 
 		p.project(m, n, delta, finalDef, m.periodicVec);
 
-		getDefVec(defVec_b, defVec, n, finalDef, n.N_c, n.N_m);
+		getDefVec(defVec_all, defVec_ds, n, finalDef, n.N_c, n.N_m);
 
-		performRBF(PhiPtr->Phi_cc,PhiPtr->Phi_ic,defVec_b,n.cPtr, n.iPtr, n.N_c);
+		performRBF(PhiPtr->Phi_cc,PhiPtr->Phi_ic,defVec_all,n.cPtr, n.iPtr, n.N_c);
 
 	}else{
 		for (int dim = 0; dim < m.nDims; dim++){
@@ -170,15 +168,17 @@ void rbf_ds::performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi,  PhiStruct* Phi
 				m.coords(*n.iPtr, dim) += (PhiPtr->Phi_ic*alpha(Eigen::seqN(dim*n.N_c, n.N_c))).array();
 				m.coords(*n.sePtr, dim) += (PhiPtr->Phi_ec*alpha(Eigen::seqN(dim*(n.N_c),n.N_c))).array();
 				m.coords(*n.ssPtr, dim) += (PhiPtr->Phi_sc*alpha(Eigen::seqN(dim*(n.N_c),n.N_c)) ).array();
-				m.coords(*n.mPtr, dim) += (defVec(Eigen::seqN(dim*n.N_m,n.N_m))).array();
+				m.coords(*n.mPtr, dim) += (defVec_ds(Eigen::seqN(dim*n.N_m,n.N_m))).array();
 			}
 		}
 	}
+
+
 }
 
 
 
-void rbf_ds::getPhiDS(Eigen::MatrixXd& Phi, PhiStruct* PhiPtr, getNodeType& n){
+void rbf_ds::getPhiDS(getNodeType& n, PhiStruct* PhiPtr){
 
 	// setting the overal matrix to correct size
 	Phi = Eigen::MatrixXd::Zero(m.nDims*(n.N_c),m.nDims*(n.N_c));

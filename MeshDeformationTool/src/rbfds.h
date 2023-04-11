@@ -18,12 +18,13 @@ public:
 	rbf_ds(struct probParams& probParamsObject, Mesh& meshObject, getNodeType& n);
 	void perform_rbf(getNodeType& n);
 	void perform_rbf(getNodeType& n, greedy& g);
-	void performRBF_DS(getNodeType& n, Eigen::MatrixXd& Phi, PhiStruct* PhiPtr, Eigen::VectorXd& defVec, Eigen::VectorXd& defVec_b);
-	void getPhiDS(Eigen::MatrixXd& Phi,PhiStruct* PhiPtr ,getNodeType& n);
+	void performRBF_DS(getNodeType& n, PhiStruct* PhiPtr);
+	void getPhiDS(getNodeType& n, PhiStruct* PhiPtr);
 	void getIdxSlidingNodes(Eigen::ArrayXi* sPtr, Eigen::ArrayXi& idx, Eigen::ArrayXi& sNodesInit);
-	void setDefVec_b(Eigen::VectorXd& defVec, Eigen::VectorXd& defVec_b, getNodeType& n, PhiStruct* PhisPtr);
+	void setDefVec_all(getNodeType& n, PhiStruct* PhisPtr);
 private:
-
+	Eigen::VectorXd defVec_ds, defVec_all;
+	Eigen::MatrixXd Phi;
 };
 
 #endif /* RBFDS_H_ */

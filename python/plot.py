@@ -11,7 +11,7 @@ import matplotlib.collections
 figPath = os.path.dirname(os.path.abspath(__file__)) + "/figs/"
 os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes')
 
-if(1):
+if(0):
     fNameInit = '/25x25.su2'
     #fNameInit = '/turbine_row.su2'
     #fNameInit = '/mesh_NACA0012_inv.su2'
@@ -126,19 +126,19 @@ if(1):
 
 ### with the initial mesh ###
 if(0):
-    bdryScatterFuns.bdryScatter2(v_init,bdryPnts_init, fileNames[0])
+#    bdryScatterFuns.bdryScatter2(v_init,bdryPnts_init, fileNames[0])
 
 ### without the initial mesh ###
-#bdryScatterFuns.bdryScatter(fileNames[0])
+    bdryScatterFuns.bdryScatter(fileNames[0])
 
 
 
 #%%
-if(0):
+if(1):
     #import numpy as np
     [f_init,v_init,elemType,bdryPnts_init,markerTags, nElemsMarks, FFD_pnts] = getPlotData("/9x9x9_def.su2")
     plotTag= ["FRONT","BACK","LOWER","UPPER","LEFT","RIGHT", "BLOCK"]
-    #plotTag = ["UPPER"]
+
     bdryScatterFuns.bdryScatter3D(v_init, bdryPnts_init, markerTags, nElemsMarks, plotTag, FFD_pnts)
 
 
@@ -165,7 +165,7 @@ if(0):
 #fname = '/25x25x5_def.su2'
 #bdryScatterFuns.bdryScatter3D(fname)
 #%%
-if(0):
+if(1):
     import numpy as np
     import math
     import matplotlib.collections
@@ -191,7 +191,7 @@ if(0):
         if np.any(v[f][i][:,cutAxis] < cutPlaneLoc) and np.any(v[f][i][:,cutAxis] >= cutPlaneLoc):
             if set(f[i]).issubset(bdryPnts_init_unique) == False:
                 idxCutElems = np.append(idxCutElems, i)
-            
+            7
     
     [alphas_0,_,_,_] = getMeshQualParams3D(f_init[idxCutElems,:],v_init,elemType[idxCutElems])
 

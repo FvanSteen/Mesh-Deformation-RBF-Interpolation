@@ -278,9 +278,10 @@ void greedy::correction(Mesh& m, getNodeType& n, double& gamma, bool& multiLvl){
 
 void greedy::setLevelParams(getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::VectorXd& alpha,Eigen::VectorXd& defVec, Eigen::ArrayXi* cPtr, int N_c){
 
-
+	// setting maxErrorPrevLvl to the current error
 	maxErrorPrevLvl = maxError;
 
+	// initializing variables that keep track of the control node information
 	if(lvl == 0){
 //		deltaInternal = Eigen::ArrayXXd::Zero(m.N_i, m.nDims);
 		delta = Eigen::ArrayXXd::Zero((*mPtr).N_m+(*mPtr).N_se+(*mPtr).N_ss, (*mPtr).nDims);
@@ -289,23 +290,28 @@ void greedy::setLevelParams(getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::
 //		alphaSum = Eigen::VectorXd::Zero(m.nDims*n.N_i);
 	}
 
-
+	// array with the new control nodes and interpolation coefficients
 	Eigen::ArrayXi newCtrlNodes(N_c);
 	Eigen::ArrayXXd newAlpha(N_c, (*mPtr).nDims);
+
 
 	int cnt = 0;
 	int idx, dim;
 	for(int i = 0; i < N_c; i++){
 //		std::cout << i << '\t' << N_c << std::endl;
+		// check for each control if its already included
 		idx = std::distance(std::begin(ctrlNodesAll), std::find(std::begin(ctrlNodesAll), std::end(ctrlNodesAll), (*cPtr)(i)));
 		if(idx == ctrlNodesAll.size()){
 //			std::cout << i << '\t' << (*n.mPtr)(i) << std::endl;
+			// if not included then add to newControlNodes list
 			newCtrlNodes(cnt) = i;
 
+			// adding new alpha to list
 			for(dim =0; dim < (*mPtr).nDims; dim++){
 				newAlpha(cnt, dim) = alpha(dim*N_c+i);
 			}
 			cnt++;
+		// if its already included then add to accumulative sum
 		}else{
 			for(dim = 0; dim < (*mPtr).nDims; dim++){
 				alphaTotal(idx,dim) += alpha(dim*N_c+i);
@@ -313,23 +319,26 @@ void greedy::setLevelParams(getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::
 		}
 	}
 
-
+	// resizing
 	ctrlNodesAll.conservativeResize(ctrlNodesAll.size()+cnt);
 	alphaTotal.conservativeResize(alphaTotal.rows()+cnt,(*mPtr).nDims);
 
+	// adding
 	ctrlNodesAll(Eigen::lastN(cnt)) = (*cPtr)(newCtrlNodes(Eigen::seqN(0,cnt)));
 	alphaTotal(Eigen::lastN(cnt), Eigen::all) = newAlpha(Eigen::seqN(0,cnt), Eigen::all);
 
-
+	// the deformation of the "internal" nodes
 	delta(n.iNodesIdx,Eigen::all) += d;
 
+	// deformation of the control nodes
 	for(int dim = 0; dim < (*mPtr).nDims; dim++ ){
 		delta(n.cNodesIdx,dim) += (defVec(Eigen::seqN(dim*N_c, N_c))).array();
 	}
 
+	// set error of the prev lvl equal to current error
 	errorPrevLvl = Eigen::ArrayXXd::Zero((*mPtr).N_m+(*mPtr).N_se+(*mPtr).N_ss, (*mPtr).nDims);
 	errorPrevLvl(n.iNodesIdx,Eigen::all) = error;
-//	std::cout << test(n.cNodesIdx) << std::endl;
+
 }
 
 void greedy::getAlphaVector(){

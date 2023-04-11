@@ -13,7 +13,7 @@ class bdryScatterFuns:
         bdryPnts = np.unique(bdryPnts)
         plt.figure()
         ax = plt.gca()
-        bdryScatterFuns.scatter(v,bdryPnts,".")    
+        bdryScatterFuns.scatter(v,bdryPnts,".")  
         ax.set_aspect('equal')
         return
 
@@ -42,6 +42,9 @@ class bdryScatterFuns:
                 bdryPntsPlot =  np.unique(bdryPnts[sum(nElemsMarker[0:idx]):sum(nElemsMarker[0:idx+1]),:])
             
                 ax.scatter(v[bdryPntsPlot][:,0],v[bdryPntsPlot][:,1],v[bdryPntsPlot][:,2],marker = "1")
+                
+        bdryPntsPlot = np.array([453,546,456,556,446,  9,543,909,444,553,990,554,300,799,390,609,199,800, 60,293,704,792,289,770, 11,260,502,659,307, 12,560,610])
+        ax.scatter(v[bdryPntsPlot][:,0],v[bdryPntsPlot][:,1],v[bdryPntsPlot][:,2],marker = "1")
         ax.legend(plotTag)
 #        scaling = np.array([getattr(ax, 'get_{}lim'.format(dim))() for dim in 'xyz'])
 #        ax.auto_scale_xyz(*[[np.min(scaling), np.max(scaling)]]*3)

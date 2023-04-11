@@ -4,12 +4,12 @@
 #include <iterator>
 getNodeType::getNodeType(probParams& params, Mesh& m)
 {
+	if(params.smode == "ps"){
+		pseudo = true;
+	}
+
 	if(params.dataRed){
-//		if(params.smode == "ps" && m.nDims ==3){
-//			assignNodeTypesGrdy(m, params.smode);
-//		}else{
 		assignNodeTypesGrdy(m);
-//		}
 	}else{
 		assignNodeTypes(m);
 	}
@@ -44,10 +44,11 @@ void getNodeType::assignNodeTypesGrdy(Mesh& m){
 	iNodes.resize(N_i);
 	iNodes << m.mNodes, m.seNodes, m.ssNodes;
 	iPtr = &iNodes;
-//	N_i = m.N_m + m.N_se;
-//	iNodes.resize(N_i);
-//	iNodes << m.mNodes, m.seNodes;
-//	iPtr = &iNodes;
+
+	if(pseudo){
+		iNodesReduced = iNodes(Eigen::seqN(0,m.N_m+m.N_se));
+		iPtr_reduced = &iNodesReduced;
+	}
 
 	iNodesIdx = Eigen::ArrayXi::LinSpaced(N_i, 0, N_i-1);
 	cNodesIdx.resize(0);
@@ -91,9 +92,9 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m, int i){
 
 		addedNodes.idx[i] = N_m-1;
 		addedNodes.type[i] = 0;
+
 	// check if the node is among the sliding edge nodes
 	}else if(std::find(std::begin(m.seNodes),std::end(m.seNodes),node) != std::end(m.seNodes)){
-
 		N_se++;
 		seNodes.conservativeResize(N_se);
 		seNodes(N_se-1) = node;
@@ -104,7 +105,6 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m, int i){
 
 	// check is the node is a silding surface node
 	}else if(std::find(std::begin(m.ssNodes), std::end(m.ssNodes),node) != std::end(m.ssNodes)){
-
 		N_ss++;
 		ssNodes.conservativeResize(N_ss);
 		ssNodes(N_ss-1) = node;
@@ -116,7 +116,6 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m, int i){
 
 
 	// todo can this if statement be omitted somehow?
-
 	N_c++;
 	cNodes.resize(N_c);
 	cNodes << mNodes, seNodes, ssNodes;
@@ -127,30 +126,62 @@ void getNodeType::addControlNode(int node, std::string& smode, Mesh& m, int i){
 	idx = std::distance(std::begin(iNodes), std::find(std::begin(iNodes), std::end(iNodes),node));
 	addedNodes.idx_i[i] = idx;
 
+
 	N_i --;
-	// todo check why this happens twice
 	iNodes(Eigen::seqN(0,N_i)) << iNodes(Eigen::seqN(0,idx)), iNodes(Eigen::seq(idx+1,N_i));
 	iNodes.conservativeResize(N_i);
+
 
 	// cNodesIdx contains the order of the control node set (ordered as moving nodes, sliding edge nodes, sliding surf nodes)
 	cNodesIdx.conservativeResize(N_m+N_se+N_ss);
 
-	if(idx <= (m.N_m-N_m)){
+
+	switch(addedNodes.type[i]){
+		case 0:
+			cNodesIdx(Eigen::seqN(N_m,N_se+N_ss)) = cNodesIdx(Eigen::seqN(N_m-1,N_se+N_ss)).eval();
+			cNodesIdx(N_m-1) = iNodesIdx(idx);
+			break;
+
+		case 1:
+			cNodesIdx(Eigen::seqN(N_m+N_se,N_ss)) = cNodesIdx(Eigen::seqN(N_m+N_se-1,N_ss)).eval();
+			cNodesIdx(N_m+N_se-1) = iNodesIdx(idx);
+			break;
+
+		case 2:
+			cNodesIdx(N_m+N_se+N_ss-1) = iNodesIdx(idx);
+			break;
+
+	}
+
+
+	/*// todo remove the following part
+	if(addedNodes.type[i] == 0){
+		std::cout << "idx: " << idx << std::endl;
+		std::cout << "N_m: " << N_m << std::endl;
+		std::cout << "N_se: " << N_se << std::endl;
+		std::cout << "N_ss: " << N_ss << std::endl;
+
 		cNodesIdx(Eigen::seqN(N_m,N_se+N_ss)) = cNodesIdx(Eigen::seqN(N_m-1,N_se+N_ss)).eval();
+		std::cout << "\n" << cNodesIdx << "\n\n";
 		cNodesIdx(N_m-1) = iNodesIdx(idx);
+		std::cout << "\n" << cNodesIdx << "\n\n";
 	}else if(idx <= (m.N_m-N_m) + (m.N_se-N_se)){
+		std::cout << "2\n";
 		cNodesIdx(Eigen::seqN(N_m+N_se,N_ss)) = cNodesIdx(Eigen::seqN(N_m+N_se-1,N_ss)).eval();
 		cNodesIdx(N_m+N_se-1) = iNodesIdx(idx);
 	}else{
+		std::cout << "3\n";
 		cNodesIdx(N_m+N_se+N_ss-1) = iNodesIdx(idx);
 	}
+	*/
 
 	// remaining indices of the unselected boundary nodes
-
 	iNodesIdx(Eigen::seqN(0,N_i)) << iNodesIdx(Eigen::seqN(0,idx)), iNodesIdx(Eigen::seq(idx+1,N_i));
 	iNodesIdx.conservativeResize(N_i);
 
-
+	if(pseudo){
+		iNodesReduced = iNodes(Eigen::seqN(0,N_i- m.N_ss + N_ss));
+	}
 }
 
 

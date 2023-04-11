@@ -22,9 +22,13 @@ public:
 	rbf_ps(struct probParams& probParamsObject, Mesh& meshObject, getNodeType& n);
 	void perform_rbf(getNodeType& n);
 	void perform_rbf(getNodeType& n, greedy& g);
-	void performRBF_PS(PhiStruct* PhiPtr, Eigen::VectorXd& defVec,Eigen::ArrayXXd& delta, Eigen::ArrayXXd& finalDef, getNodeType& n, int N_i, int N_c, int shape_type, Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ic);
+	void pseudo_sliding_edge(PhiStruct* PhiPtr, getNodeType& n);
+	void pseudo_sliding_surf(PhiStruct* PhiPtr, getNodeType& n);
 
+private:
 
+	Eigen::VectorXd defVec_m, defVec_me, defVec_all;
+	Eigen::ArrayXXd free_disp_edge, proj_disp_edge, free_disp_all, proj_disp_all;
 };
 
 
