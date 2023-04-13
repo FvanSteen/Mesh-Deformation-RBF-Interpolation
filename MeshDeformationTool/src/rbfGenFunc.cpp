@@ -221,62 +221,71 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::Ar
 
 double rbfGenFunc::getDistance(int node1, int node2){
 	double dist;
-	if(m.nDims == 2){
-		// Euclidian distance
-
-//				dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet22(j),0),2) + pow(m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1),2));
-
-
-		//todo following if statement is introduced to improve efficiency, check if anything else can be done
-		if(params.pmode != "none"){
-			dist = 0;
-			for(int dim = 0; dim < m.nDims; dim++){
-				if(m.periodicVec(dim)){
-					dist += pow(m.lambda/M_PI*sin( (m.coords(node1,dim)-m.coords(node2,dim))*M_PI/m.lambda),2);
-				}
-				else{
-					dist += pow(m.coords(node1,dim)-m.coords(node2,dim),2);
-				}
-			}
-			dist = sqrt(dist);
+	if(params.ptype){
+		if(m.nDims == 2){
+			dist = sqrt(pow(m.coords_polar_spherical(node1,0),2) + pow(m.coords_polar_spherical(node2,0),2) -2*m.coords_polar_spherical(node1,0)*m.coords_polar_spherical(node2,0)*cos(m.coords_polar_spherical(node1,1)-m.coords_polar_spherical(node2,1)));
+		}else if(m.nDims == 3){
+			std::cout << "implement 3D\n";
+			std::exit(0);
 		}
-		else{
-			//todo can the difference in coordinates by calculated for the whole row. then take the power of 2, sum and take square root??
-			dist = sqrt(pow(m.coords(node1,0)-m.coords(node2,0),2) + pow(m.coords(node1,1)-m.coords(node2,1),2) );
-		}
-//				dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(1/M_PI*sin( (m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1))*M_PI/1),2));
-//				std::cout << dist << std::endl;
-//				std::cout << 'x' << '\t' << m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0) << std::endl;
-//				std::cout << 'y' << '\t' << m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1) << std::endl;
+	}else{
+		if(m.nDims == 2){
+			// Euclidian distance
 
-	}
-	//todo if statements can probably by removed if the calc is done with the previous for loop.
-	else if(m.nDims == 3){
-		if(params.pmode != "none"){
-			dist = 0;
-//					std::cout << m.coords.row((*idxSet1)(i)) << std::endl;
-//					std::cout << m.coords.row((*idxSet2)(j)) << std::endl;
-			for(int dim = 0; dim < m.nDims; dim++){
+	//				dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet22(j),0),2) + pow(m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1),2));
 
-				if(m.periodicVec(dim)){
-					dist += pow(m.lambda/M_PI*sin( (m.coords(node1,dim)-m.coords(node2,dim))*M_PI/m.lambda),2);
-//							std::cout << "here: " << pow(m.lambda/M_PI*sin( (m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim))*M_PI/m.lambda),2) << std::endl;
-				}else{
-					dist += pow(m.coords(node1,dim)-m.coords(node2,dim),2);
-//							std::cout << "local dist: " << pow(m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim),2) << std::endl;
+
+			//todo following if statement is introduced to improve efficiency, check if anything else can be done
+			if(params.pmode != "none"){
+				dist = 0;
+				for(int dim = 0; dim < m.nDims; dim++){
+					if(m.periodicVec(dim)){
+						dist += pow(m.lambda/M_PI*sin( (m.coords(node1,dim)-m.coords(node2,dim))*M_PI/m.lambda),2);
+					}
+					else{
+						dist += pow(m.coords(node1,dim)-m.coords(node2,dim),2);
+					}
 				}
-//						std::cout << " squared distance: "<< dist << std::endl;
-
-
+				dist = sqrt(dist);
 			}
-			dist = sqrt(dist);
-//					std::cout << "actual dist: " << dist << std::endl;
-//					if(j>0){
-//						std::exit(0);
-//					}
-		}else{
-//					std::cout << "check" << std::endl;
-			dist = sqrt(pow(m.coords(node1,0)-m.coords(node2,0),2) + pow(m.coords(node1,1)-m.coords(node2,1),2) + pow(m.coords(node1,2)-m.coords(node2,2),2));
+			else{
+				//todo can the difference in coordinates by calculated for the whole row. then take the power of 2, sum and take square root??
+				dist = sqrt(pow(m.coords(node1,0)-m.coords(node2,0),2) + pow(m.coords(node1,1)-m.coords(node2,1),2) );
+			}
+	//				dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(1/M_PI*sin( (m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1))*M_PI/1),2));
+	//				std::cout << dist << std::endl;
+	//				std::cout << 'x' << '\t' << m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0) << std::endl;
+	//				std::cout << 'y' << '\t' << m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1) << std::endl;
+
+		}
+		//todo if statements can probably by removed if the calc is done with the previous for loop.
+		else if(m.nDims == 3){
+			if(params.pmode != "none"){
+				dist = 0;
+	//					std::cout << m.coords.row((*idxSet1)(i)) << std::endl;
+	//					std::cout << m.coords.row((*idxSet2)(j)) << std::endl;
+				for(int dim = 0; dim < m.nDims; dim++){
+
+					if(m.periodicVec(dim)){
+						dist += pow(m.lambda/M_PI*sin( (m.coords(node1,dim)-m.coords(node2,dim))*M_PI/m.lambda),2);
+	//							std::cout << "here: " << pow(m.lambda/M_PI*sin( (m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim))*M_PI/m.lambda),2) << std::endl;
+					}else{
+						dist += pow(m.coords(node1,dim)-m.coords(node2,dim),2);
+	//							std::cout << "local dist: " << pow(m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim),2) << std::endl;
+					}
+	//						std::cout << " squared distance: "<< dist << std::endl;
+
+
+				}
+				dist = sqrt(dist);
+	//					std::cout << "actual dist: " << dist << std::endl;
+	//					if(j>0){
+	//						std::exit(0);
+	//					}
+			}else{
+	//					std::cout << "check" << std::endl;
+				dist = sqrt(pow(m.coords(node1,0)-m.coords(node2,0),2) + pow(m.coords(node1,1)-m.coords(node2,1),2) + pow(m.coords(node1,2)-m.coords(node2,2),2));
+			}
 		}
 	}
 	return dist;

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <Eigen/Dense>
 #include "greedy.h"
+#include "CoordTransform.h"
 
 //rbf_ps::rbf_ps(Mesh& meshObject, Eigen::VectorXd& dVec, Eigen::RowVectorXd& rotPnt, Eigen::VectorXd& rotVec, const int& steps, const std::string& smode, const bool& curved, const std::string& pDir)
 rbf_ps::rbf_ps( struct probParams& probParamsObject, Mesh& meshObject, getNodeType& n)
@@ -24,10 +25,19 @@ void rbf_ps::perform_rbf(getNodeType& n){
 	for(int i = 0; i < params.steps; i++){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 
+		if(params.ptype){
+			transform.cart_to_polar_spherical(m.coords, m.coords_polar_spherical);
+		}
+//		std::cout << m.coords_polar_spherical << std::endl;
+//		transform.cart_to_polar_spherical(m.coords_polar_spherical, m.coords);
+//		std::cout << "\n\n" << m.coords << std::endl;
+//		std::exit(0);
+
 		if(params.curved || i==0){
 			m.getMidPnts(params);
 			m.getVecs(params);
 		}
+
 
 		getPhis(n, 0);
 

@@ -13,7 +13,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
-
+#include "CoordTransform.h"
 using namespace std;
 
 int main()
@@ -44,9 +44,6 @@ int main()
 
 	// initialising class object m, reads mesh input file in constructor.
 	Mesh meshOb(probParams, debugLvl);
-
-
-
 
 	getNodeType n(probParams, meshOb);
 

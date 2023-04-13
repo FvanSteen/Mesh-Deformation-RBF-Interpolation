@@ -7,6 +7,7 @@ struct probParams{
 	int steps;
 	std::string smode;
 	std::string pmode;
+	int ptype;
 	bool curved;
 	std::string pDir;
 	bool dataRed;

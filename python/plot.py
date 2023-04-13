@@ -11,13 +11,13 @@ import matplotlib.collections
 figPath = os.path.dirname(os.path.abspath(__file__)) + "/figs/"
 os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes')
 
-if(0):
-    fNameInit = '/25x25.su2'
+if(1):
+    fNameInit = '/5x5_per.su2'
     #fNameInit = '/turbine_row.su2'
     #fNameInit = '/mesh_NACA0012_inv.su2'
     #fNameInit = '/gis_nthx001_mesh.su2'
     #fileNames = ['/25x25_def_none.su2','/25x25_def_periodic.su2','/25x25_def_fixed.su2','/25x25_def_moving.su2']
-    fileNames = ['/25x25_def.su2']
+    fileNames = ['/5x5_per.su2']
     
     #fileNames = ['/mesh_NACA0012_inv_def.su2']
     [f_init,v_init,elemType,bdryPnts_init,_,_,_] = getPlotData(fNameInit)
@@ -134,11 +134,12 @@ if(0):
 
 
 #%%
-if(1):
+if(0):
     #import numpy as np
-    [f_init,v_init,elemType,bdryPnts_init,markerTags, nElemsMarks, FFD_pnts] = getPlotData("/9x9x9_def.su2")
-    plotTag= ["FRONT","BACK","LOWER","UPPER","LEFT","RIGHT", "BLOCK"]
-
+    [f_init,v_init,elemType,bdryPnts_init,markerTags, nElemsMarks, FFD_pnts] = getPlotData("/25x25x25_def.su2")
+    plotTag= ["LOWER","LEFT", "BLOCK"]
+#    plotTag = ["BLADE", "HUB", "SHROUD"]
+#    plotTag = ["BLADE","HUB","INFLOW","OUTFLOW","PER1","PER2","SHROUD"]
     bdryScatterFuns.bdryScatter3D(v_init, bdryPnts_init, markerTags, nElemsMarks, plotTag, FFD_pnts)
 
 
@@ -165,16 +166,17 @@ if(1):
 #fname = '/25x25x5_def.su2'
 #bdryScatterFuns.bdryScatter3D(fname)
 #%%
-if(1):
+if(0):
     import numpy as np
     import math
     import matplotlib.collections
     from colMap import colMap
     
     cmapMatlab = colMap()
-    fileNames = ['/9x9x9_def.su2']
+#    fileNames = ['/9x9x9_def.su2']
+    fileNames = ['/25x25x25_def.su2']
     
-    [f_init,v_init,elemType,bdryPnts_init,_,_,_] = getPlotData('/9x9x9.su2')
+    [f_init,v_init,elemType,bdryPnts_init,_,_,_] = getPlotData('/25x25x25.su2')
     
     
     graphNames = ["",""]
@@ -191,7 +193,7 @@ if(1):
         if np.any(v[f][i][:,cutAxis] < cutPlaneLoc) and np.any(v[f][i][:,cutAxis] >= cutPlaneLoc):
             if set(f[i]).issubset(bdryPnts_init_unique) == False:
                 idxCutElems = np.append(idxCutElems, i)
-            7
+            
     
     [alphas_0,_,_,_] = getMeshQualParams3D(f_init[idxCutElems,:],v_init,elemType[idxCutElems])
 
@@ -208,7 +210,11 @@ if(1):
     v_cut = np.empty((len(idxCutElems),8,2),dtype = float)
     v_cut[:] = np.nan
     #plt.figure();
+    
     for i in range(len(idxCutElems)):
+        if(i%5000 == 0):
+            print(i, "\t", len(idxCutElems))
+                
         edges = v[f][idxCutElems[i]][verticesInd]    
         cutLoc = np.empty((12,2), dtype = float)
         cnt = 0

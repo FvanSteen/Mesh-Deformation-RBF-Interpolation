@@ -13,8 +13,9 @@ public:
 
 	int nNodes, nDims;
 
-	Eigen::ArrayXXd coords;
-
+	Eigen::ArrayXXd coords, coords_polar_spherical;
+	Eigen::ArrayXXd* ptrCoords_polar_spherical;
+	Eigen::ArrayXXd* ptrCoords;
 	Eigen::ArrayXXd surfMidPnts, edgeMidPnts;
 
 	Eigen::ArrayXXd t_se, n1_se, n2_se, n_ss,t1_ss,t2_ss;
@@ -82,6 +83,8 @@ public:
 	void findStringBounds(int& first, int& last, std::string& line);
 
 	void getPeriodicParams(probParams& params);
+
+	void removeMutualNodes(Eigen::ArrayXi& array_in, int& size, Eigen::ArrayXi& to_remove_nodes);
 //	void getInternalCorrectionNodes(Eigen::ArrayXi& subDomains,  Eigen::ArrayXi& subDomsLen, Eigen::ArrayXXd& bdryCoord);
 private:
 	Eigen::ArrayXXi edgeConnectivity, edgeConnectivityPeriodic, surfConnectivity, bdryNodesMat, extBdryEdgeSegments;

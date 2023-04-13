@@ -51,6 +51,11 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 
 
 			}
+			else if(line.rfind("PERIODIC_TYPE") == 0){
+				findStringBounds(first,last,line);
+				probParamsObject.ptype = stoi(line.substr(first,last-first));
+			}
+
 			else if(line.rfind("PERIODIC_DIRECTION")==0){
 				findStringBounds(first,last,line);
 				probParamsObject.pDir = line.substr(first,last-first);

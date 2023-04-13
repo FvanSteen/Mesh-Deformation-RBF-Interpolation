@@ -18,6 +18,13 @@ readMeshFile(params);
 r = params.rFac*getCharDomLength();
 std::cout << "RADIUS: " << r << std::endl;
 getPeriodicParams(params);
+if(params.ptype){
+	coords_polar_spherical.resize(nNodes,nDims);
+	ptrCoords_polar_spherical = &coords_polar_spherical;
+	ptrCoords = &coords_polar_spherical;
+}else{
+	ptrCoords = &coords;
+}
 }
 
 // Main function for reading the .su2 mesh files
@@ -41,7 +48,7 @@ void Mesh::readMeshFile(probParams& params){
 	int markerElems;							// locally stores how many elements are in that boundary
 	int nMarker = 0; 							// Counts the number of external boundary markers
 	nNodes = -1; // set to a default so some if statements are not triggered
-
+	int idxDelta;
 	int firstIdx, lastIdx;
 	bdryNodesMat.resize(0,3);//, intBdryNodesMat.resize(0,3);	// the int/ ext boundary node arrays have a minimum of 3 columns. One for the node type and at least two node indices.
 																// The array will be adjusted to appropriate size depending on the boundary element type.
@@ -93,6 +100,12 @@ void Mesh::readMeshFile(probParams& params){
 						}
 						markerIdx = lineNo;
 						srtdTags[nMarker] = tag;
+						if(tag == "SEND_RECEIVE"){
+							idxDelta = 2;
+						}else{
+							idxDelta = 1;
+						}
+
 					}
 					else throw(tag);
 				}
@@ -119,7 +132,7 @@ void Mesh::readMeshFile(probParams& params){
 
 				}
 
-			else if(markerIdx > 0 && lineNo > markerIdx+1 && lineNo <= markerIdx+1 + markerElems){
+			else if(markerIdx > 0 && lineNo > markerIdx+idxDelta && lineNo <= markerIdx+idxDelta + markerElems){
 
 
 				// split line by '\t' character
@@ -171,13 +184,95 @@ void Mesh::readMeshFile(probParams& params){
 	// If the file is not opened then the following error message will be displayed
 	else std::cout << "Not able to open input mesh file";
 
+
 	getNodeTypes(params, nMarker);
+	std::cout << "established node types\n";
+
+
+	int idx = srtdTags.size();
+	int cnt = 0;
+	std::vector<int> SEND_RECEIVE_idx;
+	while(cnt < idx ){
+		if(srtdTags[cnt] == "SEND_RECEIVE"){
+			SEND_RECEIVE_idx.push_back(cnt);
+		}
+		cnt++;
+	}
+
+
+
+
+	if(SEND_RECEIVE_idx.size() > 0 ){
+
+		Eigen::ArrayXi oldIdx(nrElemsBdry[SEND_RECEIVE_idx[0]]/2), newIdx(nrElemsBdry[SEND_RECEIVE_idx[1]]/2);
+
+		int startIdxOld = nrElemsBdry(Eigen::seqN(0,SEND_RECEIVE_idx[0])).sum();
+		int startIdxNew = nrElemsBdry(Eigen::seqN(0,SEND_RECEIVE_idx[1])).sum()+oldIdx.size();
+
+		for(int i = 0; i < oldIdx.size(); i++){
+			oldIdx(i) = bdryNodesMat(startIdxOld+i,1);
+			newIdx(i) = bdryNodesMat(startIdxNew+i,1);
+		}
+
+		removeMutualNodes(mNodes, N_m, newIdx);
+		removeMutualNodes(seNodes, N_se, newIdx);
+		removeMutualNodes(ssNodes, N_ss, periodicEdgeNodes);
+		/*
+		Eigen::ArrayXi seNodesIdx(seNodes.size());
+		int cnt = 0;
+		for(int i = 0; i < seNodes.size(); i++ ){
+			if(std::find(std::begin(newIdx), std::end(newIdx), seNodes(i)) == std::end(newIdx)){
+				seNodesIdx(cnt) = i;
+				cnt++;
+			}
+		}
+
+		seNodes(Eigen::seqN(0,cnt)) = seNodes(seNodesIdx(Eigen::seqN(0,cnt))).eval();
+		seNodes.conservativeResize(cnt);
+		N_se = cnt;
+
+
+
+
+		Eigen::ArrayXi mNodesIdx(mNodes.size());
+		cnt = 0;
+		for(int i = 0; i < mNodes.size(); i++ ){
+			if(std::find(std::begin(newIdx), std::end(newIdx), mNodes(i)) == std::end(newIdx)){
+				mNodesIdx(cnt) = i;
+				cnt++;
+			}
+		}
+
+		mNodes(Eigen::seqN(0,cnt)) = mNodes(mNodesIdx(Eigen::seqN(0,cnt))).eval();
+		mNodes.conservativeResize(cnt);
+		N_m = cnt;
+
+		Eigen::ArrayXi ssNodesIdx(ssNodes.size());
+		cnt = 0;
+		for(int i = 0; i < ssNodes.size(); i++ ){
+			if(std::find(std::begin(seNodes), std::end(seNodes), ssNodes(i)) == std::end(seNodes)){
+				ssNodesIdx(cnt) = i;
+				cnt++;
+			}
+		}
+
+		ssNodes(Eigen::seqN(0,cnt)) = ssNodes(ssNodesIdx(Eigen::seqN(0,cnt))).eval();
+		ssNodes.conservativeResize(cnt);
+		N_ss = cnt;
+		*/
+	}
+
+
+
+
+
+
 
 //	std::cout <<"moving Nodes: \n" <<  mNodes << std::endl;
 //	std::cout <<"sliding edge Nodes: \n" <<  seNodes << std::endl;
 //	std::cout <<"sliding surf Nodes: \n" <<  ssNodes << std::endl;
 
-	getIntNodes();
+
 //	std::cout << "internal Nodes: \n" << iNodes << std::endl;
 
 	if(nDims == 3 && (params.smode == "ds" || params.smode == "ps") && (params.pmode == "fixed" || params.pmode == "moving")){
@@ -188,18 +283,54 @@ void Mesh::readMeshFile(probParams& params){
 
 
 		// removing the periodic edge nodes from the sliding edge node selection
-		int cnt = 0;
-		for(int i=0; i < N_se; i++){
-			if(std::find(std::begin(periodicEdgeNodes), std::end(periodicEdgeNodes), seNodes(i)) == std::end(periodicEdgeNodes)){
-				seNodes(cnt) = seNodes(i);
-				cnt++;
-			}
-		}
-		N_se = cnt;
-		seNodes.conservativeResize(cnt);
-//		seNodes(Eigen::lastN(N_pe)) = periodicEdgeNodes;
-
+		removeMutualNodes(seNodes, N_se, periodicEdgeNodes);
 	}
+
+	removeMutualNodes(seNodes, N_se, mNodes);
+
+	removeMutualNodes(ssNodes, N_ss, seNodes);
+
+	std::cout <<  "MOVING\n";
+	for(int i = 0; i < mNodes.size(); i++){
+		std::cout << mNodes(i) << ", ";
+	}
+	std::cout << std::endl;
+	std::cout <<  "surf\n";
+	for(int i = 0; i < ssNodes.size(); i++){
+		std::cout << ssNodes(i) << ", ";
+	}
+	std::cout << std::endl;
+	std::cout <<  "per edge\n";
+	for(int i = 0; i < periodicEdgeNodes.size(); i++){
+		std::cout << periodicEdgeNodes(i) << ", ";
+	}
+	std::cout << std::endl;
+	std::cout <<  "per vertices\n";
+	for(int i = 0; i < periodicVerticesNodes.size(); i++){
+		std::cout << periodicVerticesNodes(i) << ", ";
+	}
+	std::cout << std::endl;
+	std::cout <<  "vertices\n";
+		for(int i = 0; i < verticesNodes.size(); i++){
+			std::cout << verticesNodes(i) << ", ";
+		}
+	std::cout << std::endl;
+
+	std::cout <<  "edge\n";
+	for(int i = 0; i < N_se; i++){
+		std::cout << seNodes(i) << ", ";
+	}
+	std::cout << std::endl;
+
+	std::cout << N_m << '\t' << N_se << '\t'<< N_ss << std::endl;
+
+//	Eigen::ArrayXi allNodes(N_m+N_se+N_ss);
+//	allNodes << mNodes, seNodes, ssNodes;
+//	std::cout << "size: " << allNodes.size() << std::endl;
+//	removeDuplicates(allNodes);
+//	std::cout << "size: " << allNodes.size() << std::endl;
+
+	getIntNodes();
 
 	if(params.smode != "none"){
 		getEdgeConnectivity(params.pmode, edgeConnectivity,seNodes,  N_se - N_periodic_vertices);
@@ -212,7 +343,7 @@ void Mesh::readMeshFile(probParams& params){
 		}
 	}
 
-
+	std::cout << "check\n";
 
 	if(params.pmode != "none"){
 		getCharPerLength(params.pDir);
@@ -231,6 +362,22 @@ void Mesh::readMeshFile(probParams& params){
 //		getIntCorNodes();
 //	}
 	std::cout << "Mesh file read successfully" << std::endl;
+}
+
+
+void Mesh::removeMutualNodes(Eigen::ArrayXi& array_in, int& size, Eigen::ArrayXi& to_remove_nodes){
+	Eigen::ArrayXi idx_keep(array_in.size());
+	int cnt = 0;
+	for(int i = 0; i < array_in.size(); i++ ){
+		if(std::find(std::begin(to_remove_nodes), std::end(to_remove_nodes), array_in(i)) == std::end(to_remove_nodes)){
+			idx_keep(cnt) = i;
+			cnt++;
+		}
+	}
+
+	array_in(Eigen::seqN(0,cnt)) = array_in(idx_keep(Eigen::seqN(0,cnt))).eval();
+	array_in.conservativeResize(cnt);
+	size = cnt;
 }
 
 /* getNodeTypes function
@@ -265,12 +412,17 @@ void Mesh::getNodeTypes(probParams& params, int nMarker){
 	for(int elem = 0; elem < nMarker; elem++){
 //		std::cout << "MARKER: " << srtdTags[elem] << std::endl;
 		// resizing the array that will contain all the boundary nodes of that boundary
-		bdryNodesArr.resize(nrElemsBdry(elem)*(bdryNodesMat.cols()-1));
 
-		// next two loops ensure that all nodes are included in the 1D node array.
-		for(int i =0; i<nrElemsBdry(elem);i++){
-			for(int j=0; j< bdryNodesMat.cols()-1; j++ ){
-				bdryNodesArr(j+i*(bdryNodesMat.cols()-1)) = bdryNodesMat(i+ nrElemsBdry(Eigen::seqN(0,elem)).sum(),j+1);
+		if(srtdTags[elem] == "SEND_RECEIVE"){
+			bdryNodesArr.resize(0);
+		}else{
+			bdryNodesArr.resize(nrElemsBdry(elem)*(bdryNodesMat.cols()-1));
+
+			// next two loops ensure that all nodes are included in the 1D node array.
+			for(int i =0; i<nrElemsBdry(elem);i++){
+				for(int j=0; j< bdryNodesMat.cols()-1; j++ ){
+					bdryNodesArr(j+i*(bdryNodesMat.cols()-1)) = bdryNodesMat(i+ nrElemsBdry(Eigen::seqN(0,elem)).sum(),j+1);
+				}
 			}
 		}
 
@@ -311,8 +463,15 @@ void Mesh::getNodeTypes(probParams& params, int nMarker){
 			// else its either a sliding or moving node
 			else{
 				for (int i= 0; i< bdryNodesArr.size();i++){
+
 					// for 3D, in case of 4 subsuquent equal nodes its a surface node
-					if(nDims == 3 && (i< bdryNodesArr.size()-3 && bdryNodesArr(i) == bdryNodesArr(i+3))){
+					if(nDims == 3 && (i< bdryNodesArr.size()-2 && bdryNodesArr(i) == bdryNodesArr(i+2))){
+
+
+						int n = 2;
+						while(bdryNodesArr(i) == bdryNodesArr(i+n) && i+n < bdryNodesArr.size()){
+							n++;
+						}
 
 						// if no sliding is allowed then its a moving node, else its a sliding surface node
 						if(params.smode == "none"){
@@ -322,7 +481,8 @@ void Mesh::getNodeTypes(probParams& params, int nMarker){
 							idxSlidingSurf(cntSlidingSurf) = bdryNodesArr(i);
 							cntSlidingSurf++;
 						}
-						i +=3;
+						i +=(n-1);
+
 					}
 
 					// else in case 2 subsequent nodes are equal its an edge node
@@ -365,14 +525,27 @@ void Mesh::getNodeTypes(probParams& params, int nMarker){
 		}else{
 			Eigen::ArrayXi idxPeriodicEdgeNodes(bdryNodesArr.size());
 			int cntPeriodicEdgeNodes = 0;
+//			for(int x = 0; x < bdryNodesArr.size(); x++){
+//				std::cout << bdryNodesArr(x) << ", ";
+//			}
 
 			for(int i = 0; i < bdryNodesArr.size(); i++){
-				if ( (i< bdryNodesArr.size()-3 && bdryNodesArr(i) == bdryNodesArr(i+3))){
-					i+= 3;
+
+				if ( (i< bdryNodesArr.size()-2 && bdryNodesArr(i) == bdryNodesArr(i+2))){
+
+					int n = 2;
+					while(bdryNodesArr(i) == bdryNodesArr(i+n) && i+n < bdryNodesArr.size()){
+						n++;
+					}
+
+					i+= (n-1);
 				}else if(i< bdryNodesArr.size()-1 && bdryNodesArr(i) == bdryNodesArr(i+1)){
 					idxPeriodicEdgeNodes(cntPeriodicEdgeNodes) = bdryNodesArr(i);
 					cntPeriodicEdgeNodes++;
 					i++;
+				}else{
+					idxMoving(cntMoving) = bdryNodesArr(i);
+					cntMoving++;
 				}
 			}
 			periodicEdgeNodes.conservativeResize(periodicEdgeNodes.size()+cntPeriodicEdgeNodes);
@@ -380,6 +553,12 @@ void Mesh::getNodeTypes(probParams& params, int nMarker){
 
 		}
 
+//		std::cout << "\n\n\n" << bdryNodesArr << std::endl;
+//		std::cout << srtdTags[elem] << '\t' << cntMoving << '\t' << cntSlidingEdge << '\t' << cntSlidingSurf << std::endl;
+//		for(int x = 0; x < bdryNodesArr.size(); x++){
+//			std::cout << bdryNodesArr(x) << ", ";
+//		}
+//		std::cout << std::endl;
 
 
 //		std::cout << "moving nodes: \n" << idxMoving(Eigen::seqN(0,cntMoving)) << std::endl;
@@ -413,6 +592,7 @@ void Mesh::getNodeTypes(probParams& params, int nMarker){
 	removeDuplicates(mNodes);
 
 
+
 	verticesNodes.conservativeResize(verticesCnt);
 	removeDuplicates(verticesNodes);
 
@@ -423,16 +603,15 @@ void Mesh::getNodeTypes(probParams& params, int nMarker){
 	}
 
 	if(params.pmode == "moving"){
+		removeMutualNodes(mNodes,N_m,periodicVerticesNodes);
 		seNodes.conservativeResize(seNodes.size()+N_periodic_vertices);
 		seNodes(Eigen::lastN(N_periodic_vertices)) = periodicVerticesNodes;
 	}
-
 
 	N_ss = ssNodes.size();
 	N_se = seNodes.size();
 	N_m = mNodes.size();
 	N_pe = periodicEdgeNodes.size();
-
 }
 
 
@@ -510,7 +689,9 @@ void Mesh::getIntNodes(){
 			iNodes(cnt) = i;					// include remaining points as internal nodes
 			cnt++; i++;							// update index and i
 		}
+
 	}
+
 	N_i = iNodes.size();
 }
 
@@ -874,8 +1055,8 @@ void Mesh::getEdgeTan(Eigen::ArrayXXd& t, Eigen::ArrayXXi& edgeConnectivity, Eig
 		// Otherwise, the vector will (partially) cancel each other out when taking the average if they are opposite to each other.
 		// So one vector goes from connectivity node 1 to the sliding node and the second vector goes from the sliding node to connectivity node 2.
 
-		v1 = coords.row(edgeConnectivity(i,0)) - coords.row(seNodes(i));
-		v2 = coords.row(seNodes(i)) - coords.row(edgeConnectivity(i,1));
+		v1 = (*ptrCoords).row(edgeConnectivity(i,0)) - (*ptrCoords).row(seNodes(i));
+		v2 = (*ptrCoords).row(seNodes(i)) - (*ptrCoords).row(edgeConnectivity(i,1));
 
 		tan = (v1/v1.norm() + v2/v2.norm());
 
@@ -1110,9 +1291,10 @@ void Mesh::getMidPnts(probParams& params){
 
 	if(nDims == 2){
 		for(int i = 0; i < nrElems; i++){
-			edgeMidPnts.row(i) = (coords.row(bdryNodesMat(indices(i),1)) + coords.row(bdryNodesMat(indices(i),2)))/2;
+			std::cout << i << '\t' << nrElems << std::endl;
+			edgeMidPnts.row(i) = ((*ptrCoords).row(bdryNodesMat(indices(i),1)) + (*ptrCoords).row(bdryNodesMat(indices(i),2)))/2;
 
-			tan = coords.row(bdryNodesMat(indices(i),2)) - coords.row(bdryNodesMat(indices(i),1));
+			tan = (*ptrCoords).row(bdryNodesMat(indices(i),2)) - (*ptrCoords).row(bdryNodesMat(indices(i),1));
 
 			edgeMidPntNormals1.row(i) << tan(1),-tan(0);
 
@@ -1330,7 +1512,8 @@ void Mesh::getCharPerLength(std::string& pDir){
 			}
 		}
 	}
-
+	std::cout << vertices << std::endl;
+	std::cout << indices << std::endl;
 	Eigen::ArrayXd vals;
 	vals = vertices(indices(Eigen::seqN(0,cnt)),perDir);
 
