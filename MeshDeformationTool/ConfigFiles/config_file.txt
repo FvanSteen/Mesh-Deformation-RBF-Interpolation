@@ -51,15 +51,17 @@ MARKER_MOVING = (BLOCK)
 %MARKER_PERIODIC  (periodic1, periodic2)
 %MARKER_PERIODIC = (FRONT, BACK)
 %MARKER_PERIODIC = (PER1, PER2)
-MARKER_PERIODIC = (LEFT, RIGHT)
+MARKER_PERIODIC = (LOWER,UPPER)
 
 %(none, pseudo, direct)
 SLIDING_MODE = ps
 
 %(none,periodic,fixed_vertices,moving_vertices)
-PERIODIC_MODE = periodic
+PERIODIC_MODE = fixed
 % translational = 0, Rotational = 1
 PERIODIC_TYPE = 1
+
+
 STEPS = 1
 
 INFLUENCE_FACTOR = 2.5

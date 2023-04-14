@@ -192,7 +192,7 @@ void SPDS::projectEdge(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 			projection = Eigen::RowVectorXd::Zero(m.nDims);
 
 
-			query = m.coords.row((*nodesPtr)(i)) + array_in.row(i);
+			query = (*m.ptrCoords).row((*nodesPtr)(i)) + array_in.row(i);
 
 
 			resultSet.init(&idx[0], &distSqrd[0]);

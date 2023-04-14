@@ -38,7 +38,6 @@ void rbf_ps::perform_rbf(getNodeType& n){
 			m.getVecs(params);
 		}
 
-
 		getPhis(n, 0);
 
 		if(i == 0){
@@ -62,6 +61,10 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 		performRBF(PhiPtr->Phi_cc,PhiPtr->Phi_ic,defVec_all,n.cPtr,n.iPtr,n.N_c);
 
+	}
+
+	if(params.ptype){
+		transform.polar_spherical_to_cart(m.coords_polar_spherical,m.coords);
 	}
 }
 

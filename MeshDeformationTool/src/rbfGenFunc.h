@@ -14,6 +14,8 @@ public:
 
 	Eigen::ArrayXi movingIndices;
 	Eigen::ArrayXXd exactDisp;
+	Eigen::ArrayXXd exactDisp_polar_spherical;
+	Eigen::ArrayXXd* exactDispPtr;
 
 	Eigen::ArrayXi* dispIdx;
 	Eigen::ArrayXXd* disp;

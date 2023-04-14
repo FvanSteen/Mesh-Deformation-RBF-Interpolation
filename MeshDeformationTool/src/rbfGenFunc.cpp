@@ -5,6 +5,7 @@
 #include <chrono>
 #include <fstream>
 #include <sstream>
+#include "CoordTransform.h"
 rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 //rbfGenFunc::rbfGenFunc(Mesh* meshPtr, Eigen::VectorXd& dVec, Eigen::RowVectorXd& rotPnt, Eigen::VectorXd& rotVec, const int& steps, const std::string& smode, const bool& curved, const std::string& pDir)
 :m(meshObject), params(probParamsObject)
@@ -14,11 +15,17 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 	movingIndices.resize(m.N_nonzeroDisp);
 	exactDisp.resize(m.N_nonzeroDisp,m.nDims);
 	readDisplacementFile();
-
-	dispIdx = &movingIndices;
-	disp = &exactDisp;
-
 	exactDisp = exactDisp/params.steps; // deformation per step is more usefull then the total deformation.
+	dispIdx = &movingIndices;
+
+	if(params.ptype){
+		exactDisp_polar_spherical.resize(m.N_nonzeroDisp, m.nDims);
+		CoordTransform transform;
+		transform.vector_cart_to_polar_spherical(exactDisp, exactDisp_polar_spherical, movingIndices, m.coords);
+		disp = &exactDisp_polar_spherical;
+	}else{
+		disp = &exactDisp;
+	}
 
 	PhiPtr = &Phis;
 }
@@ -337,6 +344,8 @@ void rbfGenFunc::readDisplacementFile(){
 			lineNo++;
 		}
 	}else std::cout << "Unable to open the displacement file" << std::endl;
+
+	//todo do the division by the number of steps here
 //	std::cout << displacement << std::endl;
 //	std::cout << mIndex << std::endl;
 }
@@ -376,8 +385,8 @@ void rbfGenFunc::performRBF(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ic, Ei
 		if(params.dataRed){
 			d.col(dim) = Phi_ic*alpha(Eigen::seqN(dim*N,N));
 		}else{
-			m.coords(*iNodes,dim) += (Phi_ic*alpha(Eigen::seqN(dim*N,N))).array();
-			m.coords(*cNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
+			(*m.ptrCoords)(*iNodes,dim) += (Phi_ic*alpha(Eigen::seqN(dim*N,N))).array();
+			(*m.ptrCoords)(*cNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
 		}
 	}
 }

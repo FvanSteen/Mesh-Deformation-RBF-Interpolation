@@ -1291,7 +1291,7 @@ void Mesh::getMidPnts(probParams& params){
 
 	if(nDims == 2){
 		for(int i = 0; i < nrElems; i++){
-			std::cout << i << '\t' << nrElems << std::endl;
+
 			edgeMidPnts.row(i) = ((*ptrCoords).row(bdryNodesMat(indices(i),1)) + (*ptrCoords).row(bdryNodesMat(indices(i),2)))/2;
 
 			tan = (*ptrCoords).row(bdryNodesMat(indices(i),2)) - (*ptrCoords).row(bdryNodesMat(indices(i),1));
