@@ -19,9 +19,9 @@ public:
 	void kdt_NNSearch(Eigen::ArrayXi& bdryIndex, Eigen::ArrayXi& intIndex, Eigen::ArrayXXd& coords, const size_t dim, double& gamma, double&maxError, Eigen::ArrayXXd* ePtr);
 	double rbfEval(double distance, double radius);
 
-	void project(Mesh& m, getNodeType& n, Eigen::ArrayXXd& array_in, Eigen::ArrayXXd& array_out, Eigen::VectorXd& pVec);
-	void projectEdge(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array_in, Eigen::ArrayXXd& array_out, Eigen::VectorXd& pVec, size_t startIdx, size_t endIdx, int project);
-	void projectSurf(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array_in, Eigen::ArrayXXd& array_out, Eigen::VectorXd& pVec, size_t startIdx, size_t endIdx, int project);
+	void project(Mesh& m, getNodeType& n, Eigen::ArrayXXd& array_in, Eigen::ArrayXXd& array_out);
+	void projectEdge(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array_in, Eigen::ArrayXXd& array_out, size_t startIdx, size_t endIdx, int project);
+	void projectSurf(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array_in, Eigen::ArrayXXd& array_out, size_t startIdx, size_t endIdx, int project);
 
 };
 

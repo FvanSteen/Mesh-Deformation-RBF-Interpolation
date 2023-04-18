@@ -10,7 +10,7 @@
 %MESH_FILENAME = gis_nthx001_mesh.SU2
 %MESH_FILENAME = stator_per_ffd_init.su2 
 MESH_FILENAME = 5x5_per.su2
-
+ 
 %MESH_OUT_FILENAME = 25x25_def.su2
 %MESH_OUT_FILENAME = mesh_NACA0012_inv_def.su2
 %MESH_OUT_FILENAME = LS89_turbine_def.su2
@@ -57,11 +57,12 @@ MARKER_PERIODIC = (LOWER,UPPER)
 SLIDING_MODE = ps
 
 %(none,periodic,fixed_vertices,moving_vertices)
-PERIODIC_MODE = fixed
+PERIODIC_MODE = periodic
+
 % translational = 0, Rotational = 1
 PERIODIC_TYPE = 1
 
-
+PERIODIC_DIRECTION = 1
 STEPS = 1
 
 INFLUENCE_FACTOR = 2.5
@@ -80,14 +81,14 @@ INFLUENCE_FACTOR = 2.5
 DEFORMATION_FILENAME = 5x5_per_deformation.txt
  
 CURVED = NO
-DATA_REDUCTION = NO
-DATA_RED_TOLERANCE = 1e-3
+DATA_REDUCTION = YES
+DATA_RED_TOLERANCE = 1e-2
 % 0.0000074815
 GAMMA = 25
 DOUBLE_EDGE = YES
 
 ## Parameters for the multi level greedy
-MULTILEVEL = NO
+MULTILEVEL = YES
 LVL_TOL_CRIT = 0.1
 
 

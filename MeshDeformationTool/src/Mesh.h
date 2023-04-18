@@ -13,8 +13,8 @@ public:
 
 	int nNodes, nDims;
 
-	Eigen::ArrayXXd coords, coords_polar_spherical;
-	Eigen::ArrayXXd* ptrCoords_polar_spherical;
+	Eigen::ArrayXXd coords, coords_polar_cylindrical;
+
 	Eigen::ArrayXXd* ptrCoords;
 	Eigen::ArrayXXd surfMidPnts, edgeMidPnts;
 
@@ -30,21 +30,13 @@ public:
 
 	Eigen::ArrayXi periodicEdgeNodes;
 
-	Eigen::VectorXd periodicVec, periodicNormalVec1,periodicNormalVec2;
 
+	Eigen::MatrixXd periodicVecs;
 	int N_pe;
 
-//	struct Domains{
-//		Eigen::ArrayXi d1;
-//		Eigen::ArrayXi d2;
-//		Eigen::ArrayXi d3;
-//		Eigen::ArrayXi d4;
-//	};
-//
-//	struct Domains subDoms;
 
 
-	double r,lambda; // support radius
+	double r,periodic_length; // support radius
 	int N_i, N_nonzeroDisp, N_se, N_ss, N_m, N_periodic_vertices;
 
 
@@ -72,11 +64,10 @@ public:
 	void getExtBdryEdgeSegments();
 	void getMidPnts(probParams& params);
 
-	void getSubDomains(Eigen::ArrayXi& subDomains, Eigen::ArrayXi& subDomLen, Eigen::ArrayXi& subDomBdry, Eigen::ArrayXi& subDomBdryLen);
 	void getIntCorNodes(double& gamma, double& tol);
 
 
-	void getCharPerLength(std::string& pDir);
+	void getCharPerLength(probParams& params);
 	double getCharDomLength();
 
 	void writeMeshFile(std::string& ifName, std::string& ofName);
@@ -85,7 +76,7 @@ public:
 	void getPeriodicParams(probParams& params);
 
 	void removeMutualNodes(Eigen::ArrayXi& array_in, int& size, Eigen::ArrayXi& to_remove_nodes);
-//	void getInternalCorrectionNodes(Eigen::ArrayXi& subDomains,  Eigen::ArrayXi& subDomsLen, Eigen::ArrayXXd& bdryCoord);
+
 private:
 	Eigen::ArrayXXi edgeConnectivity, edgeConnectivityPeriodic, surfConnectivity, bdryNodesMat, extBdryEdgeSegments;
 	Eigen::ArrayXi nrElemsBdry;

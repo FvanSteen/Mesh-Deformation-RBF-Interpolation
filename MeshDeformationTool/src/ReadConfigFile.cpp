@@ -6,7 +6,7 @@
 #include <sstream>
 ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject) {
 	std::cout << "Reading the configuration file" << std::endl;
-
+	// todo remove whitespace before and after input variable
 	std::string line;							// string containing line obtained by getline() function
 	std::ifstream file("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\ConfigFiles\\" + ifName);
 
@@ -58,7 +58,27 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 
 			else if(line.rfind("PERIODIC_DIRECTION")==0){
 				findStringBounds(first,last,line);
-				probParamsObject.pDir = line.substr(first,last-first);
+
+				bool invalid = false;
+				std::string pDir = line.substr(first,last-first);
+				for(int i = 0; i< last-first; i++){
+					if(!isdigit(pDir[i])){
+						invalid = true;
+					}
+				}
+
+				probParamsObject.pDir = stoi(line.substr(first,last-first));
+
+				try{
+					if(probParamsObject.pDir > 2 || invalid){
+						throw(pDir);
+					}
+				}
+				catch(std::string& pDir){
+					std::cout << "Invalid periodic direction parameter provided: " << pDir << std::endl;
+					std::exit(0);
+				}
+
 			}
 			else if(line.rfind("STEPS")==0){
 				findStringBounds(first,last,line);

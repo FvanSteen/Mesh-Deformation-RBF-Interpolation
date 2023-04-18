@@ -20,6 +20,25 @@ def meshQualPlot(fileNames,fNameInit, graphNames,alphas_0):
     #    ax = fig.add_subplot(1,len(fileNames),i+1)
         ax = fig.add_subplot(1,1,i+1)
         [f,v,elemType,_,_,_,_] = getPlotData(fileNames[i])  
+#        print(v)
+        
+        coordsPolar = np.empty(np.shape(v))
+        coordsPolar[:,0] = np.sqrt(v[:,0]**2+v[:,1]**2)
+        coordsPolar[:,1] = np.arctan2(v[:,1],v[:,0])
+        coordsPolar[:,1] += np.pi/6
+        v2 = np.empty(np.shape(v))
+        v2[:,0] = coordsPolar[:,0]*np.cos(coordsPolar[:,1])
+        v2[:,1] = coordsPolar[:,0]*np.sin(coordsPolar[:,1])
+        
+        coordsPolar[:,1] += np.pi/6
+        v3 = np.empty(np.shape(v))
+        v3[:,0] = coordsPolar[:,0]*np.cos(coordsPolar[:,1])
+        v3[:,1] = coordsPolar[:,0]*np.sin(coordsPolar[:,1])
+        
+        
+        
+#        coordsPolar[:,0] = np.sqrt(v[:,0]**2+v[:,1]**2)
+#        print(coordsPolar)
         
         quadIdx = np.where(elemType == 9)
         if np.size(quadIdx) != 0:
@@ -47,14 +66,18 @@ def meshQualPlot(fileNames,fNameInit, graphNames,alphas_0):
         pc = matplotlib.collections.PolyCollection(v[f[0:startQuadIdx,0:3]],cmap='seismic', facecolors=colors1, edgecolor="black",linewidth=0.1)
         pc2 = matplotlib.collections.PolyCollection(v[f[startQuadIdx:,0:4]],cmap=cmapMatlab,  facecolors=colors2, edgecolor="black",linewidth=0.1)
 #        v[:,1] += 0.045
-#        pc3 = matplotlib.collections.PolyCollection(v[f[0:startQuadIdx,0:3]],cmap='seismic', facecolors=colors1, edgecolor="black",linewidth=0.05)
-#        pc4 = matplotlib.collections.PolyCollection(v[f[startQuadIdx:,0:4]],cmap=cmapMatlab,  facecolors=colors2, edgecolor="black",linewidth=0.05)
+#        pc3 = matplotlib.collections.PolyCollection(v2[f[0:startQuadIdx,0:3]],cmap='seismic', facecolors=colors1, edgecolor="black",linewidth=0.1)
+        pc4 = matplotlib.collections.PolyCollection(v2[f[startQuadIdx:,0:4]],cmap=cmapMatlab,  facecolors=colors2, edgecolor="black",linewidth=0.1)
+        pc5 = matplotlib.collections.PolyCollection(v3[f[startQuadIdx:,0:4]],cmap=cmapMatlab,  facecolors=colors2, edgecolor="black",linewidth=0.1)
+        
     #    pc3 = matplotlib.collections.PolyCollection(v[f[4365:4366]],cmap=cmapMatlab, facecolors='red', edgecolor="black",linewidth=0.25)
         
         polys = ax.add_collection(pc)
         polys = ax.add_collection(pc2)
 #        polys = ax.add_collection(pc3)
 #        polys = ax.add_collection(pc4)
+#        polys = ax.add_collection(pc5)
+        
     #    polys = ax.add_collection(pc3)
 #        if(fileNames[i][0:10] == '/mesh_NACA'): 
 #            ax.scatter(v[200][0],v[200][1],color='red') 

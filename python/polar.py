@@ -8,12 +8,15 @@ def polarCartesianTransform(coordsPolar):
     coordsCart[:,1] = coordsPolar[:,0]*np.sin(coordsPolar[:,1])
     return coordsCart    
 
+
+
+
 r_start = 0.2
 r_stop = 1.0
 theta_start = 0
 theta_stop = np.pi/6
 z_start = 0
-z_stop = 1
+z_stop = 0.2
 
 
 r = np.linspace(r_start, r_stop, 6)
@@ -35,32 +38,30 @@ for k in range(len(z)):
 
 coordsCart = polarCartesianTransform(coords)
 
-x_mp = np.array([0.28, 0.44, 0.6, 0.76, 0.92, 0.28, 0.44, 0.6, 0.76, 0.92, 0.199726, 0.199726, 0.199726, 0.199726, 0.199726, 0.99863, 0.99863, 0.99863, 0.99863, 0.99863])
-y_mp = np.array([0, 0, 0, 0, 0, 0.523599, 0.523599, 0.523599, 0.523599, 0.523599, 0.0523599, 0.15708, 0.261799, 0.366519, 0.471239, 0.0523599, 0.15708, 0.261799, 0.366519, 0.471239])
-
-xdef = 0.1
-ydef = -0.05
-idxMoving = np.array([14,15,20,21])
-xdefpol =  np.array([0.0874192 , 0.0874192, 0.0796548,0.0796548 ])
-ydefpol =  np.array([-0.0696985, -0.0696985,-0.0784545, -0.0784545])
-
-
-  
-newPosx= np.array([0.611405,0.770578, 0.604765,0.763695])
-newPosy = np.array([ 0.0951938,  0.118866,   0.184065,   0.211248])
-
-deltax = coords[idxMoving,0] - newPosx
-deltay = coords[idxMoving,1] - newPosy
-
-
-coords[idxMoving,0] = newPosx
-coords[idxMoving,1] = newPosy
-
-coordsCart = polarCartesianTransform(coords)
+#x_mp = np.array([0.28, 0.44, 0.6, 0.76, 0.92, 0.28, 0.44, 0.6, 0.76, 0.92, 0.199726, 0.199726, 0.199726, 0.199726, 0.199726, 0.99863, 0.99863, 0.99863, 0.99863, 0.99863])
+#y_mp = np.array([0, 0, 0, 0, 0, 0.523599, 0.523599, 0.523599, 0.523599, 0.523599, 0.0523599, 0.15708, 0.261799, 0.366519, 0.471239, 0.0523599, 0.15708, 0.261799, 0.366519, 0.471239])
+#
+#
+#idxMoving = np.array([14,15,20,21])
+#xdefpol =  np.array([0.0874192 , 0.0874192, 0.0796548,0.0796548 ])
+#ydefpol =  np.array([-0.0696985, -0.0696985,-0.0784545, -0.0784545])
+#
+#
+#  
+#newPosx= np.array([0.611405,0.770578, 0.604765,0.763695])
+#newPosy = np.array([ 0.0951938,  0.118866,   0.184065,   0.211248])
+#
+#
+#
+#
+#coords[idxMoving,0] = newPosx
+#coords[idxMoving,1] = newPosy
+#
+#coordsCart = polarCartesianTransform(coords)
 
 plt.figure()
 plt.scatter(coords[:,0],coords[:,1])
-plt.scatter(coords[17,0],coords[17,1])
+#plt.scatter(coords[17,0],coords[17,1])
 #plt.scatter(x_mp,y_mp)
 #plt.scatter(coordsCart[idxMoving,0]+xdef, coordsCart[idxMoving,1]+ydef)
 #plt.scatter(coords[idxMoving,0], coords[idxMoving,1])

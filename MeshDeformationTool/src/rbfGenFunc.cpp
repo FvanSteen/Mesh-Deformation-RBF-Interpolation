@@ -19,10 +19,10 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 	dispIdx = &movingIndices;
 
 	if(params.ptype){
-		exactDisp_polar_spherical.resize(m.N_nonzeroDisp, m.nDims);
+		exactDisp_polar_cylindrical.resize(m.N_nonzeroDisp, m.nDims);
 		CoordTransform transform;
-		transform.vector_cart_to_polar_spherical(exactDisp, exactDisp_polar_spherical, movingIndices, m.coords);
-		disp = &exactDisp_polar_spherical;
+		transform.vector_cart_to_polar_cylindrical(exactDisp, exactDisp_polar_cylindrical, movingIndices, m.coords);
+		disp = &exactDisp_polar_cylindrical;
 	}else{
 		disp = &exactDisp;
 	}
@@ -230,10 +230,11 @@ double rbfGenFunc::getDistance(int node1, int node2){
 	double dist;
 	if(params.ptype){
 		if(m.nDims == 2){
-			dist = sqrt(pow(m.coords_polar_spherical(node1,0),2) + pow(m.coords_polar_spherical(node2,0),2) -2*m.coords_polar_spherical(node1,0)*m.coords_polar_spherical(node2,0)*cos(m.coords_polar_spherical(node1,1)-m.coords_polar_spherical(node2,1)));
+
+			dist = sqrt(pow(m.coords_polar_cylindrical(node1,0),2) + pow(m.coords_polar_cylindrical(node2,0),2) -2*m.coords_polar_cylindrical(node1,0)*m.coords_polar_cylindrical(node2,0)*cos(m.periodic_length/M_PI*sin( (m.coords_polar_cylindrical(node2,1)-m.coords_polar_cylindrical(node1,1))*M_PI/m.periodic_length) ));
+
 		}else if(m.nDims == 3){
-			std::cout << "implement 3D\n";
-			std::exit(0);
+			dist = sqrt(pow(m.coords_polar_cylindrical(node1,0),2) + pow(m.coords_polar_cylindrical(node2,0),2) -2*m.coords_polar_cylindrical(node1,0)*m.coords_polar_cylindrical(node2,0)*cos(m.periodic_length/M_PI*sin( (m.coords_polar_cylindrical(node2,1)-m.coords_polar_cylindrical(node1,1))*M_PI/m.periodic_length)) + pow(m.coords_polar_cylindrical(node2,2) - m.coords_polar_cylindrical(node1,2),2) );
 		}
 	}else{
 		if(m.nDims == 2){
@@ -246,8 +247,8 @@ double rbfGenFunc::getDistance(int node1, int node2){
 			if(params.pmode != "none"){
 				dist = 0;
 				for(int dim = 0; dim < m.nDims; dim++){
-					if(m.periodicVec(dim)){
-						dist += pow(m.lambda/M_PI*sin( (m.coords(node1,dim)-m.coords(node2,dim))*M_PI/m.lambda),2);
+					if(dim == params.pDir){
+						dist += pow(m.periodic_length/M_PI*sin( (m.coords(node1,dim)-m.coords(node2,dim))*M_PI/m.periodic_length),2);
 					}
 					else{
 						dist += pow(m.coords(node1,dim)-m.coords(node2,dim),2);
@@ -273,8 +274,8 @@ double rbfGenFunc::getDistance(int node1, int node2){
 	//					std::cout << m.coords.row((*idxSet2)(j)) << std::endl;
 				for(int dim = 0; dim < m.nDims; dim++){
 
-					if(m.periodicVec(dim)){
-						dist += pow(m.lambda/M_PI*sin( (m.coords(node1,dim)-m.coords(node2,dim))*M_PI/m.lambda),2);
+					if(dim == params.pDir){
+						dist += pow(m.periodic_length/M_PI*sin( (m.coords(node1,dim)-m.coords(node2,dim))*M_PI/m.periodic_length),2);
 	//							std::cout << "here: " << pow(m.lambda/M_PI*sin( (m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim))*M_PI/m.lambda),2) << std::endl;
 					}else{
 						dist += pow(m.coords(node1,dim)-m.coords(node2,dim),2);
@@ -413,16 +414,13 @@ void rbfGenFunc::updateNodes(getNodeType& n, Eigen::VectorXd& defVec, Eigen::Arr
 
 
 	getPhi(Phi_icGrdy,n.iPtrGrdy,ptr);
-
-
-	m.coords(*n.iPtr, Eigen::all) += *d_step;
-
-
+	(*m.ptrCoords)(*n.iPtr, Eigen::all) += *d_step;
 
 	for(int dim = 0; dim < m.nDims; dim++){
+
 		if(params.multiLvl == false){
-			m.coords(*ptr,dim) += (defVec(Eigen::seqN(dim*N_m,N_m))).array();
+			(*m.ptrCoords)(*ptr,dim) += (defVec(Eigen::seqN(dim*N_m,N_m))).array();
 		}
-		m.coords(*n.iPtrGrdy,dim) +=  (Phi_icGrdy*(*alpha_step)(Eigen::seqN(dim*N_m,N_m))).array();
+		(*m.ptrCoords)(*n.iPtrGrdy,dim) +=  (Phi_icGrdy*(*alpha_step)(Eigen::seqN(dim*N_m,N_m))).array();
 	}
 }

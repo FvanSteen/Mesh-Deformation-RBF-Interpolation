@@ -8,18 +8,19 @@
 #include "SPDS.h"
 #include "nanoflann.hpp"
 
+//todo remove this entry probably
+#include "CoordTransform.h"
+
 greedy::greedy(Mesh& m, probParams& params,Eigen::ArrayXXd& disp, Eigen::ArrayXi& movingIndices, Eigen::VectorXd& alpha, Eigen::ArrayXXd& d)
 {
 
 
 	mPtr = &m;
 
-
 	exctDispPtr = &disp;
 	mIdxPtr = &movingIndices;
 
 	p = &params;
-	pVec = &m.periodicVec;
 	if((*p).multiLvl){
 		alpha_step = &alphaGrdy;
 		d_step = &delta;
@@ -28,6 +29,7 @@ greedy::greedy(Mesh& m, probParams& params,Eigen::ArrayXXd& disp, Eigen::ArrayXi
 		alpha_step = &alpha;
 		d_step = &d;
 	}
+
 
 	setInitMaxErrorNodes();
 	std::cout << "initial selected Nodes:\n" << maxErrorNodes << std::endl;
@@ -39,10 +41,6 @@ void greedy::getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl){
 
 	error.resize(d.rows(),(*mPtr).nDims);
 	errorAngle.resize(d.rows(), (*mPtr).nDims-1);
-	// defining array for the error directions
-//	Eigen::ArrayXXd errorAngle(n.N_i, m.nDims-1);
-
-
 
 	if((*p).multiLvl && lvl>0){
 		getErrorMultiLvl(n,d);
@@ -50,8 +48,16 @@ void greedy::getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl){
 		getErrorSingleLvl(n,d);
 	}
 
+	if((*p).ptype){
+		if((*p).multiLvl){
+			errorPolarCylindrical = error;
+		}
+		transform.error_to_cart(error, mPtr, n);
+	}
 
-	// find index of largest error
+
+
+//	 find index of largest error
 	int idxMax;
 	error.rowwise().squaredNorm().maxCoeff(&idxMax);
 
@@ -61,7 +67,7 @@ void greedy::getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl){
 	// from here
 	if((*p).doubleEdge){
 		// todo remove second argument
-		getErrorAngle((*mPtr).nDims, d.rows());
+		getErrorAngle();
 
 		int idxMaxAngle = getDoubleEdgeError(idxMax, n.N_i, error);
 
@@ -77,7 +83,6 @@ void greedy::getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl){
 		maxErrorNodes.resize(1);
 		maxErrorNodes << (*n.iPtr)(idxMax);
 	}
-
 }
 
 void greedy::getErrorMovingNodes(Eigen::ArrayXi* nodes, Eigen::ArrayXXd& d, size_t N){
@@ -95,10 +100,10 @@ void greedy::getErrorMovingNodes(Eigen::ArrayXi* nodes, Eigen::ArrayXXd& d, size
 
 
 
-void greedy::getErrorAngle(size_t dims, size_t N){
-	for(size_t i =0 ; i < N; i++){
+void greedy::getErrorAngle(){
+	for(int i =0 ; i < errorAngle.rows(); i++){
 		errorAngle(i,0) = atan2(error(i,1),error(i,0));
-		if(dims == 3){
+		if((*mPtr).nDims == 3){
 			errorAngle(i,1) = atan2(  sqrt(pow(error(i,0),2) + pow(error(i,1),2)), error(i,2));
 		}
 	}
@@ -116,13 +121,13 @@ void greedy::getErrorSingleLvl(getNodeType& n, Eigen::ArrayXXd& d){
 	//todo call class somewhere else
 	SPDS SPDSobj;
 	if(m_end != size_t(d.rows())){
-		SPDSobj.projectEdge(*mPtr, n.iPtr, d, error, *pVec, m_end, se_end, 0);
+		SPDSobj.projectEdge(*mPtr, n.iPtr, d, error, m_end, se_end, 0);
 	}
 
 	if(se_end != size_t(d.rows())){
 
 		ss_end = se_end + (*mPtr).N_ss-n.N_ss;
-		SPDSobj.projectSurf(*mPtr, n.iPtr, d, error, *pVec, se_end, ss_end, 0);
+		SPDSobj.projectSurf(*mPtr, n.iPtr, d, error, se_end, ss_end, 0);
 	}
 
 }
@@ -254,6 +259,11 @@ void greedy::correction(Mesh& m, getNodeType& n, double& gamma, bool& multiLvl){
 	}else{
 		errorPtr = &error;
 	}
+
+	if((*p).ptype){
+		transform.polar_cylindrical_to_cart(m.coords_polar_cylindrical, m.coords);
+	}
+
 	m.coords(*n.iPtr , Eigen::all) -= *errorPtr;
 
 
@@ -337,7 +347,11 @@ void greedy::setLevelParams(getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::
 
 	// set error of the prev lvl equal to current error
 	errorPrevLvl = Eigen::ArrayXXd::Zero((*mPtr).N_m+(*mPtr).N_se+(*mPtr).N_ss, (*mPtr).nDims);
-	errorPrevLvl(n.iNodesIdx,Eigen::all) = error;
+	if((*p).ptype){
+		errorPrevLvl(n.iNodesIdx,Eigen::all) = errorPolarCylindrical;
+	}else{
+		errorPrevLvl(n.iNodesIdx,Eigen::all) = error;
+	}
 
 }
 

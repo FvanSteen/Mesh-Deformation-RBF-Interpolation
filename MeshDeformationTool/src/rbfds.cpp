@@ -154,7 +154,7 @@ void rbf_ds::performRBF_DS(getNodeType& n, PhiStruct* PhiPtr){
 			delta(Eigen::seqN(n.N_se,n.N_ss),dim) = (PhiPtr->Phi_sc*alpha(Eigen::seqN(dim*(n.N_c),n.N_c)) ).array();
 		}
 
-		p.project(m, n, delta, finalDef, m.periodicVec);
+		p.project(m, n, delta, finalDef);
 
 		getDefVec(defVec_all, defVec_ds, n, finalDef, n.N_c, n.N_m);
 

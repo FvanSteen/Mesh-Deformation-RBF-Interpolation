@@ -8,6 +8,7 @@
 #include <chrono>
 #include <Eigen/Dense>
 #include "SPDS.h"
+#include "CoordTransform.h"
 
 
 
@@ -16,12 +17,10 @@ Mesh::Mesh(probParams& params, const int& debugLvl)
 {
 readMeshFile(params);
 r = params.rFac*getCharDomLength();
-std::cout << "RADIUS: " << r << std::endl;
 getPeriodicParams(params);
 if(params.ptype){
-	coords_polar_spherical.resize(nNodes,nDims);
-	ptrCoords_polar_spherical = &coords_polar_spherical;
-	ptrCoords = &coords_polar_spherical;
+	coords_polar_cylindrical.resize(nNodes,nDims);
+	ptrCoords = &coords_polar_cylindrical;
 }else{
 	ptrCoords = &coords;
 }
@@ -47,7 +46,7 @@ void Mesh::readMeshFile(probParams& params){
 	int bdryElemCnt = 0; 						// counting the elements of the boundaries
 	int markerElems;							// locally stores how many elements are in that boundary
 	int nMarker = 0; 							// Counts the number of external boundary markers
-	nNodes = -1; // set to a default so some if statements are not triggered
+	nNodes = -1; // set to a default so some if statements are not triggered //todo check which ones
 	int idxDelta;
 	int firstIdx, lastIdx;
 	bdryNodesMat.resize(0,3);//, intBdryNodesMat.resize(0,3);	// the int/ ext boundary node arrays have a minimum of 3 columns. One for the node type and at least two node indices.
@@ -343,10 +342,10 @@ void Mesh::readMeshFile(probParams& params){
 		}
 	}
 
-	std::cout << "check\n";
+
 
 	if(params.pmode != "none"){
-		getCharPerLength(params.pDir);
+		getCharPerLength(params);
 	}
 
 //	if(params.dataRed){
@@ -745,9 +744,11 @@ void Mesh::writeMeshFile(std::string& ifName, std::string& ofName){
 			// set the coordinates based on the number of dimensions of the mesh.
 			if(nDims == 2){
 				outputF << coords(cnt,0)<< '\t' << coords(cnt,1) << '\t'<< cnt << std::endl;
+//				outputF << coords(cnt,0)<< '\t' << coords(cnt,1) << '\t'<< cnt << std::endl;
 			}
 			else if(nDims == 3){
 				outputF << coords(cnt,0)<< '\t' << coords(cnt,1) << '\t' << coords(cnt,2) << '\t' << cnt << std::endl;
+//				outputF << coords_polar_cylindrical(cnt,0)<< '\t' << coords_polar_spherical(cnt,1) << '\t' << coords_polar_spherical(cnt,2) << '\t' << cnt << std::endl;
 			}
 			cnt++;
 
@@ -937,10 +938,6 @@ void Mesh::getVecs(probParams& params){
 //		std::cout << "Obtaining normal and tangential vectors " << std::endl;
 	}
 
-	// string that contains the type of element that is considered
-	std::string type;
-
-
 	// in case of 2D
 	if(nDims == 2){
 		// resizing of the normal and tangential vector arrays.
@@ -956,8 +953,8 @@ void Mesh::getVecs(probParams& params){
 			n1_se.conservativeResize(N_se,nDims);
 			t_se.conservativeResize(N_se,nDims);
 			for(int i = N_se - periodicVerticesNodes.size(); i< N_se; i++){
-				n1_se.row(i) = periodicNormalVec1;
-				t_se.row(i) = periodicVec;
+				n1_se.row(i) = periodicVecs.col(1);
+				t_se.row(i) = periodicVecs.col(0);
 			}
 		}
 	}
@@ -970,7 +967,6 @@ void Mesh::getVecs(probParams& params){
 		getEdgeTan(t_se, edgeConnectivity, seNodes);
 
 		// set the type of element to edge and obtaining 2 vectors perpendicular to the tangential vectors.
-		type = "edge";
 		getPerpVecs(t_se, n1_se,n2_se);
 
 		// resizing of the sliding surface normal and tangential vectors.
@@ -991,9 +987,9 @@ void Mesh::getVecs(probParams& params){
 			n2_se.conservativeResize(N_se, nDims);
 			t_se.conservativeResize(N_se, nDims);
 			for(int i = N_se - periodicVerticesNodes.size(); i< N_se; i++){
-				n1_se.row(i) = periodicNormalVec1;
-				n2_se.row(i) = periodicNormalVec2;
-				t_se.row(i) = periodicVec;
+				n1_se.row(i) = periodicVecs.col(1);
+				n2_se.row(i) = periodicVecs.col(2);
+				t_se.row(i) = periodicVecs.col(0);
 			}
 		}
 	}
@@ -1105,20 +1101,20 @@ void Mesh::getSurfNormal(){
 
 			// two vector are set up to define a plane of the boundary element.
 			// one vector from the first node to the second node and a second vector from the first node to the last node.
-			vec1 = coords.row(bdryNodesMat(surfConnectivity(i,j),2)) - coords.row(bdryNodesMat(surfConnectivity(i,j),1));
-			vec2 = coords.row(bdryNodesMat(surfConnectivity(i,j),4)) - coords.row(bdryNodesMat(surfConnectivity(i,j),1));
+			vec1 = (*ptrCoords).row(bdryNodesMat(surfConnectivity(i,j),2)) - (*ptrCoords).row(bdryNodesMat(surfConnectivity(i,j),1));
+			vec2 = (*ptrCoords).row(bdryNodesMat(surfConnectivity(i,j),4)) - (*ptrCoords).row(bdryNodesMat(surfConnectivity(i,j),1));
 
 			// initialise a zero distance vector
 			dMidPnt = Eigen::ArrayXd::Zero(nDims);
 
 			// summing all coordinates of the nodes of the element and storing it in dMidPnt
 			for(int l = 1; l< bdryNodesMat.cols(); l++){
-				dMidPnt += coords.row(bdryNodesMat(surfConnectivity(i,j),l));
+				dMidPnt += (*ptrCoords).row(bdryNodesMat(surfConnectivity(i,j),l));
 			}
 
 			// taking the average and substracting the coordinates of the sliding surface node to obtain the relative distance
 			// from the midpoint of the element to the sliding surface node
-			dMidPnt = dMidPnt/(bdryNodesMat.cols()-1) - coords.row(ssNodes(i)).transpose();
+			dMidPnt = dMidPnt/(bdryNodesMat.cols()-1) - (*ptrCoords).row(ssNodes(i)).transpose();
 
 			// calculating the inverse of the distance
 			invDist = 1/dMidPnt.matrix().norm();
@@ -1304,8 +1300,8 @@ void Mesh::getMidPnts(probParams& params){
 
 		Eigen::ArrayXXd midPntTan(size,nDims);
 		for(int i = 0 ; i < size; i++ ){
-			edgeMidPnts.row(i) = (coords.row(extBdryEdgeSegments(i,0)) + coords.row(extBdryEdgeSegments(i,1)))/2;
-			midPntTan.row(i) = coords.row(extBdryEdgeSegments(i,1)) - coords.row(extBdryEdgeSegments(i,0));
+			edgeMidPnts.row(i) = ((*ptrCoords).row(extBdryEdgeSegments(i,0)) + (*ptrCoords).row(extBdryEdgeSegments(i,1)))/2;
+			midPntTan.row(i) = (*ptrCoords).row(extBdryEdgeSegments(i,1)) - (*ptrCoords).row(extBdryEdgeSegments(i,0));
 		}
 
 		getPerpVecs(midPntTan,edgeMidPntNormals1,edgeMidPntNormals2);
@@ -1315,9 +1311,10 @@ void Mesh::getMidPnts(probParams& params){
 		for(int i = 0; i < nrElems; i++){
 
 			n = Eigen::VectorXd::Zero(nDims);
-			surfMidPnts.row(i) = (coords.row(bdryNodesMat(indices(i),1)) + coords.row(bdryNodesMat(indices(i),2)) + coords.row(bdryNodesMat(indices(i),3))+ coords.row(bdryNodesMat(indices(i),4)))/4;
-			vec1 = coords.row(bdryNodesMat(indices(i),2)) - coords.row(bdryNodesMat(indices(i),1));
-			vec2 = coords.row(bdryNodesMat(indices(i),4)) - coords.row(bdryNodesMat(indices(i),1));
+			// todo what if bdryNodesMat has less than 5 columns/?
+			surfMidPnts.row(i) = ((*ptrCoords).row(bdryNodesMat(indices(i),1)) + (*ptrCoords).row(bdryNodesMat(indices(i),2)) + (*ptrCoords).row(bdryNodesMat(indices(i),3))+ (*ptrCoords).row(bdryNodesMat(indices(i),4)))/4;
+			vec1 = (*ptrCoords).row(bdryNodesMat(indices(i),2)) - (*ptrCoords).row(bdryNodesMat(indices(i),1));
+			vec2 = (*ptrCoords).row(bdryNodesMat(indices(i),4)) - (*ptrCoords).row(bdryNodesMat(indices(i),1));
 //			std::cout << vec1 << std::endl;
 //			std::cout << vec2 << std::endl;
 			for(int k=0;k<nDims;k++){
@@ -1337,187 +1334,50 @@ void Mesh::getMidPnts(probParams& params){
 
 
 
-void Mesh::getSubDomains(Eigen::ArrayXi& subDomains, Eigen::ArrayXi& subDomLen, Eigen::ArrayXi& subDomBdry, Eigen::ArrayXi& subDomBdryLen){
-////	std::cout << "dividing the subdomains" << std::endl;
-//
-//	double max_x = coords.col(0).maxCoeff();
-//	double min_x = coords.col(0).minCoeff();
-//
-//	double max_y = coords.col(1).maxCoeff();
-//	double min_y = coords.col(1).minCoeff();
-////	std::cout << "max x " << max_x << " min x " << min_x << std::endl;
-////	std::cout << "max y " << max_y << " min y " << min_y << std::endl;
-//	Eigen::ArrayXi domain1(nNodes), domain2(nNodes), domain3(nNodes), domain4(nNodes);
-//	Eigen::ArrayXi bdrydomain1(N_m+N_se), bdrydomain2(N_m+N_se), bdrydomain3(N_m+N_se), bdrydomain4(N_m+N_se);
-//
-//
-//	for(int i = 0; i < nNodes; i++){
-////		std::cout << i << std::endl;
-//		if(std::find(std::begin(bdryNodes),std::end(bdryNodes),i) == std::end(bdryNodes)){
-//			if(coords(i,0) <= (max_x+min_x)/2){
-//				if(coords(i,1) <= (max_y+min_y)/2){
-//					domain1(subDomLen(0)) = i;
-//					subDomLen(0)++;
-//				}else{
-//					domain3(subDomLen(2)) = i;
-//					subDomLen(2)++;
-//				}
-//			}else{
-//				if(coords(i,1) <= (max_y+min_y)/2){
-//					domain2(subDomLen(1)) = i;
-//
-//					subDomLen(1)++;
-//				}else{
-//					domain4(subDomLen(3)) = i;
-//					subDomLen(3)++;
-//				}
-//			}
-//		}else{
-//			if(coords(i,0) <= (max_x+min_x)/2){
-//				if(coords(i,1) <= (max_y+min_y)/2){
-//					bdrydomain1(subDomBdryLen(0)) = i;
-//					subDomBdryLen(0)++;
-//				}else{
-//					bdrydomain3(subDomBdryLen(2)) = i;
-//					subDomBdryLen(2)++;
-//				}
-//			}else{
-//				if(coords(i,1) <= (max_y+min_y)/2){
-//					bdrydomain2(subDomBdryLen(1)) = i;
-//					subDomBdryLen(1)++;
-//				}else{
-//					bdrydomain4(subDomBdryLen(3)) = i;
-//					subDomBdryLen(3)++;
-//				}
-//			}
-//		}
-//	}
-//
-//	subDomains << domain1(Eigen::seqN(0,subDomLen(0))), domain2(Eigen::seqN(0,subDomLen(1))), domain3(Eigen::seqN(0,subDomLen(2))), domain4(Eigen::seqN(0,subDomLen(3)));
-//	subDomBdry << bdrydomain1(Eigen::seqN(0,subDomBdryLen(0))), bdrydomain2(Eigen::seqN(0,subDomBdryLen(1))),bdrydomain3(Eigen::seqN(0,subDomBdryLen(2))),bdrydomain4(Eigen::seqN(0,subDomBdryLen(3)));
-//
-////	std::cout << "subdomains are found" << std::endl;
-}
 
-void Mesh::getIntCorNodes(double& gamma, double& tol){
-//	std::cout << "Obtaining the internal nodes that fall within the correction tolerance" << std::endl;
-//	int nDomains = 4;
-//	Eigen::ArrayXi subDomains(N_i), subDomBdry(N_m+N_se);
-//	Eigen::ArrayXi subDomLen, subDomBdryLen;
-//
-//	subDomLen = Eigen::ArrayXi::Zero(nDomains);
-//	subDomBdryLen = Eigen::ArrayXi::Zero(nDomains);
-//
-//
-//
-//	getSubDomains(subDomains, subDomLen, subDomBdry, subDomBdryLen);
-//
-//	Eigen::ArrayXXd bdryCoords;
-//
-//	intCorNodes.resize(100);
-//
-////	std::cout << subDomLen << std::endl;
-//	int idxMin,startIdx = 0, startIdxBdry = 0, cnt=0;
-//	for(int i = 0; i < nDomains; i++){
-//		bdryCoords = coords(subDomBdry(Eigen::seqN(startIdxBdry,subDomBdryLen(i))), Eigen::all);
-//		for(int j = startIdx; j < startIdx + subDomLen(i); j++){
-////			std::cout << j << std::endl;
-//			(bdryCoords.rowwise()- coords.row(subDomains(j))).rowwise().squaredNorm().minCoeff(&idxMin);
-////			std::cout << "closest bdry node: " << bdryNodes(idxMin) << std::endl;
-//			if ((bdryCoords.row(idxMin) - coords.row(subDomains(j))).matrix().norm() < tol*gamma){
-////				std::cout << "node in question: " << subDomains(j) << " cnt: " << cnt << std::endl;
-////				std::cout << "min distance: " << (bdryCoords.row(idxMin) - coords.row(subDomains(j))).matrix().norm() << std::endl;
-//				intCorNodes(cnt) = subDomains(j);
-//				cnt++;
-//
-//				if(cnt == intCorNodes.size()){
-////					std::cout << cnt << std::endl;
-//					intCorNodes.conservativeResize(intCorNodes.size()+5000);
-//				}
-//			}
-//		}
-//		startIdx += subDomLen(i);
-//		startIdxBdry += subDomBdryLen(i);
-//
-//	}
-//
-//
-//	intCorNodes.conservativeResize(cnt);
-//
-//	// for debugging puposes
-////	std::cout << intCorNodes << std::endl;
-////	std::cout << intCorNodes.size() << std::endl;
-////	std::cout << "done" << std::endl;
-////	std::exit(0);
-//
-//
-
-
-}
-
-void Mesh::getCharPerLength(std::string& pDir){
-	int perDir;
-	Eigen::ArrayXi nonPerDir(nDims-1), idxMin(nDims-1);
-
-	switch(nDims){
-		case 2:
-			if(pDir == "x"){
-				perDir = 0;
-				nonPerDir << 1;
-			}else{
-				perDir = 1;
-				nonPerDir << 0;
-			}
-			break;
-		case 3:
-			if(pDir == "x"){
-				perDir = 0;
-				nonPerDir << 1,2;
-			}else if(pDir == "y"){
-				perDir = 1;
-				nonPerDir << 0,2;
-			}
-			else{
-				perDir = 2;
-				nonPerDir << 0,1;
-			}
-			break;
-	}
+void Mesh::getCharPerLength(probParams& params){
 
 	Eigen::ArrayXXd vertices(verticesNodes.size(), nDims);
-	vertices = coords(verticesNodes, Eigen::all);
+	if(params.ptype){
+		Eigen::ArrayXXd verticesCart(verticesNodes.size(),nDims);
+		verticesCart = coords(verticesNodes,Eigen::all);
 
-
-
-	for(int i = 0; i < nDims-1 ; i++){
-		vertices.col(nonPerDir(i)).minCoeff(&idxMin(i));
-	}
-
-	int size = (vertices.col(nonPerDir(0))==vertices(idxMin(0),nonPerDir(0))).count();
-	Eigen::ArrayXi indices(size);
-
-	int cnt = 0;
-	if(nDims == 2){
-		for(int i = 0; i < vertices.rows(); i++){
-			if(vertices(i,nonPerDir(0)) == vertices(idxMin(0), nonPerDir(0))){
-				indices(cnt) = i;
-				cnt++;
-			}
-		}
+		CoordTransform transform;
+		transform.cart_to_polar_cylindrical(verticesCart, vertices);
 	}else{
-		for(int i = 0; i < vertices.rows(); i++){
-			if(vertices(i,nonPerDir(0)) == vertices(idxMin(0), nonPerDir(0)) && vertices(i,nonPerDir(1)) == vertices(idxMin(1), nonPerDir(1))){
-				indices(cnt) = i;
-				cnt++;
-			}
+		vertices = coords(verticesNodes,Eigen::all);
+	}
+
+
+	std::vector<double>  minVals;
+	std::vector<int>  cols;
+	for(int i = 0; i < nDims; i++){
+		if(i != params.pDir){
+			cols.push_back(i);
+			minVals.push_back(vertices.col(i).minCoeff());
 		}
 	}
-	std::cout << vertices << std::endl;
-	std::cout << indices << std::endl;
-	Eigen::ArrayXd vals;
-	vals = vertices(indices(Eigen::seqN(0,cnt)),perDir);
 
-	lambda = vals.maxCoeff() - vals.minCoeff();
+
+
+
+	Eigen::ArrayXd periodicVals(vertices.rows());
+	int cnt = 0;
+
+	for(int i = 0; i < vertices.rows(); i++){
+		if(vertices(i,cols[0]) == minVals[0] && (nDims == 2 || vertices(i,cols[1]) == minVals[1])){
+
+			periodicVals(cnt) = vertices(i,params.pDir);
+			cnt++;
+		}
+	}
+
+
+
+	periodicVals.conservativeResize(cnt);
+
+	periodic_length = periodicVals.maxCoeff()-periodicVals.minCoeff();
+
 }
 
 void Mesh::findStringBounds(int& first, int& last, std::string& line){
@@ -1539,39 +1399,18 @@ void Mesh::findStringBounds(int& first, int& last, std::string& line){
 
 
 void Mesh::getPeriodicParams(probParams& params){
-	periodicVec.resize(nDims);
-	periodicNormalVec1.resize(nDims);
-	periodicNormalVec2.resize(nDims);
-	if(nDims==2){
-		if(params.pmode != "none"){
-			if(params.pDir == "x"){
-				periodicVec << 1,0;
-				periodicNormalVec1 << 0,1;
-			}
-			else if(params.pDir == "y"){
-				periodicVec << 0,1;
-				periodicNormalVec1 << 1,0;
-			}
-		}
-		else{
-			periodicVec << 0,0;
-		}
-	}
-	else if(nDims==3){
-		if(params.pmode != "none"){
-			if(params.pDir == "x"){
-				periodicVec << 1,0,0;
-				periodicNormalVec1 << 0,1,0;
-				periodicNormalVec2 << 0,0,1;
-			}else if(params.pDir == "y"){
-				periodicVec << 0,1,0;
-				periodicNormalVec1 << 1,0,0;
-				periodicNormalVec2 << 0,0,1;
-			}else if(params.pDir == "z"){
-				periodicVec << 0,0,1;
-				periodicNormalVec1 << 1,0,0;
-				periodicNormalVec2 << 0,1,0;
-			}
+	// each column of periodicVecs contains the periodic vectors for either the cartesian/ polar/ spherical coordinates
+	// the first column is the normal vector in periodic direction
+	// second and third column contains the two vectors normal to the periodic direction
+	periodicVecs = Eigen::MatrixXd::Zero(nDims,nDims);
+
+	int cnt = 1;
+	for(int row = 0; row < nDims; row++){
+		if(row == params.pDir){
+			periodicVecs(row,0) = 1;
+		}else{
+			periodicVecs(row, cnt) = 1;
+			cnt++;
 		}
 	}
 }

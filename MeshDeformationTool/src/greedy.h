@@ -2,6 +2,7 @@
 #define GREEDY_H_
 #include "getNodeType.h"
 #include "Mesh.h"
+#include "CoordTransform.h"
 class greedy {
 public:
 
@@ -12,7 +13,7 @@ public:
 	Eigen::ArrayXXd delta;
 	Eigen::ArrayXXd deltaInternal;
 
-	Eigen::ArrayXXd error;
+	Eigen::ArrayXXd error, errorPolarCylindrical;
 	Eigen::ArrayXXd errorPrevLvl;
 
 	Eigen::VectorXd alphaGrdy;
@@ -30,10 +31,9 @@ public:
 
 	probParams* p;
 
-	Eigen::VectorXd* pVec;
-
 	Mesh* mPtr;
 	getNodeType* nPtr; // todo add this?
+	CoordTransform transform;
 
 	greedy(Mesh& m, probParams& params, Eigen::ArrayXXd& disp, Eigen::ArrayXi& movingIndices,  Eigen::VectorXd& alpha, Eigen::ArrayXXd& d);
 
@@ -55,7 +55,7 @@ public:
 
 
 	void getErrorMovingNodes(Eigen::ArrayXi* nodes,Eigen::ArrayXXd& d,  size_t N);
-	void getErrorAngle(size_t dims, size_t N);
+	void getErrorAngle();
 private:
 	Eigen::ArrayXXd errorAngle;
 };

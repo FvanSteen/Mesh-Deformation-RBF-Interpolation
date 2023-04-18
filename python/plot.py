@@ -17,7 +17,7 @@ if(1):
     #fNameInit = '/mesh_NACA0012_inv.su2'
     #fNameInit = '/gis_nthx001_mesh.su2'
     #fileNames = ['/25x25_def_none.su2','/25x25_def_periodic.su2','/25x25_def_fixed.su2','/25x25_def_moving.su2']
-    fileNames = ['/5x5_per.su2']
+    fileNames = ['/5x5_per_def.su2']
     
     #fileNames = ['/mesh_NACA0012_inv_def.su2']
     [f_init,v_init,elemType,bdryPnts_init,_,_,_] = getPlotData(fNameInit)
@@ -136,8 +136,8 @@ if(0):
 #%%
 if(0):
     #import numpy as np
-    [f_init,v_init,elemType,bdryPnts_init,markerTags, nElemsMarks, FFD_pnts] = getPlotData("/25x25x25_def.su2")
-    plotTag= ["LOWER","LEFT", "BLOCK"]
+    [f_init,v_init,elemType,bdryPnts_init,markerTags, nElemsMarks, FFD_pnts] = getPlotData("/5x5x5_per_def.su2")
+    plotTag= ["LOWER", "UPPER","LEFT","RIGHT","FRONT","BACK", "BLOCK"]
 #    plotTag = ["BLADE", "HUB", "SHROUD"]
 #    plotTag = ["BLADE","HUB","INFLOW","OUTFLOW","PER1","PER2","SHROUD"]
     bdryScatterFuns.bdryScatter3D(v_init, bdryPnts_init, markerTags, nElemsMarks, plotTag, FFD_pnts)
@@ -173,15 +173,15 @@ if(0):
     from colMap import colMap
     
     cmapMatlab = colMap()
-#    fileNames = ['/9x9x9_def.su2']
-    fileNames = ['/25x25x25_def.su2']
+    fileNames = ['/5x5x5_per_def.su2']
+#    fileNames = ['/25x25x25_def.su2']
     
-    [f_init,v_init,elemType,bdryPnts_init,_,_,_] = getPlotData('/25x25x25.su2')
+    [f_init,v_init,elemType,bdryPnts_init,_,_,_] = getPlotData('/5x5x5_per.su2')
     
     
     graphNames = ["",""]
     cutAxis = 2
-    cutPlaneLoc = 0.5
+    cutPlaneLoc = 0.25
     
     dims = [0,1,2]
     dims.remove(cutAxis)

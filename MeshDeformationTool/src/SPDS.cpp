@@ -56,24 +56,25 @@ double SPDS::rbfEval(double distance, double radius){
 }
 
 //todo remove pVec as argument since m is also included
-void SPDS::project(Mesh& m, getNodeType&n, Eigen::ArrayXXd& array_in, Eigen::ArrayXXd& array_out, Eigen::VectorXd& pVec){
+void SPDS::project(Mesh& m, getNodeType&n, Eigen::ArrayXXd& array_in, Eigen::ArrayXXd& array_out){
 //	std::cout << "SPDS project\n";
 	if(n.N_se > 0){
-		projectEdge(m, n.sePtr, array_in, array_out, pVec, 0, n.N_se, 1);
+		projectEdge(m, n.sePtr, array_in, array_out, 0, n.N_se, 1);
 //		std::cout << "edge projection is done\n";
 	}
 
 //	if(n.N_ss > 0){
 	if(array_in.rows() > n.N_se){
-		projectSurf(m, n.ssPtr, array_in, array_out, pVec, n.N_se, n.N_se + n.N_ss, 1);
+		projectSurf(m, n.ssPtr, array_in, array_out, n.N_se, n.N_se + n.N_ss, 1);
 //		std::cout << "surf projection is done\n";
 	}
 
 }
 
-void SPDS::projectSurf(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array_in, Eigen::ArrayXXd& array_out, Eigen::VectorXd& pVec, size_t startIdx, size_t endIdx, int project){
+void SPDS::projectSurf(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array_in, Eigen::ArrayXXd& array_out, size_t startIdx, size_t endIdx, int project){
 	using kdt = nanoflann::KDTreeEigenMatrixAdaptor<Eigen::ArrayXXd>;
 	kdt mat_index2(m.nDims, std::cref(m.surfMidPnts), 10 /* max leaf */);
+
 
 
 	Eigen::ArrayXd query(m.nDims);
@@ -114,9 +115,9 @@ void SPDS::projectSurf(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 			projection = Eigen::RowVectorXd::Zero(m.nDims);
 
 			if(project){
-				query = m.coords.row((*nodesPtr)(i-startIdx)) + array_in.row(i);
+				query = (*m.ptrCoords).row((*nodesPtr)(i-startIdx)) + array_in.row(i);
 			}else{
-				query = m.coords.row((*nodesPtr)(i)) + array_in.row(i);
+				query = (*m.ptrCoords).row((*nodesPtr)(i)) + array_in.row(i);
 			}
 
 
@@ -152,7 +153,7 @@ void SPDS::projectSurf(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 	}
 }
 
-void SPDS::projectEdge(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array_in, Eigen::ArrayXXd& array_out, Eigen::VectorXd& pVec, size_t startIdx, size_t endIdx, int project){
+void SPDS::projectEdge(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array_in, Eigen::ArrayXXd& array_out, size_t startIdx, size_t endIdx, int project){
 
 	using kdt = nanoflann::KDTreeEigenMatrixAdaptor<Eigen::ArrayXXd>;
 
@@ -181,11 +182,12 @@ void SPDS::projectEdge(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 	ptr[1] = &m.edgeMidPntNormals2;
 
 	for(size_t i = startIdx; i < endIdx; i++){
+
 		if(std::find(std::begin(m.periodicVerticesNodes),std::end(m.periodicVerticesNodes),(*nodesPtr)(i)) != std::end(m.periodicVerticesNodes)){
 			if(project)
-				array_out.row(i) = array_in.row(i)*pVec.transpose().array();
+				array_out.row(i) = array_in.row(i)*m.periodicVecs.col(0).transpose().array();
 			else
-				array_out.row(i) =   array_in.row(i) - array_in.row(i)*pVec.transpose().array();
+				array_out.row(i) =   array_in.row(i) - array_in.row(i)*m.periodicVecs.col(0).transpose().array();
 
 		}
 		else{
@@ -193,7 +195,6 @@ void SPDS::projectEdge(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 
 
 			query = (*m.ptrCoords).row((*nodesPtr)(i)) + array_in.row(i);
-
 
 			resultSet.init(&idx[0], &distSqrd[0]);
 
@@ -205,6 +206,8 @@ void SPDS::projectEdge(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 			for(size_t j = 0; j < size_t(m.nDims-1); j++){
 				projectionMagnitude(j) =  distNN.dot((*ptr[j]).row(idx[0]).matrix());
 			}
+
+
 			while(abs(projectionMagnitude).sum() > tol){
 
 				for(size_t j = 0; j < size_t(m.nDims-1); j++){

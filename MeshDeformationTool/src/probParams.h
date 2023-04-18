@@ -9,7 +9,7 @@ struct probParams{
 	std::string pmode;
 	int ptype;
 	bool curved;
-	std::string pDir;
+	int pDir;
 	bool dataRed;
 	double tol;
 	std::string dispFile;
