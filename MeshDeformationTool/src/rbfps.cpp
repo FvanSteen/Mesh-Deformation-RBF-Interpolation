@@ -4,14 +4,14 @@
 #include <chrono>
 #include <Eigen/Dense>
 #include "greedy.h"
-#include "CoordTransform.h"
+
 
 //rbf_ps::rbf_ps(Mesh& meshObject, Eigen::VectorXd& dVec, Eigen::RowVectorXd& rotPnt, Eigen::VectorXd& rotVec, const int& steps, const std::string& smode, const bool& curved, const std::string& pDir)
 rbf_ps::rbf_ps( struct probParams& probParamsObject, Mesh& meshObject, getNodeType& n)
 :rbfGenFunc(meshObject, probParamsObject)
 {
 	if(params.dataRed){
-		greedy g(m, params, exactDisp, movingIndices, alpha, d);
+		greedy g(m, params, disp, movingIndices, alpha, d);
 		perform_rbf(n,g);
 	}else{
 		perform_rbf(n);
@@ -72,12 +72,12 @@ void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 
 	int iter, lvl;
 	bool iterating = true;
-	if(params.ptype){
-		transform.cart_to_polar_cylindrical(m.coords, m.coords_polar_cylindrical);
-	}
 
 	for(int i = 0; i < params.steps; i++){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
+		if(params.ptype){
+			transform.cart_to_polar_cylindrical(m.coords, m.coords_polar_cylindrical);
+		}
 
 		iter = 0;
 		lvl = 0;
@@ -90,7 +90,11 @@ void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 		while(iterating){
 
 			n.addControlNodes(g.maxErrorNodes, params.smode, m);
-
+			std::cout << "control nodes:\n";
+			for(auto x : *n.cPtr){
+				std::cout << x << ", ";
+			}
+			std::cout << std::endl;
 			getPhis(n, iter);
 
 			if(lvl != 0){
@@ -113,6 +117,8 @@ void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 			g.getError(n,d, lvl);
 			std::cout << "error: \t"<< g.maxError <<" at node: \t" << g.maxErrorNodes(0)<< std::endl;
 
+
+
 			if(g.maxError < params.tol){
 				iterating = false;
 				if(params.multiLvl == false){
@@ -133,21 +139,56 @@ void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 					g.getAlphaVector();
 					g.setInitMaxErrorNodes();
 				}
-				g.getAlphaVector();
-				if(lvl == 2){
-					updateNodes(n,defVec_all, g.d_step, g.alpha_step, g.ctrlPtr);
-					if(params.ptype){
-						transform.polar_cylindrical_to_cart(m.coords_polar_cylindrical, m.coords);
-					}
-	//				g.correction(m,n, params.gamma, params.multiLvl);
-					m.writeMeshFile(params.mesh_ifName, params.mesh_ofName);
-					std::exit(0);
-				}
+
+//				if(lvl == 1){
+//					g.getAlphaVector();
+//					std::cout << *g.d_step << std::endl;
+//					std::cout << (*g.d_step).rows() << std::endl;
+//					std::cout << "\n\n" << g.errorPrevLvl << std::endl;
+////					updateNodes(n,defVec_all, g.d_step, g.alpha_step, g.ctrlPtr);
+//					m.coords_polar_cylindrical(*n.iPtr,Eigen::all) += (*g.d_step - g.errorPrevLvl);
+////					for(int dim = 0; dim <m.nDims; dim++){
+////						m.coords_polar_cylindrical
+////					}
+//					if(params.ptype){
+//						transform.polar_cylindrical_to_cart(m.coords_polar_cylindrical, m.coords);
+//					}
+//	//				g.correction(m,n, params.gamma, params.multiLvl);
+//					m.writeMeshFile(params.mesh_ifName, params.mesh_ofName);
+//					std::exit(0);
+//				}
 
 			}
 			iter++;
 
 		}
+
+
+
+//		for(auto x : m.seNodes){
+//			std::cout << x << ", ";
+//		}
+//		std::cout << std::endl;
+//
+//		for(auto x : *n.cPtr){
+//			std::cout << x << ", ";
+//		}
+//		std::cout << std::endl;
+//
+//		(*m.ptrCoords)(*n.iPtr_reduced,Eigen::all) += d;
+////				(*m.ptrCoords)(*n.sePtr,Eigen::all) += free_disp_edge;
+//		for(int i = 0; i < m.nDims; i++){
+//			(*m.ptrCoords)(*n.cPtr, i) += defVec_me(Eigen::seqN(i*n.N_c, n.N_c)).array();
+//		}
+//
+//
+//		transform.polar_cylindrical_to_cart(m.coords_polar_cylindrical, m.coords);
+//		m.writeMeshFile(params.mesh_ifName, params.mesh_ofName);
+//		std::exit(0);
+
+
+
+
 
 
 		int iter_surf = 0;
@@ -165,9 +206,14 @@ void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 		while(iterating){
 
 
+
 			n.addControlNodes(g.maxErrorNodes, params.smode, m);
 //			std::cout << "\n added node types:\n" << n.addedNodes.type << "\n" << std::endl;
-
+			std::cout << "control nodes:\n";
+			for(auto x : *n.cPtr){
+				std::cout << x << ", ";
+			}
+			std::cout << std::endl;
 			getPhis(n, iter_surf);
 
 			if(lvl != 0){
@@ -188,12 +234,50 @@ void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 
 				pseudo_sliding_surf(PhiPtr, n);
 				getDefVec(defVec_all, defVec_me, n, proj_disp_all, n.N_c, n.N_m+n.N_se);
+				std::exit(0);
 
 			}
 			performRBF(PhiPtr->Phi_cc,PhiPtr->Phi_ic,defVec_all,n.cPtr,n.iPtr,n.N_c);
 
 			g.getError(n,d,lvl);
 			std::cout << "error: \t"<< g.maxError <<" at node: \t" << g.maxErrorNodes(0)<< std::endl;
+
+
+
+			if(iter_surf == 0){
+				for(auto x : *n.sePtr){
+					std::cout << x << ", ";
+				}
+				std::cout << std::endl;
+
+				for(auto x : *n.mPtr){
+					std::cout << x << ", ";
+				}
+				std::cout << std::endl;
+
+				for(auto x : *n.ssPtr){
+					std::cout << x << ", ";
+				}
+				std::cout << std::endl;
+
+				for(auto x : *n.cPtr){
+					std::cout << x << ", ";
+				}
+				std::cout << std::endl;
+
+//				(*m.ptrCoords)(*n.iPtr,Eigen::all) += d;
+				(*m.ptrCoords)(*n.sePtr,Eigen::all) += proj_disp_edge;
+				(*m.ptrCoords)(*n.ssPtr,Eigen::all) += proj_disp_all;
+				for(int i = 0; i < m.nDims; i++){
+					(*m.ptrCoords)(*n.mPtr, i) += defVec_m(Eigen::seqN(i*n.N_m, n.N_m)).array();
+				}
+
+
+				transform.polar_cylindrical_to_cart(m.coords_polar_cylindrical, m.coords);
+				m.writeMeshFile(params.mesh_ifName, params.mesh_ofName);
+				std::exit(0);
+			}
+
 
 			if(g.maxError < params.tol){
 				iterating = false;
@@ -224,7 +308,6 @@ void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 		updateNodes(n,defVec_all, g.d_step, g.alpha_step, g.ctrlPtr);
 		g.correction(m,n, params.gamma, params.multiLvl);
 
-
 		iterating = true;
 
 		std::cout << "number of control nodes: " << n.N_c << std::endl;
@@ -243,6 +326,7 @@ void rbf_ps::pseudo_sliding_surf(PhiStruct* PhiPtr, getNodeType& n){
 	}
 
 	p.projectSurf(m, n.ssPtr, free_disp_all, proj_disp_all, 0, n.N_ss, 1);
+
 }
 
 

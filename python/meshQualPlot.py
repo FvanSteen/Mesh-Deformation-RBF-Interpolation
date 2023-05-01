@@ -2,93 +2,141 @@
 import matplotlib.pyplot as plt
 import matplotlib.collections
 import numpy as np
-from funs import getMeshQuals,getPlotData
+from funs import getMeshQual, getPlotData
 from colMap import colMap
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
-
-def meshQualPlot(fileNames,fNameInit, graphNames,alphas_0):
+def meshQualPlot2D(fileName, graphName, f, v, elemType):
     # importing the default matlab colormap from colMap.py
     cmapMatlab = colMap()
     
+    meshQual = getMeshQual(fileName)
+       
+    quad_idx = np.where(elemType == 9)
+    tri_idx = np.where(elemType == 5)
+    
+    colors = cmapMatlab(plt.Normalize(0,1)(meshQual))
+    
+    pc_tri = matplotlib.collections.PolyCollection(v[f[tri_idx][:,0:3]],cmap=cmapMatlab, facecolors=colors, edgecolor="black",linewidth=0.1)
+    pc_quad = matplotlib.collections.PolyCollection(v[f[quad_idx][:,0:4]],cmap=cmapMatlab,  facecolors=colors, edgecolor="black",linewidth=0.1)
 
-    fig = plt.figure()  
-    #fig.suptitle('NACA 0012',y=0.85)
-        
+    fig = plt.figure()              
+    ax = fig.add_subplot(1,1,1)
+    
+    polys = ax.add_collection(pc_tri)
+    polys = ax.add_collection(pc_quad)
+    
+#        pc.set_array(None)
+    ax.autoscale()
+    ax.set_aspect('equal')
+    polys.set_clim(0,1)
+    plt.colorbar(polys, ax=ax)
     
     
-    for i in range(0,len(fileNames)):
-    #    ax = fig.add_subplot(1,len(fileNames),i+1)
-        ax = fig.add_subplot(1,1,i+1)
-        [f,v,elemType,_,_,_,_] = getPlotData(fileNames[i])  
-#        print(v)
-        
-        coordsPolar = np.empty(np.shape(v))
-        coordsPolar[:,0] = np.sqrt(v[:,0]**2+v[:,1]**2)
-        coordsPolar[:,1] = np.arctan2(v[:,1],v[:,0])
-        coordsPolar[:,1] += np.pi/6
-        v2 = np.empty(np.shape(v))
-        v2[:,0] = coordsPolar[:,0]*np.cos(coordsPolar[:,1])
-        v2[:,1] = coordsPolar[:,0]*np.sin(coordsPolar[:,1])
-        
-        coordsPolar[:,1] += np.pi/6
-        v3 = np.empty(np.shape(v))
-        v3[:,0] = coordsPolar[:,0]*np.cos(coordsPolar[:,1])
-        v3[:,1] = coordsPolar[:,0]*np.sin(coordsPolar[:,1])
-        
-        
-        
-#        coordsPolar[:,0] = np.sqrt(v[:,0]**2+v[:,1]**2)
-#        print(coordsPolar)
-        
-        quadIdx = np.where(elemType == 9)
-        if np.size(quadIdx) != 0:
-            startQuadIdx = np.where(elemType == 9)[0][0]
-        else:
-            startQuadIdx = np.size(elemType)
-        
-        meshQual = getMeshQuals(f,v,alphas_0, elemType)
-        
-        print("Min mesh quality: \t", round(np.min(meshQual),5)) 
-        print("Max mesh quality: \t", round(np.max(meshQual),5)) 
-        print("Mean mesh quality: \t", round(np.mean(meshQual),5))
-        
-    #    colors1 = cmapMatlab(plt.Normalize(0,1)(meshQual[0:startQuadIdx]))
-    #    
-    #    colors2 = cmapMatlab(plt.Normalize(0,1)(meshQual[startQuadIdx:]))
-        colors1 = cmapMatlab(plt.Normalize(0,1)(meshQual[0:startQuadIdx]))
-        colors2 = cmapMatlab(plt.Normalize(0,1)(meshQual[startQuadIdx:]))
-        
-    #    colormap = plt.cm.coolwarm #or any other colormap
-    #    cmap_reversed = matplotlib.cm.get_cmap('bwr_r')
-    #    colors2 = cmap_reversed(plt.Normalize(0,1)(meshQual[startQuadIdx:]))
-        
-    #    v[:,0] = -v[:,0]
-        pc = matplotlib.collections.PolyCollection(v[f[0:startQuadIdx,0:3]],cmap='seismic', facecolors=colors1, edgecolor="black",linewidth=0.1)
-        pc2 = matplotlib.collections.PolyCollection(v[f[startQuadIdx:,0:4]],cmap=cmapMatlab,  facecolors=colors2, edgecolor="black",linewidth=0.1)
-#        v[:,1] += 0.045
-#        pc3 = matplotlib.collections.PolyCollection(v2[f[0:startQuadIdx,0:3]],cmap='seismic', facecolors=colors1, edgecolor="black",linewidth=0.1)
-        pc4 = matplotlib.collections.PolyCollection(v2[f[startQuadIdx:,0:4]],cmap=cmapMatlab,  facecolors=colors2, edgecolor="black",linewidth=0.1)
-        pc5 = matplotlib.collections.PolyCollection(v3[f[startQuadIdx:,0:4]],cmap=cmapMatlab,  facecolors=colors2, edgecolor="black",linewidth=0.1)
-        
-    #    pc3 = matplotlib.collections.PolyCollection(v[f[4365:4366]],cmap=cmapMatlab, facecolors='red', edgecolor="black",linewidth=0.25)
-        
-        polys = ax.add_collection(pc)
-        polys = ax.add_collection(pc2)
-#        polys = ax.add_collection(pc3)
-#        polys = ax.add_collection(pc4)
-#        polys = ax.add_collection(pc5)
-        
-    #    polys = ax.add_collection(pc3)
-#        if(fileNames[i][0:10] == '/mesh_NACA'): 
-#            ax.scatter(v[200][0],v[200][1],color='red') 
-        pc.set_array(None)
-        ax.autoscale()
-        ax.set_aspect('equal')
-        polys.set_clim(0,1)
-        plt.colorbar(polys, ax=ax, shrink=1.0/(np.size(graphNames)-1))
-        ax.title.set_text(graphNames[i])
-#        ax.set_ylim([-0.031, -0.01])
-#        ax.set_xlim([-0.140, -0.126])
+    ax.title.set_text(graphName)
+
     plt.show()
-    x = np.argwhere(np.isnan(meshQual))
-    print(v[f[x]])
+
+#    x = np.argwhere(np.isnan(meshQual))
+#    print(v[f[x]])
+    
+    
+def meshQualPlot3D(fileName, graphName, cutAxis, cutPlaneLoc, f, v, elemType):
+    
+    cmapMatlab = colMap()
+   
+    dims = [0,1,2]
+    dims.remove(cutAxis)
+       
+    meshQuality = getMeshQual(fileName)
+    
+    idx_lower = np.where(v[f][:,:,cutAxis] < cutPlaneLoc)
+    idx_upper = np.where(v[f][:,:,cutAxis] >= cutPlaneLoc)
+    idxCutElems = np.intersect1d(idx_lower[0],idx_upper[0])
+    
+    meshQual_cut = meshQuality[idxCutElems]
+    
+    print("\nMesh quality parameters of the cross-section:" )
+    print("Min mesh quality: \t", round(np.min(meshQual_cut),5)) 
+    print("Max mesh quality: \t", round(np.max(meshQual_cut),5)) 
+    print("Mean mesh quality: \t", round(np.mean(meshQual_cut),5), "\n")
+    
+    # quadriliteral
+    verticesInd = np.array([[0,1],[1,2],[2,3],[3,0],[0,4],[1,5],[2,6],[3,7],[4,5],[5,6],[6,7],[7,4]])
+    
+    # tetrahidral
+#    verticesInd = np.array([[0,1],[1,2],[2,0],[0,3],[1,3],[2,3]])
+    
+    v_cut = np.empty((len(idxCutElems),8,2),dtype = float)
+    v_cut[:] = np.nan    
+    
+    for i in range(len(idxCutElems)):
+        if(i%100 == 0):
+            print(str(i) + "/" + str(len(idxCutElems)))
+        
+        edges = v[f][idxCutElems[i]][verticesInd]   
+        
+        idx_1 = np.where(edges[:,:,cutAxis] < cutPlaneLoc)
+        idx_2 = np.where(edges[:,:,cutAxis] >= cutPlaneLoc)
+        idx_crossing = np.intersect1d(idx_1[0],idx_2[0])
+        
+        cutLoc = edges[idx_crossing][:,0,dims] + (edges[idx_crossing][:,1,dims]-edges[idx_crossing][:,0,dims])*((cutPlaneLoc-edges[idx_crossing][:,0,cutAxis])/(edges[idx_crossing][:,1,cutAxis]-edges[idx_crossing][:,0,cutAxis]))[:, np.newaxis]
+        
+        midpoint = np.mean(cutLoc,axis=0)
+        
+        angles = np.arctan2(cutLoc[:,1]-midpoint[1],cutLoc[:,0]-midpoint[0])
+        cutLoc = cutLoc[angles.argsort()]
+        
+        v_cut[i,0:np.shape(cutLoc)[0],:] = cutLoc
+  
+    print(str(len(idxCutElems)) + "/" + str(len(idxCutElems)))
+    
+    colors = cmapMatlab(plt.Normalize(0,1)(meshQual_cut))
+   
+    fig = plt.figure()  
+    pc = matplotlib.collections.PolyCollection(v_cut,cmap=cmapMatlab, facecolors=colors, edgecolor="black",linewidth=0.1)
+    ax = fig.add_subplot(1,1,1)
+    
+    polys = ax.add_collection(pc)
+    
+#    pc.set_array(None)
+    ax.autoscale()  
+    ax.set_aspect('equal')
+    polys.set_clim(0,1)
+    plt.colorbar(polys, ax=ax)
+    plt.show()
+    
+    
+def nanElems(fileName,v,f):
+    
+    meshQuality = getMeshQual(fileName)
+    idx = np.argwhere(np.isnan(meshQuality))
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1, projection='3d')
+    for i in range(len(idx)):
+        elem = v[f][idx[i]][0]
+
+        verts = [np.array([elem[0],elem[1],elem[5],elem[4]]),
+              np.array([elem[3],elem[2],elem[6],elem[7]]),
+              np.array([elem[3],elem[0],elem[4],elem[7]]),
+              np.array([elem[2],elem[1],elem[5],elem[6]]),
+              np.array([elem[0],elem[1],elem[2],elem[3]]),
+              np.array([elem[4],elem[5],elem[6],elem[7]])]
+        
+        
+        pc = Poly3DCollection(verts, facecolors='blue', edgecolor="black",linewidth=0.5)
+    
+        ax.add_collection(pc)
+    
+    ub = np.max(v[idx],axis=0)
+    lb = np.min(v[idx],axis=0)
+    ax.set_xlim(lb[0][0], ub[0][0])
+    ax.set_ylim(lb[0][1], ub[0][1])
+    ax.set_zlim(lb[0][2], ub[0][2])
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+    plt.show()
+    
+    

@@ -1,3 +1,12 @@
+#ifdef WINDOWS
+#include <direct.h>
+#define get_cwd _getcwd
+#else
+#include <unistd.h>
+#define get_cwd getcwd
+#endif
+
+
 #include "ReadConfigFile.h"
 #include <iostream>
 #include <fstream>
@@ -6,9 +15,12 @@
 #include <sstream>
 ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject) {
 	std::cout << "Reading the configuration file" << std::endl;
+
+	getDirectory(probParamsObject.directory);
+
 	// todo remove whitespace before and after input variable
 	std::string line;							// string containing line obtained by getline() function
-	std::ifstream file("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\ConfigFiles\\" + ifName);
+	std::ifstream file(probParamsObject.directory + "\\ConfigFiles\\" + ifName);
 
 	int first, last;
 	std::string tolCrit;
@@ -122,6 +134,10 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 				tolCrit = line.substr(first,last-first);
 				probParamsObject.tolCrit = stod(tolCrit);
 			}
+			else if(line.rfind("GENERATE_QUALITY")==0){
+				std::string param = "GENERATE_QUALITY";
+				getBool(param, probParamsObject.generateQuality, line);
+			}
 		}
 		file.close();
 	}else{std::cout << "Unable to open the configuration file: " << ifName << std::endl;}
@@ -226,4 +242,9 @@ void ReadConfigFile::getBool(std::string& param, bool& boolean, std::string& lin
 	}
 }
 
-
+void ReadConfigFile::getDirectory(std::string& dir){
+	char fname_buff[FILENAME_MAX];
+	get_cwd(fname_buff, FILENAME_MAX );
+	std::string cwd(fname_buff);
+	dir = cwd;
+}

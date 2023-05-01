@@ -14,18 +14,11 @@
 #include <ctime>
 #include <iostream>
 #include "CoordTransform.h"
-using namespace std;
+#include "MeshQuality.h"
+
 
 int main()
 {
-
-//	SPDS ds;
-//	ds.kdtree<double>(5,2);
-
-
-//	std::cout << "DONE ALL" << std::endl;
-//	std::exit(0);
-
 
 	// config file containing all information required to perform the mesh deformation
 	std::string configFile = "config_file.txt";
@@ -39,11 +32,16 @@ int main()
 	ReadConfigFile config(configFile,probParams);
 
 
+
 	// lvl indicating the amount of debug messages
 	int debugLvl = 3;
 
 	// initialising class object m, reads mesh input file in constructor.
 	Mesh meshOb(probParams, debugLvl);
+
+
+
+	MeshQuality Qual(probParams, meshOb.coords);
 
 	getNodeType n(probParams, meshOb);
 
@@ -65,10 +63,7 @@ int main()
 
 	meshOb.writeMeshFile(probParams.mesh_ifName, probParams.mesh_ofName);
 
-
-	// Initialising the rbf class with the mesh data and the problem parameters
-//	rbf rbf(meshOb, probParams);
-
-	// calling the main rbf function that performs the mesh deformation
-//	rbf.RBFMain();
+	if(probParams.generateQuality){
+		Qual.getDeformedMeshQual(meshOb.coords);
+	}
 }

@@ -1,145 +1,84 @@
 import os
 from bdryScatter import bdryScatterFuns
-from meshQualPlot import meshQualPlot
-from funs import getMeshQualParams,getPlotData, getMeshQualParams3D, getMeshQuals3D
+from meshQualPlot import meshQualPlot2D, meshQualPlot3D, nanElems
+from funs import getMeshQualParams,getPlotData, getMeshQualParams3D, getMeshQuals3D, getMeshQual, getMeshQuals
 import matplotlib.pyplot as plt
 import numpy as np
+from coordTransform import coordTransform
+
 
 import matplotlib.collections
 #plt.close('all')
 # Setting directory to find .su2 files
 figPath = os.path.dirname(os.path.abspath(__file__)) + "/figs/"
 os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes')
+fileName = '/stator_per_ffd_def.su2'
+#fileName = '/5x5x5_per.su2'
+[f,v,elemType,bdryPnts,markerTags, nElemsMarks, FFD_pnts] = getPlotData(fileName)  
 
-if(1):
-    fNameInit = '/5x5_per.su2'
-    #fNameInit = '/turbine_row.su2'
-    #fNameInit = '/mesh_NACA0012_inv.su2'
-    #fNameInit = '/gis_nthx001_mesh.su2'
-    #fileNames = ['/25x25_def_none.su2','/25x25_def_periodic.su2','/25x25_def_fixed.su2','/25x25_def_moving.su2']
-    fileNames = ['/5x5_per_def.su2']
-    
-    #fileNames = ['/mesh_NACA0012_inv_def.su2']
-    [f_init,v_init,elemType,bdryPnts_init,_,_,_] = getPlotData(fNameInit)
-    
-    [alphas_0,_,_,_] = getMeshQualParams(f_init,v_init,elemType)
-#%%
-#a = v_init[98320]
-#b = v_init[97661]
-#qc = a +0.25*(b-a)
+v = coordTransform.toCylindrical(v)
+
+#%% 2D PLOTS
+
+# Mesh quality
+if(0):    
+    graphName = ''    
+    meshQualPlot2D(fileName, graphName, f, v, elemType)
+
+# Boundary scatter plots
+if(0):
+    # Without initial boundary
+    init = 1
+    bdryScatterFuns.bdryScatter(fileName, v, bdryPnts, init)
+
+
 #%%
 
-#bdryPnts = np.unique(bdryPnts_init)
-#blockidx = np.array([49,50,51,52,53,54,57,58,59,60,61,62])
-#periodicIdx = np.append(np.arange(1,25), np.arange(111-11-25,111-12))
-#blockPnts = bdryPnts[blockidx]
-#
-#bdryPnts = np.delete(bdryPnts, blockidx)
-#periodicPnts = bdryPnts[periodicIdx]
-#bdryPnts = np.delete(bdryPnts,periodicIdx)
-#
-#pc = matplotlib.collections.PolyCollection(v_init[f_init],cmap='seismic', facecolors="white", edgecolor="black",linewidth=0.4)
-#
-#labels= ["_nolegend_", "control", "sliding", "periodic"]
-##labels= [ "control", "internal"]
-#fig = plt.figure()
-#ax = fig.add_subplot(1,1,1)
-#polys = ax.add_collection(pc)
-##plt.plot([0,1,1,0,0],[0,0,1,1,0], color = "black", linewidth=0.5)
-#plt.scatter(v_init[blockPnts][:,0],v_init[blockPnts][:,1], s = 15)
-#plt.scatter(v_init[bdryPnts][:,0],v_init[bdryPnts][:,1], s = 15)
-#plt.scatter(v_init[periodicPnts][:,0],v_init[periodicPnts][:,1], s = 15)
-#
-#
-#ax.set_xlim([-0.05,1.05])
-#ax.set_ylim([-0.05,1.05])
-#plt.axis('equal')
-#ax.set_xlabel('x')
-#ax.set_ylabel('y')
 #ax.legend(labels, bbox_to_anchor=(1.04,1), loc='upper left')
 #plt.show()
-#plt.savefig(figPath + "per_3.png", dpi=800,bbox_inches='tight')
-##%%
-#
-#bdryPnts = np.unique(bdryPnts_init)
-#internalPnts = np.arange(0,np.size(v_init,0))
-#internalPnts = np.delete(internalPnts,bdryPnts)
-#
-#
-#pc = matplotlib.collections.PolyCollection(v_init[f_init],cmap='seismic', facecolors="white", edgecolor="black",linewidth=0.5)
-#
-#labels= ["_nolegend_", "control", "internal"]
-#fig = plt.figure()
-#ax = fig.add_subplot(1,1,1)
-#polys = ax.add_collection(pc)
-#plt.scatter(v_init[bdryPnts][:,0],v_init[bdryPnts][:,1], s = 15)
-#plt.scatter(v_init[internalPnts][:,0],v_init[internalPnts][:,1], s= 15)
-#
-#ax.set_xlim([-0.05,1.05])
-#ax.set_ylim([-0.05,1.05])
-#plt.axis('equal')
-#ax.set_xlabel('x')
-#ax.set_ylabel('y')
-#ax.legend(labels, bbox_to_anchor=(1.04,1), loc='upper left')
-#plt.show()
-#
-#
 #plt.savefig(figPath + "rbf_def.png", dpi=800,bbox_inches='tight')
 
 
-#[f,v,elemType,_] = getPlotData('/25x25.su2')  
-#[f_init, v_init, elemType, bdryPnts_init] = getPlotData('/mesh_NACA0012_inv.su2')
-#[f_init,v_init,elemType,bdryPnts_init] = getPlotData('/turbine_row.su2')
-#[f,v,elemType] = getPlotData('/su2mesh.su2')
-#[f,v,elemType] = getPlotData('/mesh_original.su2')
-
-
-
-
-# Provide filenames of the meshes
-#fileNames = ['/25x25_def_ps_none_noCorrect_DataRed_e1.su2','/25x25_def_ps_none_noCorrect_DataRed_e2.su2','/25x25_def_ps_none_noCorrect_DataRed_e3.su2','/25x25_def_ps_none_noCorrect_DataRed_e4.su2','/25x25_def_ps_none_correct_DataRed_e1.su2','/25x25_def_ps_none_correct_DataRed_e2.su2','/25x25_def_ps_none_correct_DataRed_e3.su2','/25x25_def_ps_none_correct_DataRed_e4.su2']
-#fileNames = ['/375x375_def.su2']
-#fileNames = ['/mesh_NACA0012_inv_def.su2']
-#fileNames = ['/LS89_turbine_def.su2']
-#fileNames= ['/25x25_def_ref.su2','/25x25_def_err1.su2','/25x25_def_err2.su2','/25x25_def_err3.su2','/25x25_def_err4.su2','/25x25_def_err5.su2']
-#fileNames = ['/mesh_NACA0012_inv_def_none_ref.su2','/mesh_NACA0012_inv_def_none_greedy.su2','/mesh_NACA0012_inv_def_ps_ref.su2','/mesh_NACA0012_inv_def_ps_greedy.su2']
-#fileNames = ['/su2mesh_def_ps_ref.su2']
-#fileNames = ['/mesh_original.su2']
-#fileNames = ['/turbine_row_def.su2']
-
-
-#fileNames = ['/gis_nthx001_mesh_def.su2']
-#graphNames = ['non-periodic', 'periodic in y', 'periodic in y,\nmoving boundaries, fixed vertices', 'periodic in y,\nmoving boundaries, moving vertices']
-#graphNames = ['','Regular RBF', 'Greedy 1e-1', 'Greedy 1e-2', 'Greedy 1e-3', 'Greedy 1e-4', 'Greedy 1e-5']
-#graphNames = ['standard','periodic', 'fixed', 'moving']
-
-
-#%% Mesh Quality plots
-    #import numpy as np
-    graphNames = ['','']
-    #fileNames = ['/turbine_row_d.su2']
-    meshQualPlot(fileNames,fNameInit,graphNames,alphas_0)
-    #plt.scatter(qc[0],qc[1])
-    #x = np.argwhere(np.isnan(meshQual))
-    #plt.savefig(figPath + "turbine_row_ps_fixed_zoom.png", dpi=800,bbox_inches='tight')
-#%% MAKING A SCATTER PLOT OF THE BOUNDARY POINTS
-
-### with the initial mesh ###
+#%% 3D PLOTS
+    
+    
+# Mesh quality
 if(0):
-#    bdryScatterFuns.bdryScatter2(v_init,bdryPnts_init, fileNames[0])
+    graphName = ''
+    cutAxis = 0
+    cutPlaneLoc = 0.246
+    meshQualPlot3D(fileName, graphName, cutAxis, cutPlaneLoc, f, v, elemType)
+#plt.savefig(figPath + "stator_def2.png", dpi=800,bbox_inches='tight')
+    
+    
+    
+    
 
-### without the initial mesh ###
-    bdryScatterFuns.bdryScatter(fileNames[0])
+# Boundary scatter
+if(1):
+#    plotTag = ["BLADE","HUB","INFLOW","OUTFLOW","PER1","PER2","SHROUD"]
+    plotTag = ["BLADE","HUB", "SHROUD","INFLOW","OUTFLOW"]
+#    plotTag = ["LEFT", "RIGHT", "UPPER","LOWER","FRONT","BACK","BLOCK"]
+    bdryScatterFuns.bdryScatter3D(v, bdryPnts, markerTags, nElemsMarks, plotTag, FFD_pnts)
+    
 
+if(0):
+    nanElems(fileName,v,f)
+    
+    
+    
+    
 
 
 #%%
 if(0):
     #import numpy as np
-    [f_init,v_init,elemType,bdryPnts_init,markerTags, nElemsMarks, FFD_pnts] = getPlotData("/5x5x5_per_def.su2")
-    plotTag= ["LOWER", "UPPER","LEFT","RIGHT","FRONT","BACK", "BLOCK"]
+    [f_init,v_init,elemType,bdryPnts_init,markerTags, nElemsMarks, FFD_pnts] = getPlotData("/stator_per_ffd_def.su2")
+#    [f_init,v_init,elemType,bdryPnts_init,markerTags, nElemsMarks, FFD_pnts] = getPlotData("/OneraM6_fixed.su2")
+#    plotTag= ["LOWER", "UPPER","LEFT","RIGHT","FRONT","BACK", "BLOCK"]
 #    plotTag = ["BLADE", "HUB", "SHROUD"]
-#    plotTag = ["BLADE","HUB","INFLOW","OUTFLOW","PER1","PER2","SHROUD"]
+    plotTag = ["BLADE","HUB","INFLOW","OUTFLOW","PER1","PER2","SHROUD"]
+#    plotTag = ["LOWER_SIDE" ,"UPPER_SIDE","TIP", "XNORMAL_FACES", "YNORMAL_FACES", "ZNORMAL_FACES", "SYMMETRY_FACE"]
     bdryScatterFuns.bdryScatter3D(v_init, bdryPnts_init, markerTags, nElemsMarks, plotTag, FFD_pnts)
 
 
@@ -173,66 +112,78 @@ if(0):
     from colMap import colMap
     
     cmapMatlab = colMap()
-    fileNames = ['/5x5x5_per_def.su2']
-#    fileNames = ['/25x25x25_def.su2']
+#    fileNames = ['/OneraM6_fixed.su2']
+    fileNames = ['/stator_per_ffd_def.su2']
+#    fileNames = ['/5x5x5_per.su2']
     
-    [f_init,v_init,elemType,bdryPnts_init,_,_,_] = getPlotData('/5x5x5_per.su2')
+#    [f_init,v_init,elemType,bdryPnts_init,_,_,_] = getPlotData('/OneraM6_fixed.su2')
     
     
     graphNames = ["",""]
-    cutAxis = 2
-    cutPlaneLoc = 0.25
+    cutAxis = 0
+    cutPlaneLoc = 0.27
     
     dims = [0,1,2]
     dims.remove(cutAxis)
     [f,v,elemType,_, markerTags, nElemsMarks,FFD_pnts] = getPlotData(fileNames[0]) 
+       
     
-    idxCutElems = np.array([],dtype = 'int')
-    bdryPnts_init_unique = np.unique(bdryPnts_init)
-    for i in range(len(f)):
-        if np.any(v[f][i][:,cutAxis] < cutPlaneLoc) and np.any(v[f][i][:,cutAxis] >= cutPlaneLoc):
-            if set(f[i]).issubset(bdryPnts_init_unique) == False:
-                idxCutElems = np.append(idxCutElems, i)
-            
+    idx_lower = np.where(v[f][:,:,cutAxis] < cutPlaneLoc)
+    idx_upper = np.where(v[f][:,:,cutAxis] >= cutPlaneLoc)
+    idxCutElems = np.intersect1d(idx_lower[0],idx_upper[0])
     
-    [alphas_0,_,_,_] = getMeshQualParams3D(f_init[idxCutElems,:],v_init,elemType[idxCutElems])
+    meshQuality = getMeshQual(fileNames[0])
+    meshQual_cut = meshQuality[idxCutElems]
+    
 
-    #[f,v,elemType,_,_,_,_] = getPlotData(fileNames[0])
-    meshQual = getMeshQuals3D(f[idxCutElems],v,alphas_0,elemType[idxCutElems])
-    print("Min mesh quality: \t", round(np.min(meshQual),5)) 
-    print("Max mesh quality: \t", round(np.max(meshQual),5)) 
-    print("Mean mesh quality: \t", round(np.mean(meshQual),5))
+    print("Min mesh quality: \t", round(np.min(meshQual_cut),5)) 
+    print("Max mesh quality: \t", round(np.max(meshQual_cut),5)) 
+    print("Mean mesh quality: \t", round(np.mean(meshQual_cut),5))
     
-    v1 = [0,1,2,3,0,1,2,3,4,5,6,7]
-    v2 = [1,2,3,0,4,5,6,7,5,6,7,4]
-    
+    # quadriliteral
     verticesInd = np.array([[0,1],[1,2],[2,3],[3,0],[0,4],[1,5],[2,6],[3,7],[4,5],[5,6],[6,7],[7,4]])
+    
+    # tetrahidral
+#    verticesInd = np.array([[0,1],[1,2],[2,0],[0,3],[1,3],[2,3]])
+    
     v_cut = np.empty((len(idxCutElems),8,2),dtype = float)
-    v_cut[:] = np.nan
-    #plt.figure();
+    v_cut[:] = np.nan    
     
     for i in range(len(idxCutElems)):
-        if(i%5000 == 0):
-            print(i, "\t", len(idxCutElems))
-                
-        edges = v[f][idxCutElems[i]][verticesInd]    
-        cutLoc = np.empty((12,2), dtype = float)
-        cnt = 0
-        for ii in range(len(edges)):
-            if np.any(edges[ii][:,cutAxis] < cutPlaneLoc) and np.any(edges[ii][:,cutAxis] >= cutPlaneLoc):
-                delta = edges[ii][1,:] - edges[ii][0,:]
-                cutLoc[cnt,:] = edges[ii][0,dims] + delta[dims]*((cutPlaneLoc-edges[ii][0,cutAxis])/delta[cutAxis])
-                cnt = cnt+1
-    
-        midpoint = np.sum(cutLoc[0:cnt,:],axis=0)/cnt
-    
-        angles = np.empty(cnt,dtype=float)
-        for ii in range(cnt):
-            angles[ii] = math.atan2(cutLoc[ii,1]-midpoint[1],cutLoc[ii,0]-midpoint[0])*180/np.pi
-    
-        cutLoc[0:cnt,:] = cutLoc[0:cnt,:][angles.argsort()]
-    
-        v_cut[i][0:cnt,:] = cutLoc[0:cnt,:]
+        if(i%100 == 0):
+            print(i)
+#    for i in range(1):
+        
+        edges = v[f][idxCutElems[i]][verticesInd]   
+        
+#        cutLoc = np.empty((12,2), dtype = float)
+#        cnt = 0
+#        for ii in range(len(edges)):
+#            if np.any(edges[ii][:,cutAxis] < cutPlaneLoc) and np.any(edges[ii][:,cutAxis] >= cutPlaneLoc):
+#                delta = edges[ii][1,:] - edges[ii][0,:]
+#                cutLoc[cnt,:] = edges[ii][0,dims] + delta[dims]*((cutPlaneLoc-edges[ii][0,cutAxis])/delta[cutAxis])
+#                cnt = cnt+1
+#                
+        idx_1 = np.where(edges[:,:,cutAxis] < cutPlaneLoc)
+        idx_2 = np.where(edges[:,:,cutAxis] >= cutPlaneLoc)
+        idx_crossing = np.intersect1d(idx_1[0],idx_2[0])
+        
+        cutLoc = edges[idx_crossing][:,0,dims] + (edges[idx_crossing][:,1,dims]-edges[idx_crossing][:,0,dims])*((cutPlaneLoc-edges[idx_crossing][:,0,cutAxis])/(edges[idx_crossing][:,1,cutAxis]-edges[idx_crossing][:,0,cutAxis]))[:, np.newaxis]
+        
+        
+        midpoint = np.mean(cutLoc,axis=0)
+        
+        
+        
+#        angles = np.empty(cnt,dtype=float)
+#        for ii in range(cnt):
+#            angles[ii] = math.atan2(cutLoc[ii,1]-midpoint[1],cutLoc[ii,0]-midpoint[0])
+#    
+#        print(angles)
+        angles = np.arctan2(cutLoc[:,1]-midpoint[1],cutLoc[:,0]-midpoint[0])
+        cutLoc = cutLoc[angles.argsort()]
+        
+        v_cut[i,0:np.shape(cutLoc)[0],:] = cutLoc
     #    print(cutLoc[0:cnt,:])
     
     #    plt.scatter(cutLoc[0:cnt,0],cutLoc[0:cnt,1], color= "blue") 
@@ -240,8 +191,10 @@ if(0):
     #    for ii in range(len(v1)):
                 
     #        print(v[f][idxCutElems[i]][v1,cutAxis], v[f][idxCutElems[i]][v2,cutAxis])
-            
-    colors = cmapMatlab(plt.Normalize(0,1)(meshQual))
+     
+
+    # plotting stuff   
+    colors = cmapMatlab(plt.Normalize(0,1)(meshQual_cut))
     fig = plt.figure()  
     pc = matplotlib.collections.PolyCollection(v_cut,cmap=cmapMatlab, facecolors=colors, edgecolor="black",linewidth=0.1)
     ax = fig.add_subplot(1,1,1)

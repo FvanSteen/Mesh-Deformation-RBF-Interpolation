@@ -85,9 +85,10 @@ o.write("NELEM= " + str(xElem*yElem*zElem-1) + "\n")
 for k in range(zNodes-1):
     for j in range(yNodes-1):
         for i in range(xNodes-1):
-            if(j*xElem+i != middleElem): 
+            if(k*xElem*yElem+ j*xElem+i != middleElem): 
 #                o.write("12\t" + str(i + j*yNodes + k*yNodes*zNodes) + "\t" + str(i+1 + j*yNodes + k*yNodes*zNodes) + "\t" +  str(i+1+(1+j)*yNodes) + "\t" +  str(i+(1+j)*yNodes + k*yNodes*zNodes) + "\t" + str(j*xElem+i + k*yNodes*zNodes) +  "\n")
 #                print(i + j*yNodes + k*yNodes*xNodes, i+1 + j*yNodes + k*yNodes*xNodes, i+1 + (j+1)*yNodes + k*yNodes*xNodes, i + (j+1)*yNodes + k*yNodes*xNodes, i + j*yNodes + (k+1)*yNodes*xNodes, i+1 + j*yNodes + (k+1)*yNodes*xNodes,  i+1 + (j+1)*yNodes + (k+1)*yNodes*xNodes, i + (j+1)*yNodes + (k+1)*yNodes*xNodes)
+                print("12\t" + str(i + j*yNodes + k*yNodes*xNodes) + "\t" +  str(i+1 + j*yNodes + k*yNodes*xNodes)  + "\t" + str(i+1 + (j+1)*yNodes + k*yNodes*xNodes)  + "\t" + str(i + (j+1)*yNodes + k*yNodes*xNodes)  + "\t" +  str(i + j*yNodes + (k+1)*yNodes*xNodes)  + "\t" +  str(i+1 + j*yNodes + (k+1)*yNodes*xNodes)  + "\t" +  str(i+1 + (j+1)*yNodes + (k+1)*yNodes*xNodes)  + "\t" +  str(i + (j+1)*yNodes + (k+1)*yNodes*xNodes) + "\n")
                 o.write("12\t" + str(i + j*yNodes + k*yNodes*xNodes) + "\t" +  str(i+1 + j*yNodes + k*yNodes*xNodes)  + "\t" + str(i+1 + (j+1)*yNodes + k*yNodes*xNodes)  + "\t" + str(i + (j+1)*yNodes + k*yNodes*xNodes)  + "\t" +  str(i + j*yNodes + (k+1)*yNodes*xNodes)  + "\t" +  str(i+1 + j*yNodes + (k+1)*yNodes*xNodes)  + "\t" +  str(i+1 + (j+1)*yNodes + (k+1)*yNodes*xNodes)  + "\t" +  str(i + (j+1)*yNodes + (k+1)*yNodes*xNodes) + "\n")
 
             

@@ -10,7 +10,7 @@ rbf_std::rbf_std(struct probParams& probParamsObject, Mesh& meshObject, getNodeT
 :rbfGenFunc(meshObject, probParamsObject)
 {
 	if(params.dataRed){
-		greedy g(m, params, exactDisp, movingIndices, alpha, d);
+		greedy g(m, params, disp, movingIndices, alpha, d);
 		perform_rbf(n,g);
 	}else{
 		perform_rbf(n);

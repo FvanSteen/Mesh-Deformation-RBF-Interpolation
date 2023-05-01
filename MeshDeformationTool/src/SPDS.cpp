@@ -75,8 +75,6 @@ void SPDS::projectSurf(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 	using kdt = nanoflann::KDTreeEigenMatrixAdaptor<Eigen::ArrayXXd>;
 	kdt mat_index2(m.nDims, std::cref(m.surfMidPnts), 10 /* max leaf */);
 
-
-
 	Eigen::ArrayXd query(m.nDims);
 	Eigen::VectorXd distNN;
 	Eigen::RowVectorXd project_i;
@@ -91,12 +89,13 @@ void SPDS::projectSurf(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 	nanoflann::KNNResultSet<double> resultSet(N);
 
 	double tol = 1e-6;
-
+	//todo does not have to be an array probably
 	Eigen::ArrayXd projectionMagnitude(m.nDims-1);
 
 	projectionMagnitude.resize(1);
 
 	for(size_t  i = startIdx; i < endIdx; i++){
+		std::cout << i << '\t' << "node: \t" << (*nodesPtr)(i-startIdx) << std::endl;
 		int idxNode;
 		if(project){
 			idxNode = std::distance(std::begin(m.periodicEdgeNodes), std::find(std::begin(m.periodicEdgeNodes),std::end(m.periodicEdgeNodes),(*nodesPtr)(i-startIdx)));
@@ -104,6 +103,7 @@ void SPDS::projectSurf(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 			idxNode = std::distance(std::begin(m.periodicEdgeNodes), std::find(std::begin(m.periodicEdgeNodes),std::end(m.periodicEdgeNodes),(*nodesPtr)(i)));
 		}
 		if(idxNode != m.N_pe){
+			std::cout << "among periodic edge nodes\n";
 			if(project){
 				array_out.row(i)  = array_in.row(i) + array_in.row(i)*m.n_ss.row(m.N_ss-m.N_pe+idxNode);
 			}else{
@@ -111,11 +111,12 @@ void SPDS::projectSurf(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 			}
 		}
 		else{
-
+			std::cout << "not among periodic edge nodes\n";
 			projection = Eigen::RowVectorXd::Zero(m.nDims);
 
 			if(project){
 				query = (*m.ptrCoords).row((*nodesPtr)(i-startIdx)) + array_in.row(i);
+				std::cout << "query: \n"<< query << std::endl;
 			}else{
 				query = (*m.ptrCoords).row((*nodesPtr)(i)) + array_in.row(i);
 			}
@@ -125,8 +126,10 @@ void SPDS::projectSurf(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 
 			mat_index2.index_->findNeighbors(resultSet, &query(0));
 
+			std::cout << "nearest surf midpoint:\n " << m.surfMidPnts.row(idx[0]) << std::endl;
+			std::cout << "normal:\n" << m.surfMidPntNormals.row(idx[0]) << std::endl;
 			distNN = m.surfMidPnts.row(idx[0]) - query.transpose();
-
+			std::cout << "DISTNN:\n" << distNN << std::endl;
 			projectionMagnitude(0) =  distNN.dot( m.surfMidPntNormals.row(idx[0]).matrix());
 
 			while(abs(projectionMagnitude).sum() > tol){
@@ -134,12 +137,15 @@ void SPDS::projectSurf(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 				project_i =  projectionMagnitude(0) * m.surfMidPntNormals.row(idx[0]);
 				projection += project_i;
 				query += project_i.array();
-
+				std::cout << "query: \n"<< query << std::endl;
 				mat_index2.index_->findNeighbors(resultSet, &query(0));
+
+				std::cout << "nearest surf midpoint:\n " << m.surfMidPnts.row(idx[0]) << std::endl;
+				std::cout << "normal:\n" << m.surfMidPntNormals.row(idx[0]) << std::endl;
 
 				distNN = m.surfMidPnts.row(idx[0]) - query.transpose();
 
-
+				std::cout << "DISTNN:\n" << distNN << std::endl;
 				projectionMagnitude(0) =  distNN.dot(m.surfMidPntNormals.row(idx[0]).matrix());
 
 			}

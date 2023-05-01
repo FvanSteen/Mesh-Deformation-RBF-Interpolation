@@ -3,7 +3,6 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <iterator>
-#include <chrono>
 #include <math.h>
 #include "SPDS.h"
 #include "nanoflann.hpp"
@@ -11,13 +10,12 @@
 //todo remove this entry probably
 #include "CoordTransform.h"
 
-greedy::greedy(Mesh& m, probParams& params,Eigen::ArrayXXd& disp, Eigen::ArrayXi& movingIndices, Eigen::VectorXd& alpha, Eigen::ArrayXXd& d)
+greedy::greedy(Mesh& m, probParams& params,Eigen::ArrayXXd* disp, Eigen::ArrayXi& movingIndices, Eigen::VectorXd& alpha, Eigen::ArrayXXd& d)
 {
 
 
 	mPtr = &m;
-
-	exctDispPtr = &disp;
+	exctDispPtr = disp;
 	mIdxPtr = &movingIndices;
 
 	p = &params;
@@ -59,7 +57,9 @@ void greedy::getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl){
 
 //	 find index of largest error
 	int idxMax;
-	error.rowwise().squaredNorm().maxCoeff(&idxMax);
+	Eigen::ArrayXd errorSquaredNorm;
+	errorSquaredNorm = error.rowwise().squaredNorm();
+	errorSquaredNorm.maxCoeff(&idxMax);
 
 	// and the maximum error magnitude
 	maxError = error.row(idxMax).matrix().norm();
@@ -86,6 +86,7 @@ void greedy::getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl){
 }
 
 void greedy::getErrorMovingNodes(Eigen::ArrayXi* nodes, Eigen::ArrayXXd& d, size_t N){
+
 	int idx_m;
 	for(size_t i = 0; i < N; i++){
 		idx_m = std::distance(std::begin(*mIdxPtr), std::find(std::begin(*mIdxPtr),std::end(*mIdxPtr),(*nodes)(i)));
@@ -116,7 +117,6 @@ void greedy::getErrorSingleLvl(getNodeType& n, Eigen::ArrayXXd& d){
 	se_end = m_end + (*mPtr).N_se-n.N_se;
 
 	getErrorMovingNodes(n.iPtr,  d,  m_end);
-
 
 	//todo call class somewhere else
 	SPDS SPDSobj;
@@ -269,9 +269,10 @@ void greedy::correction(Mesh& m, getNodeType& n, double& gamma, bool& multiLvl){
 
 	// integer for storing the index where the error is largest
 	int idxMax;
-
 	// finding the node with the maximum error
-	error.rowwise().norm().maxCoeff(&idxMax);
+	Eigen::ArrayXd errorSquaredNorm;
+	errorSquaredNorm = error.rowwise().squaredNorm();
+	errorSquaredNorm.maxCoeff(&idxMax);
 
 	// returning the largest error
 	double maxError = error.row(idxMax).matrix().norm();
@@ -384,7 +385,10 @@ void greedy::getAlphaIdx(Eigen::ArrayXi& mNodes, Eigen::ArrayXi* mNodesGrdy, int
 void greedy::setInitMaxErrorNodes(){
 
 	Eigen::Array2i idxMax;
-	(*exctDispPtr).rowwise().norm().maxCoeff(&idxMax(0));
+	Eigen::ArrayXd exctDispSquaredNorm;
+	exctDispSquaredNorm =(*exctDispPtr).rowwise().squaredNorm();
+	exctDispSquaredNorm.maxCoeff(&idxMax(0));
+
 	std::cout << "max deformation: " << (*exctDispPtr).row(idxMax(0)).matrix().norm() << std::endl;
 	maxErrorPrevLvl = (*exctDispPtr).row(idxMax(0)).matrix().norm();
 

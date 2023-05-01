@@ -1,7 +1,18 @@
 import os
-import sys
 import numpy as np
 
+def getMeshQual(fname):
+    filePath = os.path.dirname(os.path.abspath(__file__))
+    qFile = filePath[0:filePath.rfind('\\')+1] + "MeshDeformationTool\\meshQuals" + fname[0:-4] + "_qual.txt"
+    meshQ = np.genfromtxt(qFile)
+    
+    print("\nMesh quality parameters of", str(fname[1:-4]) + ":" )
+    print("Min mesh quality: \t", round(np.min(meshQ),5)) 
+    print("Max mesh quality: \t", round(np.max(meshQ),5)) 
+    print("Mean mesh quality: \t", round(np.mean(meshQ),5), "\n")
+    
+    
+    return meshQ
 
 def getMeshQuals(faces,vertices, alphas_0, elemType):
     
@@ -18,11 +29,6 @@ def getMeshQuals(faces,vertices, alphas_0, elemType):
     f_skew = np.empty(np.size(elemType))
     f_skew[0:startQuadIdx] = np.sqrt(3)*alphas[0:startQuadIdx,0]/(lambda_11[0:startQuadIdx,0]+lambda_22[0:startQuadIdx,0]-lambda_12[0:startQuadIdx,0])
     f_skew[startQuadIdx:] = np.abs(4/np.sum(np.sqrt(lambda_11[startQuadIdx:]*lambda_22[startQuadIdx:])/alphas[startQuadIdx:], axis=1))
-#    if elementType == 5:
-#        f_skew = np.sqrt(3)*alphas[:,0]/(lambda_11[:,0]+lambda_22[:,0]-lambda_12[:,0])
-#        
-#    elif elementType == 9:
-#        f_skew = 4/np.sum(np.sqrt(lambda_11*lambda_22)/alphas, axis=1)
     f_ss = np.sqrt(f_size)*f_skew
     
     return f_ss
@@ -56,7 +62,6 @@ def getMeshQualParams(faces, vertices, elemType):
             size = 8
             
         elem = vertices[faces[i,0:size+1]]
-        
         for ii in range(0,size):
             iip1 = (ii+1)%(size)
             iip3= (ii+(size-1))%(size)
@@ -72,6 +77,8 @@ def getMeshQualParams(faces, vertices, elemType):
             lambda_12[i,ii] = tensor[0,1]
                       
             
+    
+            
     return [alphas,lambda_11,lambda_22,lambda_12]
 
 
@@ -86,12 +93,16 @@ def getMeshQualParams3D(faces,vertices,elemType):
     kp3 = [3,0,1,2,5,6,7,4]
     kp4 = [4,5,6,7,0,1,2,3]
     
+    # for each elemeent
     for i in range(0,faces.shape[0]):    
+        
+        # amount of vertices
         if elemType[i] == 12:
             size = 8
-            
-        elem = vertices[faces[i,0:size+1]]
         
+        # the coordinates of the element
+        elem = vertices[faces[i,0:size+1]]
+
         for k in range(0,size):
             A = np.array([[elem[kp1[k],0]-elem[k,0], elem[kp3[k],0]-elem[k,0], elem[kp4[k],0]-elem[k,0]],
                           [elem[kp1[k],1]-elem[k,1], elem[kp3[k],1]-elem[k,1], elem[kp4[k],1]-elem[k,1]],
@@ -123,7 +134,6 @@ def getPlotData(fileName):
     markerTags = []
     idx = 0
     FFDCtrlPntsIdx = -1
-    
     for line in lines:
         
         if line.strip().startswith('NDIME='):
@@ -135,12 +145,17 @@ def getPlotData(fileName):
         elif line.strip().startswith('NPOIN='):
             nPnt = int(line[7:].split()[0])
             nPntIdx = idx            
-        elif line.strip().startswith('MARKER_ELEMS='):
-            nMarkIndices.append(idx)
-            nElemsMarks.append(int(line[14:].split()[0]))
-            
         elif line.strip().startswith('MARKER_TAG= '):
-            markerTags.append(str(line[11:].split()[0]))
+            if(line.strip().find("SEND_RECEIVE") != -1):
+                save = False
+            else:
+                save = True
+                markerTags.append(str(line[11:].split()[0]))
+            
+        elif line.strip().startswith('MARKER_ELEMS='):
+            if(save):
+                nMarkIndices.append(idx)
+                nElemsMarks.append(int(line[14:].split()[0]))
         elif line.strip().startswith('FFD_CONTROL_POINTS='):
             nFFDCtrlPnts = int(line[19:].split()[0])
             FFDCtrlPntsIdx = idx+1
@@ -151,30 +166,13 @@ def getPlotData(fileName):
         
         idx += 1
     print("Dimensions:\t", nDim, "\nElements:\t",nElem, "\nPoints:\t\t", nPnt)
-#    print(nDimIdx,nElemIdx,nPntIdx)
-    
-#    nLine = lines[intBdryIdx]
-#    nInElems = int(nLine[14:])
-#    f_in = np.empty([1,2*nInElems],dtype=int)
-#    
-#    for i in range(nInElems):
-#        lineData = lines[intBdryIdx+1+i].strip().split('\t')    
-#        f_in[0,2*i:2*i+2] = lineData[1:3]
-    
-    # Change the 3 and 4 here to be adjustable to the type of elements used in the mesh
-    
-#    if elementType == 5:
-#        nNodesElem = 3
-#    elif elementType == 9:
-#        nNodesElem = 4
-#    elif elementType == 12:
-#        nNodesElem = 8
+
     
     nNodesElem = 8
     
-    f = np.empty((nElem,nNodesElem),dtype=int)
+    f = np.empty((nElem,nNodesElem), dtype = int)
     f[:] = -1
-    
+
     elemType = np.empty(nElem)
     
     maxNodesElem = 3
@@ -211,12 +209,14 @@ def getPlotData(fileName):
         
     
     v = np.empty((nPnt,nDim))
-    for i in range(nPnt):
+    for i in range(nPnt):        
         lineData = lines[i+nPntIdx+1].strip().split()
         v[i,:] = lineData[:nDim]
 
+            
+
     bdryType = int(lines[nMarkIndices[0]+1].strip().split()[0])
-    print(bdryType)
+    
     if bdryType == 5:
         cols = 3
     elif bdryType == 9:

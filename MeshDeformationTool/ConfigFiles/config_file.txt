@@ -8,8 +8,8 @@
 %MESH_FILENAME = ONERAM6_FFD.su2
 %MESH_FILENAME = OneraM6_fixed.su2
 %MESH_FILENAME = gis_nthx001_mesh.SU2
-%MESH_FILENAME = stator_per_ffd_init.su2 
-MESH_FILENAME = 5x5_per.su2
+MESH_FILENAME = stator_per_ffd.su2
+%MESH_FILENAME = 5x5x5_per.su2
  
 %MESH_OUT_FILENAME = 25x25_def.su2
 %MESH_OUT_FILENAME = mesh_NACA0012_inv_def.su2
@@ -21,8 +21,8 @@ MESH_FILENAME = 5x5_per.su2
 %MESH_OUT_FILENAME = ONERAM6_FFD_def.su2
 %MESH_OUT_FILENAME = OneraM6_fixed_def.su2
 %MESH_OUT_FILENAME = gis_nthx001_mesh_def.SU2
-%MESH_OUT_FILENAME = stator_per_ffd_def.su2
-MESH_OUT_FILENAME = 5x5_per_def.su2
+MESH_OUT_FILENAME = stator_per_ffd_def.su2
+%MESH_OUT_FILENAME = 5x5x5_per_def.su2
 
 %
 %MARKER_BDRY = (block, lower, right, upper,left)
@@ -30,34 +30,34 @@ MESH_OUT_FILENAME = 5x5_per_def.su2
 %MARKER_BDRY = (airfoil, inflow, outflow, periodic_1, periodic_2)
 %MARKER_BDRY = (inflow, outflow, wall1, periodic1, periodic2)
 %MARKER_BDRY = (FRONT, BACK, LEFT, RIGHT, LOWER, UPPER, BLOCK)
-MARKER_BDRY = (LEFT, RIGHT, UPPER, LOWER, BLOCK)
+%MARKER_BDRY = (LEFT, RIGHT, UPPER, LOWER, BLOCK)
 %MARKER_BDRY = (FRONT, BACK, ROOT, TIP, LOWER, UPPER)
 %MARKER_BDRY = (LOWER_SIDE,UPPER_SIDE,TIP, XNORMAL_FACES, YNORMAL_FACES, ZNORMAL_FACES, SYMMETRY_FACE)
 %MARKER_BDRY = (LOWER_SIDE,UPPER_SIDE,TIP)
 %MARKER_BDRY = (inlet, outlet, periodic_lower, periodic_upper, tube1, tube2, tube3, tube4, tube5, tube6, tube7, tube8, tube9, tube10)
-%MARKER_BDRY = (BLADE, HUB, INFLOW, OUTFLOW, PER1, PER2, SHROUD, SEND_RECEIVE, SEND_RECEIVE)
+MARKER_BDRY = (BLADE, HUB, INFLOW, OUTFLOW, PER1, PER2, SHROUD, SEND_RECEIVE, SEND_RECEIVE)
 
 %MARKER_MOVING = (block)
 %MARKER_MOVING = (airfoil)
 %MARKER_MOVING = (wall1)
-MARKER_MOVING = (BLOCK)
+%MARKER_MOVING = (BLOCK)
 %MARKER_MOVING = (FRONT,BACK,ROOT,TIP,LOWER, UPPER)
 %MARKER_MOVING = (LOWER_SIDE,UPPER_SIDE,TIP)
 %MARKER_MOVING = (tube1,tube2,tube3,tube4,tube5,tube6,tube7, tube8,tube9, tube10)
-%MARKER_MOVING = (BLADE) 
+MARKER_MOVING = (BLADE) 
 
 %MARKER_PERIODIC = (upper, lower) 
 %MARKER_PERIODIC = (periodic_1,periodic_2)
 %MARKER_PERIODIC  (periodic1, periodic2)
 %MARKER_PERIODIC = (FRONT, BACK)
-%MARKER_PERIODIC = (PER1, PER2)
-MARKER_PERIODIC = (LOWER,UPPER)
+MARKER_PERIODIC = (PER1, PER2)
+%MARKER_PERIODIC = (LOWER,UPPER)
 
 %(none, pseudo, direct)
 SLIDING_MODE = ps
 
 %(none,periodic,fixed_vertices,moving_vertices)
-PERIODIC_MODE = periodic
+PERIODIC_MODE = moving
 
 % translational = 0, Rotational = 1
 PERIODIC_TYPE = 1
@@ -77,18 +77,22 @@ INFLUENCE_FACTOR = 2.5
 %DEFORMATION_FILENAME = ONERAM6_deformation.txt
 %DEFORMATION_FILENAME = ONERAM6_FFD_deformation.txt
 %DEFORMATION_FILENAME = gis_nthx001_mesh_deformation.txt
-%DEFORMATION_FILENAME = stator_per_ffd_deformation.txt
-DEFORMATION_FILENAME = 5x5_per_deformation.txt
+DEFORMATION_FILENAME = stator_per_ffd_deformation.txt
+%DEFORMATION_FILENAME = 5x5x5_per_deformation.txt
  
-CURVED = NO
+CURVED = YES
 DATA_REDUCTION = YES
-DATA_RED_TOLERANCE = 1e-2
+DATA_RED_TOLERANCE = 5e-4
+%0.0003
 % 0.0000074815
 GAMMA = 25
 DOUBLE_EDGE = YES
 
 ## Parameters for the multi level greedy
-MULTILEVEL = YES
+MULTILEVEL = NO
 LVL_TOL_CRIT = 0.1
+
+GENERATE_QUALITY = NO
+
 
 

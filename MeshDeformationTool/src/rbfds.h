@@ -8,13 +8,13 @@
 #include <string>
 #include <Eigen/Dense>
 #include "SPDS.h"
-
+#include "CoordTransform.h"
 class rbf_ds : public rbfGenFunc{
 public:
 
 
 	SPDS p;
-
+	CoordTransform transform;
 	rbf_ds(struct probParams& probParamsObject, Mesh& meshObject, getNodeType& n);
 	void perform_rbf(getNodeType& n);
 	void perform_rbf(getNodeType& n, greedy& g);

@@ -1,2 +1,1 @@
 step	level	max error	mean error	time
-0	0	0.683493	0.0412643	2.75044	2

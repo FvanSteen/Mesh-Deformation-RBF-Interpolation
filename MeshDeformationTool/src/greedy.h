@@ -35,7 +35,7 @@ public:
 	getNodeType* nPtr; // todo add this?
 	CoordTransform transform;
 
-	greedy(Mesh& m, probParams& params, Eigen::ArrayXXd& disp, Eigen::ArrayXi& movingIndices,  Eigen::VectorXd& alpha, Eigen::ArrayXXd& d);
+	greedy(Mesh& m, probParams& params, Eigen::ArrayXXd* disp, Eigen::ArrayXi& movingIndices,  Eigen::VectorXd& alpha, Eigen::ArrayXXd& d);
 
 
 	void getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl);
