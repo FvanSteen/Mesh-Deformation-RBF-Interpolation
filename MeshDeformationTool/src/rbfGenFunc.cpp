@@ -14,8 +14,10 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 	std::cout << "Initialised the rbfGenFunc class" << std::endl;
 	movingIndices.resize(m.N_nonzeroDisp);
 	exactDisp.resize(m.N_nonzeroDisp,m.nDims);
+
 	readDisplacementFile();
 	exactDisp = exactDisp/params.steps; // deformation per step is more usefull then the total deformation.
+	exactDispPtr = &exactDisp;
 	dispIdx = &movingIndices;
 
 	if(params.ptype){
@@ -23,6 +25,7 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 		CoordTransform transform;
 		transform.vector_cart_to_polar_cylindrical(exactDisp, exactDisp_polar_cylindrical, movingIndices, m.coords);
 		disp = &exactDisp_polar_cylindrical;
+
 	}else{
 		disp = &exactDisp;
 	}
@@ -382,7 +385,9 @@ void rbfGenFunc::performRBF(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ic, Ei
 		d.resize((*iNodes).size(),m.nDims);
 	}
 	for(int dim = 0; dim < m.nDims; dim++){
-		alpha(Eigen::seqN(dim*N,N)) = Phi_cc.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))); //fullPivHouseholderQr()
+
+		alpha(Eigen::seqN(dim*N,N)) = Phi_cc.householderQr().solve(defVec(Eigen::seqN(dim*N,N))); //fullPivHouseholderQr()
+
 		if(params.dataRed){
 			d.col(dim) = Phi_ic*alpha(Eigen::seqN(dim*N,N));
 		}else{
@@ -414,8 +419,6 @@ void rbfGenFunc::updateNodes(getNodeType& n, Eigen::VectorXd& defVec, Eigen::Arr
 
 
 	getPhi(Phi_icGrdy,n.iPtrGrdy,ptr);
-	(*m.ptrCoords)(*n.iPtr, Eigen::all) += *d_step;
-
 	for(int dim = 0; dim < m.nDims; dim++){
 
 		if(params.multiLvl == false){
@@ -423,4 +426,12 @@ void rbfGenFunc::updateNodes(getNodeType& n, Eigen::VectorXd& defVec, Eigen::Arr
 		}
 		(*m.ptrCoords)(*n.iPtrGrdy,dim) +=  (Phi_icGrdy*(*alpha_step)(Eigen::seqN(dim*N_m,N_m))).array();
 	}
+
+	// todo call class more elegantly
+	if(params.ptype){
+		CoordTransform transform;
+		transform.polar_cylindrical_to_cart(m.coords_polar_cylindrical, m.coords);
+	}
+
+	m.coords(*n.iPtr, Eigen::all) += *d_step;
 }

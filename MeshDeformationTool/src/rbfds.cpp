@@ -9,7 +9,7 @@ rbf_ds::rbf_ds(struct probParams& probParamsObject, Mesh& meshObject, getNodeTyp
 {
 	std::cout << "Initialised the ds class" << std::endl;
 	if(params.dataRed){
-		greedy g(m, params, disp, movingIndices, alpha, d);
+		greedy g(m, params, exactDispPtr, movingIndices, alpha, d);
 		perform_rbf(n,g);
 	}else{
 		perform_rbf(n);
@@ -176,7 +176,7 @@ void rbf_ds::performRBF_DS(getNodeType& n, PhiStruct* PhiPtr){
 			delta(Eigen::seqN(n.N_se,n.N_ss),dim) = (PhiPtr->Phi_sc*alpha(Eigen::seqN(dim*(n.N_c),n.N_c)) ).array();
 		}
 
-		p.project(m, n, delta, finalDef);
+		p.project(m, n, delta, finalDef, params.ptype);
 
 		getDefVec(defVec_all, defVec_ds, n, finalDef, n.N_c, n.N_m);
 

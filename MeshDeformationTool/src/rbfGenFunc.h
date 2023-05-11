@@ -20,6 +20,7 @@ public:
 	Eigen::ArrayXi* dispIdx;
 	Eigen::ArrayXXd* disp;
 
+
 	Eigen::ArrayXXd d;
 	Eigen::VectorXd alpha;
 

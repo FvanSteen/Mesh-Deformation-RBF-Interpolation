@@ -10,7 +10,7 @@ rbf_std::rbf_std(struct probParams& probParamsObject, Mesh& meshObject, getNodeT
 :rbfGenFunc(meshObject, probParamsObject)
 {
 	if(params.dataRed){
-		greedy g(m, params, disp, movingIndices, alpha, d);
+		greedy g(m, params, exactDispPtr, movingIndices, alpha, d);
 		perform_rbf(n,g);
 	}else{
 		perform_rbf(n);
@@ -19,21 +19,25 @@ rbf_std::rbf_std(struct probParams& probParamsObject, Mesh& meshObject, getNodeT
 
 
 void rbf_std::perform_rbf(getNodeType& n){
-
-	Eigen::VectorXd defVec;
+	if(params.ptype){
+		transform.cart_to_polar_cylindrical(m.coords, m.coords_polar_cylindrical);
+	}
 
 	for(int i=0; i<params.steps; i++){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 		getPhis(n, 0);
 		if(i == 0){
 			getDefVec(defVec, n.N_c, n.cPtr);
+
 		}
 		performRBF(Phis.Phi_cc, Phis.Phi_ic, defVec, n.cPtr, n.iPtr, n.N_m);
 	}
 
+
 	std::cout << "number of control nodes: " << n.N_m << std::endl;
-
-
+	if(params.ptype){
+		transform.polar_cylindrical_to_cart(m.coords_polar_cylindrical, m.coords );
+	}
 }
 
 void rbf_std::perform_rbf(getNodeType& n, greedy& g){
@@ -43,12 +47,15 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 	WriteResults w;
 	w.createConvHistFile(params.convHistFile);
 
-	Eigen::VectorXd defVec;
+
 
 
 	int iter, lvl;
 	bool iterating = true;
 
+	if(params.ptype){
+		transform.cart_to_polar_cylindrical(m.coords, m.coords_polar_cylindrical);
+	}
 
 
 	for(int i=0; i < params.steps; i++){

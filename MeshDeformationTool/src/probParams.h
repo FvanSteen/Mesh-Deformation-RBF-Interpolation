@@ -19,7 +19,7 @@ struct probParams{
 	int lvlSizeInit; // delete
 	std::string convHistFile;
 	std::string mesh_ifName, mesh_ofName;
-	std::vector<std::string> bdryTags, mTags, pTags;
+	std::vector<std::string> bdryTags, mTags, pTags, iTags;
 	double rFac;
 	bool doubleEdge;
 	double tolCrit;

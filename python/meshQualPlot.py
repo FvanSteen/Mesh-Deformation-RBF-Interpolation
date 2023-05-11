@@ -32,7 +32,7 @@ def meshQualPlot2D(fileName, graphName, f, v, elemType):
     polys.set_clim(0,1)
     plt.colorbar(polys, ax=ax)
     
-    
+
     ax.title.set_text(graphName)
 
     plt.show()
@@ -105,17 +105,56 @@ def meshQualPlot3D(fileName, graphName, cutAxis, cutPlaneLoc, f, v, elemType):
     polys.set_clim(0,1)
     plt.colorbar(polys, ax=ax)
     plt.show()
-    
+
     
 def nanElems(fileName,v,f):
     
     meshQuality = getMeshQual(fileName)
     idx = np.argwhere(np.isnan(meshQuality))
+    idx_max = np.argwhere(meshQuality > 1)
     
+    idx_min = np.argwhere(meshQuality < 0)
+    print(idx_max)
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1, projection='3d')
     for i in range(len(idx)):
+        if(i%100 == 0):
+            print(str(i) + "/" + str(len(idx)))
         elem = v[f][idx[i]][0]
+
+        verts = [np.array([elem[0],elem[1],elem[5],elem[4]]),
+              np.array([elem[3],elem[2],elem[6],elem[7]]),
+              np.array([elem[3],elem[0],elem[4],elem[7]]),
+              np.array([elem[2],elem[1],elem[5],elem[6]]),
+              np.array([elem[0],elem[1],elem[2],elem[3]]),
+              np.array([elem[4],elem[5],elem[6],elem[7]])]
+        
+        
+        pc = Poly3DCollection(verts, facecolors='red', edgecolor="black",linewidth=0.5)
+    
+        ax.add_collection(pc)
+        
+    for i in range(len(idx_max)):
+        if(i%100 == 0):
+            print(str(i) + "/" + str(len(idx_max)))
+        elem = v[f][idx_max[i]][0]
+    
+        verts = [np.array([elem[0],elem[1],elem[5],elem[4]]),
+              np.array([elem[3],elem[2],elem[6],elem[7]]),
+              np.array([elem[3],elem[0],elem[4],elem[7]]),
+              np.array([elem[2],elem[1],elem[5],elem[6]]),
+              np.array([elem[0],elem[1],elem[2],elem[3]]),
+              np.array([elem[4],elem[5],elem[6],elem[7]])]
+        
+        
+        pc = Poly3DCollection(verts, facecolors='yellow', edgecolor="black",linewidth=0.5)
+    
+        ax.add_collection(pc)
+        
+    for i in range(len(idx_min)):
+        if(i%100 == 0):
+            print(str(i) + "/" + str(len(idx_min)))
+        elem = v[f][idx_min[i]][0]
 
         verts = [np.array([elem[0],elem[1],elem[5],elem[4]]),
               np.array([elem[3],elem[2],elem[6],elem[7]]),
@@ -129,14 +168,16 @@ def nanElems(fileName,v,f):
     
         ax.add_collection(pc)
     
-    ub = np.max(v[idx],axis=0)
-    lb = np.min(v[idx],axis=0)
-    ax.set_xlim(lb[0][0], ub[0][0])
-    ax.set_ylim(lb[0][1], ub[0][1])
-    ax.set_zlim(lb[0][2], ub[0][2])
+    ub = np.max(v,axis=0)
+    lb = np.min(v,axis=0)
+    ax.set_xlim(lb[0], ub[0])
+    ax.set_ylim(lb[1], ub[1])
+    ax.set_zlim(lb[2], ub[2])
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_zlabel('z')
     plt.show()
+    
+
     
     

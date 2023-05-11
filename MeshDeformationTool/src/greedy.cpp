@@ -10,7 +10,7 @@
 //todo remove this entry probably
 #include "CoordTransform.h"
 
-greedy::greedy(Mesh& m, probParams& params,Eigen::ArrayXXd* disp, Eigen::ArrayXi& movingIndices, Eigen::VectorXd& alpha, Eigen::ArrayXXd& d)
+greedy::greedy(Mesh& m, probParams& params, Eigen::ArrayXXd* disp, Eigen::ArrayXi& movingIndices, Eigen::VectorXd& alpha, Eigen::ArrayXXd& d)
 {
 
 
@@ -31,7 +31,6 @@ greedy::greedy(Mesh& m, probParams& params,Eigen::ArrayXXd* disp, Eigen::ArrayXi
 
 	setInitMaxErrorNodes();
 	std::cout << "initial selected Nodes:\n" << maxErrorNodes << std::endl;
-
 }
 
 
@@ -40,54 +39,67 @@ void greedy::getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl){
 	error.resize(d.rows(),(*mPtr).nDims);
 	errorAngle.resize(d.rows(), (*mPtr).nDims-1);
 
+	if((*p).ptype){
+		if(d.rows() == (*n.iPtr_reduced).size())
+			transform.disp_to_cart(d, *n.iPtr_reduced, (*n.iPtr_reduced).size(), *mPtr);
+		else
+			transform.disp_to_cart(d, *n.iPtr, n.N_i, *mPtr);
+	}
+
+
 	if((*p).multiLvl && lvl>0){
 		getErrorMultiLvl(n,d);
 	}else{
 		getErrorSingleLvl(n,d);
 	}
 
-	if((*p).ptype){
-		if((*p).multiLvl){
-			errorPolarCylindrical = error;
-		}
-		transform.error_to_cart(error, mPtr, n);
-	}
+//	if((*p).ptype){
+//		if((*p).multiLvl){
+//			errorPolarCylindrical = error;
+//		}
+//		transform.error_to_cart(error, mPtr, n);
+//	}
 
 
 
 //	 find index of largest error
-	int idxMax;
-	Eigen::ArrayXd errorSquaredNorm;
-	errorSquaredNorm = error.rowwise().squaredNorm();
-	errorSquaredNorm.maxCoeff(&idxMax);
+	if(d.rows() == 0){
+		maxError = 0;
+		maxErrorNodes.resize(1);
+		maxErrorNodes << -1;
+	}else{
+		int idxMax;
+		Eigen::ArrayXd errorSquaredNorm;
+		errorSquaredNorm = error.rowwise().squaredNorm();
+		errorSquaredNorm.maxCoeff(&idxMax);
 
-	// and the maximum error magnitude
-	maxError = error.row(idxMax).matrix().norm();
-
-	// from here
-	if((*p).doubleEdge){
-		// todo remove second argument
-		getErrorAngle();
-
-		int idxMaxAngle = getDoubleEdgeError(idxMax, n.N_i, error);
+		// and the maximum error magnitude
+		maxError = error.row(idxMax).matrix().norm();
 
 
-		if(idxMaxAngle == -1){
+		if((*p).doubleEdge){
+			// todo remove second argument
+			getErrorAngle();
+
+			int idxMaxAngle = getDoubleEdgeError(idxMax, n.N_i, error);
+
+			if(idxMaxAngle == -1){
+				maxErrorNodes.resize(1);
+				maxErrorNodes << (*n.iPtr)(idxMax);
+			}else{
+				maxErrorNodes.resize(2);
+				maxErrorNodes << (*n.iPtr)(idxMax), (*n.iPtr)(idxMaxAngle);
+			}
+		}else{
 			maxErrorNodes.resize(1);
 			maxErrorNodes << (*n.iPtr)(idxMax);
-		}else{
-			maxErrorNodes.resize(2);
-			maxErrorNodes << (*n.iPtr)(idxMax), (*n.iPtr)(idxMaxAngle);
 		}
-	}else{
-		maxErrorNodes.resize(1);
-		maxErrorNodes << (*n.iPtr)(idxMax);
 	}
 }
 
 void greedy::getErrorMovingNodes(Eigen::ArrayXi* nodes, Eigen::ArrayXXd& d, size_t N){
-
 	int idx_m;
+
 	for(size_t i = 0; i < N; i++){
 		idx_m = std::distance(std::begin(*mIdxPtr), std::find(std::begin(*mIdxPtr),std::end(*mIdxPtr),(*nodes)(i)));
 		if(idx_m !=  (*mIdxPtr).size()){
@@ -116,19 +128,24 @@ void greedy::getErrorSingleLvl(getNodeType& n, Eigen::ArrayXXd& d){
 	m_end = (*mPtr).N_m-n.N_m;
 	se_end = m_end + (*mPtr).N_se-n.N_se;
 
+
+
+
 	getErrorMovingNodes(n.iPtr,  d,  m_end);
+
 
 	//todo call class somewhere else
 	SPDS SPDSobj;
 	if(m_end != size_t(d.rows())){
-		SPDSobj.projectEdge(*mPtr, n.iPtr, d, error, m_end, se_end, 0);
+		SPDSobj.projectEdge(*mPtr, n.iPtr, d, error, m_end, se_end, 0, (*p).ptype);
 	}
 
 	if(se_end != size_t(d.rows())){
 
 		ss_end = se_end + (*mPtr).N_ss-n.N_ss;
-		SPDSobj.projectSurf(*mPtr, n.iPtr, d, error, se_end, ss_end, 0);
+		SPDSobj.projectSurf(*mPtr, n.iPtr, d, error, se_end, ss_end, 0, (*p).ptype);
 	}
+
 
 }
 
@@ -260,26 +277,26 @@ void greedy::correction(Mesh& m, getNodeType& n, double& gamma, bool& multiLvl){
 		errorPtr = &error;
 	}
 
-	if((*p).ptype){
-		transform.polar_cylindrical_to_cart(m.coords_polar_cylindrical, m.coords);
+
+
+	if((*errorPtr).rows() != 0){
+		// integer for storing the index where the error is largest
+		int idxMax;
+		// finding the node with the maximum error
+		//todo adjust for multi level
+		Eigen::ArrayXd errorSquaredNorm;
+		errorSquaredNorm = error.rowwise().squaredNorm();
+		errorSquaredNorm.maxCoeff(&idxMax);
+
+		// returning the largest error
+		double maxError = error.row(idxMax).matrix().norm();
+		std::cout << "MAX ERROR: " << maxError << std::endl;
+		//todo should this be norm or just the max coefficient in the array
+		SPDS SPDS_obj;
+		SPDS_obj.kdt_NNSearch(*n.iPtr, *n.iPtrGrdy,  m.coords, m.nDims, gamma, maxError, errorPtr);
 	}
 
 	m.coords(*n.iPtr , Eigen::all) -= *errorPtr;
-
-
-	// integer for storing the index where the error is largest
-	int idxMax;
-	// finding the node with the maximum error
-	Eigen::ArrayXd errorSquaredNorm;
-	errorSquaredNorm = error.rowwise().squaredNorm();
-	errorSquaredNorm.maxCoeff(&idxMax);
-
-	// returning the largest error
-	double maxError = error.row(idxMax).matrix().norm();
-
-
-	SPDS SPDS_obj;
-	SPDS_obj.kdt_NNSearch(*n.iPtr, *n.iPtrGrdy,  m.coords, m.nDims, gamma, maxError, errorPtr);
 
 }
 

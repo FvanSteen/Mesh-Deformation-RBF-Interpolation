@@ -47,6 +47,9 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 			else if(line.rfind("MARKER_PERIODIC")==0){
 				getTags(line,probParamsObject.pTags);
 			}
+			else if(line.rfind("MARKER_INTERNAL")==0){
+				getTags(line,probParamsObject.iTags);
+			}
 			else if(line.rfind("DEFORMATION_FILENAME")==0){
 				findStringBounds(first,last,line);
 				probParamsObject.dispFile =  line.substr(first,last-first);
@@ -59,8 +62,6 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 			else if(line.rfind("PERIODIC_MODE")==0){
 				findStringBounds(first,last,line);
 				probParamsObject.pmode =  line.substr(first,last-first);
-
-
 
 			}
 			else if(line.rfind("PERIODIC_TYPE") == 0){

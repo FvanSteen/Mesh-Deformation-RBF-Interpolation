@@ -8,6 +8,7 @@ class MeshQuality {
 public:
 	MeshQuality(probParams& p, Eigen::ArrayXXd& coords);
 	void getDeformedMeshQual(Eigen::ArrayXXd& coords);
+	Eigen::Array3d defQuals;
 private:
 	Eigen::ArrayXXd* alpha_ptr;
 	Eigen::ArrayXXd alpha_init, alpha;

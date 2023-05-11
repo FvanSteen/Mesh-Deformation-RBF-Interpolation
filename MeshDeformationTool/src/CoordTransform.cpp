@@ -34,13 +34,16 @@ void CoordTransform::vector_cart_to_polar_cylindrical(Eigen::ArrayXXd& in, Eigen
 
 	initPos = coords(idx,Eigen::all);
 	newPos = coords(idx, Eigen::all) + in;
+
+	Eigen::ArrayXXd initPos_polar_cylindrical(in.rows(), in.cols());
+
 	// in contains initial position in polar/spherical
-	cart_to_polar_cylindrical(initPos, in);
+	cart_to_polar_cylindrical(initPos, initPos_polar_cylindrical);
 
 	// out contains the new position in polar/speherical coordinates
 	cart_to_polar_cylindrical(newPos, out);
 
-	out -= in;
+	out -= initPos_polar_cylindrical;
 
 }
 
@@ -53,6 +56,27 @@ void CoordTransform::error_to_cart(Eigen::ArrayXXd& error, Mesh* m, getNodeType&
 
 	error = updatedPositionCartesian - (*m).coords((*n.iPtr)(Eigen::seqN(0,error.rows())), Eigen::all);
 
+}
+
+void CoordTransform::disp_to_cart(Eigen::ArrayXXd& disp, Eigen::ArrayXi& idx, int size, Mesh& m){
+	Eigen::ArrayXXd updatedPosition(size, m.nDims);
+	updatedPosition = m.coords_polar_cylindrical(idx, Eigen::all) + disp;
+
+	Eigen::ArrayXXd updatedPositionCartesian(size, m.nDims);
+	polar_cylindrical_to_cart(updatedPosition, updatedPositionCartesian);
+
+	disp = updatedPositionCartesian - m.coords(idx, Eigen::all);
+
+}
+
+void CoordTransform::disp_to_polar_cylindrical(Eigen::ArrayXXd& disp, Eigen::ArrayXi& idx, int size, Mesh& m){
+	Eigen::ArrayXXd updatedPosition(size, m.nDims);
+	updatedPosition = m.coords(idx, Eigen::all) + disp;
+
+	Eigen::ArrayXXd updatedPositionPolarCylindrical(size, m.nDims);
+	cart_to_polar_cylindrical(updatedPosition, updatedPositionPolarCylindrical);
+
+	disp = updatedPositionPolarCylindrical - m.coords_polar_cylindrical(idx, Eigen::all);
 }
 
 

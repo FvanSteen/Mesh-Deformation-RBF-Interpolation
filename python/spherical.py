@@ -21,9 +21,9 @@ z_start = 0
 z_stop = 0.5
 
 
-r = np.linspace(r_start, r_stop, 6)
-theta = np.linspace(theta_start, theta_stop, 6)
-z = np.linspace(z_start, z_stop, 6)
+r = np.linspace(r_start, r_stop, 26)
+theta = np.linspace(theta_start, theta_stop, 26)
+z = np.linspace(z_start, z_stop, 26)
 
 dims = 3
 coords = np.empty((np.size(r)*np.size(theta)*np.size(z),dims))

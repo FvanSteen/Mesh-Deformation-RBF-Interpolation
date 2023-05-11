@@ -15,7 +15,7 @@
 #include <iostream>
 #include "CoordTransform.h"
 #include "MeshQuality.h"
-
+#include "WriteResults.h"
 
 int main()
 {
@@ -32,10 +32,8 @@ int main()
 	ReadConfigFile config(configFile,probParams);
 
 
-
 	// lvl indicating the amount of debug messages
 	int debugLvl = 3;
-
 	// initialising class object m, reads mesh input file in constructor.
 	Mesh meshOb(probParams, debugLvl);
 
@@ -66,4 +64,10 @@ int main()
 	if(probParams.generateQuality){
 		Qual.getDeformedMeshQual(meshOb.coords);
 	}
+
+	WriteResults w;
+	w.finalResult(probParams, time_elapsed_ms, Qual.defQuals);
+
+
+
 }

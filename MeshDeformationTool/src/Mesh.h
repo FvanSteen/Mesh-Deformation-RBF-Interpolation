@@ -29,7 +29,9 @@ public:
 	Eigen::ArrayXi verticesNodes, periodicVerticesNodes;
 
 	Eigen::ArrayXi periodicEdgeNodes;
+	Eigen::ArrayXXd periodicEdgeNormals;
 
+	Eigen::ArrayXi internalEdgeNodes;
 
 	Eigen::MatrixXd periodicVecs;
 	int N_pe;
@@ -58,7 +60,7 @@ public:
 	void getPerpVecs(Eigen::ArrayXXd& vecs, Eigen::ArrayXXd& p1, Eigen::ArrayXXd& p2);
 	void getEdgeTan(Eigen::ArrayXXd& t,Eigen::ArrayXXi& edgeConnectivity, Eigen::ArrayXi& seNodes);
 	void getSurfNormal();
-	void getSurfNormalPeriodic();
+	void getSurfNormalPeriodic(int directSliding);
 
 
 	void getExtBdryEdgeSegments();

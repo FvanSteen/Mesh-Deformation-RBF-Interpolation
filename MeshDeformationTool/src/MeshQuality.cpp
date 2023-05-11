@@ -14,7 +14,10 @@ MeshQuality::MeshQuality(probParams& p, Eigen::ArrayXXd& coords)
 		fName = p.directory + "\\meshQuals\\" +  p.mesh_ifName.substr(0,p.mesh_ifName.size()-4) + "_qual.txt";
 
 		alpha_ptr = &alpha_init;
+
 		getInitialMeshQualParams(p, coords);
+
+
 
 		bool existing = existTest(fName);
 
@@ -35,7 +38,9 @@ bool MeshQuality::existTest(std::string& fName){
 }
 
 void MeshQuality::getInitialMeshQualParams(probParams& p, Eigen::ArrayXXd& coords){
+
 	getElemConnectivity(p);
+
 	getQualParams(coords);
 }
 
@@ -56,6 +61,8 @@ void MeshQuality::getMeshQual(){
 	}
 
 	qual = sqrt(f_size)*f_skew;
+
+	defQuals << qual.minCoeff(), qual.mean(), qual.maxCoeff();
 
 
 }

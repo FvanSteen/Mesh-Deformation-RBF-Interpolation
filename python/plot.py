@@ -12,25 +12,27 @@ import matplotlib.collections
 # Setting directory to find .su2 files
 figPath = os.path.dirname(os.path.abspath(__file__)) + "/figs/"
 os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes')
-fileName = '/stator_per_ffd_def.su2'
-#fileName = '/5x5x5_per.su2'
+
+#%%
+#fileName = '/stator_per_ffd_mod_test_def.su2'
+fileName = '/25x25_def.su2'
 [f,v,elemType,bdryPnts,markerTags, nElemsMarks, FFD_pnts] = getPlotData(fileName)  
 
-v = coordTransform.toCylindrical(v)
-
+#v = coordTransform.toCylindrical(v)
+#v = coordTransform.toPolar(v)
 #%% 2D PLOTS
 
 # Mesh quality
-if(0):    
+if(1):    
     graphName = ''    
     meshQualPlot2D(fileName, graphName, f, v, elemType)
-
+#    plt.savefig(figPath + "25x25_init.png", dpi=800,bbox_inches='tight')
 # Boundary scatter plots
 if(0):
     # Without initial boundary
-    init = 1
+    init = 0
     bdryScatterFuns.bdryScatter(fileName, v, bdryPnts, init)
-
+#    plt.savefig(figPath + "pseudo2.png", dpi=800,bbox_inches='tight')
 
 #%%
 
@@ -46,30 +48,93 @@ if(0):
 if(0):
     graphName = ''
     cutAxis = 0
-    cutPlaneLoc = 0.246
+    cutPlaneLoc = 0.2995
     meshQualPlot3D(fileName, graphName, cutAxis, cutPlaneLoc, f, v, elemType)
-#plt.savefig(figPath + "stator_def2.png", dpi=800,bbox_inches='tight')
+#    plt.savefig(figPath + "stator_def2_0.1perc.png", dpi=800,bbox_inches='tight')
     
     
-    
-    
-
 # Boundary scatter
-if(1):
-#    plotTag = ["BLADE","HUB","INFLOW","OUTFLOW","PER1","PER2","SHROUD"]
-    plotTag = ["BLADE","HUB", "SHROUD","INFLOW","OUTFLOW"]
+if(0):
+
+#    plotTag = ["BLADE","HUB","INFLOW","OUTFLOW","SHROUD"]
+#    plotTag = ["HUB"]
+    plotTag = []
 #    plotTag = ["LEFT", "RIGHT", "UPPER","LOWER","FRONT","BACK","BLOCK"]
     bdryScatterFuns.bdryScatter3D(v, bdryPnts, markerTags, nElemsMarks, plotTag, FFD_pnts)
-    
+#    plt.savefig(figPath + "f1.png", dpi=800,bbox_inches='tight')
 
 if(0):
     nanElems(fileName,v,f)
+#    largerOneElems(fileName,v,f)
+    
+#%%
+fName = "25x25"
+data = np.genfromtxt('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\runHistory\\'+fName+ ".txt", skip_header=1, dtype=None, encoding='utf-8')
+
+smode = 'none'
+pmode = 'none'
+greedy = 0
+doubleEdge = 0
+
+rows = ((data['f0']==smode) & (data['f1'] == pmode) & (data['f2'] == greedy) & (data['f3'] == doubleEdge)).nonzero()[0]
+
+steps = np.unique(data['f6'][rows])
+cpu_time = np.empty(np.size(steps),dtype = float)
+q_min = np.empty(np.size(steps),dtype = float)
+q_mean = np.empty(np.size(steps),dtype = float)
+q_max = np.empty(np.size(steps),dtype = float)
+
+for i in range(len(steps)):
+    idx = (data['f6'] == steps[i]).nonzero()[0]
+    cpu_time[i] = np.mean(data['f7'][idx])/1000
+    q_min[i] = data['f8'][idx[0]]
+    q_mean[i] = data['f9'][idx[0]]
+    q_max[i]= data['f10'][idx[0]]
     
     
-    
-    
+plt.figure()
+plt.plot(steps,cpu_time)
+plt.xlabel('Number of steps [-]')
+plt.ylabel('CPU time [s]')
+plt.xticks(range(0,np.max(steps)))
 
 
+#%%
+#from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+#fileName = '/stator_per_ffd_mod.su2'
+##fileName = '/5x5x5_per_def.su2'
+#[f_init,v_init,_,_,_,_,_] = getPlotData(fileName)  
+#elem = v_init[f_init][76298]
+#
+#print(elem)
+#fig = plt.figure()
+#ax = fig.add_subplot(1,1,1, projection='3d')
+#
+#verts = [np.array([elem[0],elem[1],elem[5],elem[4]]),
+#      np.array([elem[3],elem[2],elem[6],elem[7]]),
+#      np.array([elem[3],elem[0],elem[4],elem[7]]),
+#      np.array([elem[2],elem[1],elem[5],elem[6]]),
+#      np.array([elem[0],elem[1],elem[2],elem[3]]),
+#      np.array([elem[4],elem[5],elem[6],elem[7]])]
+#        
+#pc = Poly3DCollection(verts, facecolors='red', edgecolor="black")
+#ax.add_collection(pc)
+#elem = v[f][76298]
+#print(elem)
+#verts = [np.array([elem[0],elem[1],elem[5],elem[4]]),
+#      np.array([elem[3],elem[2],elem[6],elem[7]]),
+#      np.array([elem[3],elem[0],elem[4],elem[7]]),
+#      np.array([elem[2],elem[1],elem[5],elem[6]]),
+#      np.array([elem[0],elem[1],elem[2],elem[3]]),
+#      np.array([elem[4],elem[5],elem[6],elem[7]])]
+#        
+#pc = Poly3DCollection(verts, facecolors='blue', edgecolor="black")
+#    
+#ax.add_collection(pc)
+#ax.set_xlim(0.290,0.303)
+#ax.set_ylim(-0.065,-0.042)
+#ax.set_zlim(0.0398,0.0408)
+#plt.show()
 #%%
 if(0):
     #import numpy as np

@@ -19,8 +19,8 @@ z_start = 0
 z_stop = 0.2
 
 
-r = np.linspace(r_start, r_stop, 6)
-theta = np.linspace(theta_start, theta_stop, 6)
+r = np.linspace(r_start, r_stop, 26)
+theta = np.linspace(theta_start, theta_stop, 26)
 z = np.linspace(z_start, z_stop, 1)
 
 dims = 2
@@ -61,6 +61,8 @@ coordsCart = polarCartesianTransform(coords)
 
 plt.figure()
 plt.scatter(coords[:,0],coords[:,1])
+#plt.scatter(coordsCart[:,0],coordsCart[:,1])
+plt.scatter(coords[block_idx,0],coords[block_idx,1])
 #plt.scatter(coords[17,0],coords[17,1])
 #plt.scatter(x_mp,y_mp)
 #plt.scatter(coordsCart[idxMoving,0]+xdef, coordsCart[idxMoving,1]+ydef)
@@ -81,22 +83,33 @@ plt.show()
 
 os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes')
 x = os.getcwd()
-o = open(x + "\\5x5_per.su2", "w")
+o = open(x + "\\25x25_per.su2", "w")
 #
-xElem = 5
-yElem = 5
+xElem = 25
+yElem = 25
 zElem = 0
+nBlock = 5;
 #
 xNodes = xElem +1
 yNodes = yElem +1
 zNodes = zElem +1
 #
+
+block_start_idx = int((yNodes/2-1)*xNodes + xNodes/2-np.floor(nBlock/2)-1)
+block_idx = np.arange(block_start_idx,block_start_idx+nBlock+1)
+block_idx = np.hstack((block_idx,np.flip(block_idx,axis=0)+xNodes))
+block_idx = np.append(block_idx,block_idx[0])
+
 o.write("NDIME= 2 \n")
-o.write("NELEM= " + str(xElem*yElem-1) + "\n")
+o.write("NELEM= " + str(xElem*yElem-nBlock) + "\n")
+
 for j in range(yNodes-1):
     for i in range(xNodes-1):
-        if(j*xElem+i != 12):
+        if(i + j*yNodes in block_idx[0:5]):
+            print('skip')
+        else:
             o.write("9\t" + str(i + j*yNodes) + "\t" + str(i+1 + j*yNodes) + "\t" +  str(i+1+(1+j)*yNodes) + "\t" +  str(i+(1+j)*yNodes) + "\t" + str(j*xElem+i) +  "\n")
+        
 o.write("NPOIN= " +  str(xNodes*yNodes*zNodes) + "\n")
 for c1,c2 in zip(coordsCart[:,0], coordsCart[:,1]):
     o.write("{0}\t{1}".format(c1,c2) + "\n")
@@ -123,9 +136,40 @@ for i in range(yElem):
     o.write("3\t" + str(i*yNodes+xElem) + "\t" + str((i+1)*yNodes+xElem) + "\n")
     
 o.write("MARKER_TAG= BLOCK\n")
-o.write("MARKER_ELEMS= "+ str(4) + "\n")
-o.write("3\t" + str(14) + "\t" + str(15) + "\n")
-o.write("3\t" + str(15) + "\t" + str(21) + "\n")
-o.write("3\t" + str(21) + "\t" + str(20) + "\n")
-o.write("3\t" + str(20) + "\t" + str(14) + "\n")
+o.write("MARKER_ELEMS= "+ str(len(block_idx)-1) + "\n")
+
+for i in range(len( block_idx)-1):
+    o.write("3\t" + str(block_idx[i]) + "\t" + str(block_idx[i+1]) + "\n")
+#o.write("3\t" + str(block_idx[0]) + "\t" + str(block_idx[-1]) + "\n")
+#o.write("3\t" + str(block_idx[-1]) + "\t" + str(block_idx[-1]+xNodes) + "\n")
+#o.write("3\t" + str(block_idx[-1]+xNodes) + "\t" + str(block_idx[0]+xNodes) + "\n")
+#o.write("3\t" + str(block_idx[0]+xNodes) + "\t" + str(block_idx[0]) + "\n")
+#o.write("3\t" + str(14) + "\t" + str(15) + "\n")
+#o.write("3\t" + str(15) + "\t" + str(21) + "\n")
+#o.write("3\t" + str(21) + "\t" + str(20) + "\n")
+#o.write("3\t" + str(20) + "\t" + str(14) + "\n")
 o.close()
+
+#%%
+from meshpy.tet import MeshInfo, build
+
+mesh_info = MeshInfo()
+mesh_info.set_points([
+    (0,0,0), (2,0,0), (2,2,0), (0,2,0),
+    (0,0,12), (2,0,12), (2,2,12), (0,2,12),
+    ])
+mesh_info.set_facets([
+    [0,1,2,3],
+    [4,5,6,7],
+    [0,4,5,1],
+    [1,5,6,2],
+    [2,6,7,3],
+    [3,7,4,0],
+    ])
+mesh = build(mesh_info)
+print("Mesh Points:")
+for i, p in enumerate(mesh.points):
+    print( i, p)
+print("Point numbers in tetrahedra:")
+for i, t in enumerate(mesh.elements):
+    print(i, t)
