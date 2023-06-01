@@ -18,7 +18,7 @@ r_stop = 1.0
 theta_start = 0
 theta_stop = np.pi/6
 z_start = 0
-z_stop = 0.5
+z_stop = 0.8
 
 
 r = np.linspace(r_start, r_stop, 26)
@@ -67,7 +67,7 @@ plt.show()
 
 os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes')
 x = os.getcwd()
-o = open(x + "\\5x5x5_per.su2", "w")
+o = open(x + "\\25x25x25_per.su2", "w")
 #
 xElem = np.size(r)-1
 yElem = np.size(theta)-1
@@ -78,14 +78,14 @@ yNodes = yElem +1
 zNodes = zElem +1
 
 middleElem = int((xElem*yElem*zElem-1)/2)
-startingNode = int((zNodes/2-1)*xNodes*yNodes + (yNodes/2-1)*xNodes + xNodes/2-1)
+startingNode = int((zNodes/2-1)*xNodes*yNodes + (yNodes/2-1)*xNodes + xNodes/2-1)-2
 #
 o.write("NDIME= 3 \n")
-o.write("NELEM= " + str(xElem*yElem*zElem-1) + "\n")
+o.write("NELEM= " + str(xElem*yElem*zElem-5) + "\n")
 for k in range(zNodes-1):
     for j in range(yNodes-1):
         for i in range(xNodes-1):
-            if(k*xElem*yElem+ j*xElem+i != middleElem): 
+            if(k*xElem*yElem+ j*xElem+i < middleElem-2 or k*xElem*yElem+ j*xElem+i > middleElem+2): 
 #                o.write("12\t" + str(i + j*yNodes + k*yNodes*zNodes) + "\t" + str(i+1 + j*yNodes + k*yNodes*zNodes) + "\t" +  str(i+1+(1+j)*yNodes) + "\t" +  str(i+(1+j)*yNodes + k*yNodes*zNodes) + "\t" + str(j*xElem+i + k*yNodes*zNodes) +  "\n")
 #                print(i + j*yNodes + k*yNodes*xNodes, i+1 + j*yNodes + k*yNodes*xNodes, i+1 + (j+1)*yNodes + k*yNodes*xNodes, i + (j+1)*yNodes + k*yNodes*xNodes, i + j*yNodes + (k+1)*yNodes*xNodes, i+1 + j*yNodes + (k+1)*yNodes*xNodes,  i+1 + (j+1)*yNodes + (k+1)*yNodes*xNodes, i + (j+1)*yNodes + (k+1)*yNodes*xNodes)
                 print("12\t" + str(i + j*yNodes + k*yNodes*xNodes) + "\t" +  str(i+1 + j*yNodes + k*yNodes*xNodes)  + "\t" + str(i+1 + (j+1)*yNodes + k*yNodes*xNodes)  + "\t" + str(i + (j+1)*yNodes + k*yNodes*xNodes)  + "\t" +  str(i + j*yNodes + (k+1)*yNodes*xNodes)  + "\t" +  str(i+1 + j*yNodes + (k+1)*yNodes*xNodes)  + "\t" +  str(i+1 + (j+1)*yNodes + (k+1)*yNodes*xNodes)  + "\t" +  str(i + (j+1)*yNodes + (k+1)*yNodes*xNodes) + "\n")
@@ -136,11 +136,21 @@ for j in range(zElem):
 
     
 o.write("MARKER_TAG= BLOCK\n")
-o.write("MARKER_ELEMS= "+ str(6) + "\n")
-o.write("9\t" + str(startingNode) + "\t" + str(startingNode+1) + "\t" + str(startingNode+1+xNodes) + "\t" + str(startingNode+xNodes)  + "\n")
-o.write("9\t" + str(startingNode+xNodes*yNodes) + "\t" + str(startingNode+1+xNodes*yNodes) + "\t" + str(startingNode+1+xNodes+xNodes*yNodes) + "\t" + str(startingNode+xNodes+xNodes*yNodes)  + "\n")
+o.write("MARKER_ELEMS= "+ str(22) + "\n")
+#lower 
+for i in range(5):
+    o.write("9\t" + str(startingNode+i) + "\t" + str(startingNode+1+i) + "\t" + str(startingNode+1+xNodes+i) + "\t" + str(startingNode+xNodes+i)  + "\n")
+# upper
+for i in range(5):
+    o.write("9\t" + str(startingNode+xNodes*yNodes+i) + "\t" + str(startingNode+1+xNodes*yNodes+i) + "\t" + str(startingNode+1+xNodes+xNodes*yNodes+i) + "\t" + str(startingNode+xNodes+xNodes*yNodes+i)  + "\n")
+
+#LEFT
 o.write("9\t" + str(startingNode) + "\t" + str(startingNode+xNodes*yNodes) + "\t" + str(startingNode+xNodes*yNodes+xNodes) + "\t" + str(startingNode+xNodes)  + "\n")
+# RIGHT
 o.write("9\t" + str(startingNode+1) + "\t" + str(startingNode+xNodes*yNodes+1) + "\t" + str(startingNode+xNodes*yNodes+xNodes+1) + "\t" + str(startingNode+xNodes+1)  + "\n")
-o.write("9\t" + str(startingNode) + "\t" + str(startingNode+1) + "\t" + str(startingNode+1+xNodes*yNodes) + "\t" + str(startingNode+xNodes*yNodes)  + "\n")
-o.write("9\t" + str(startingNode+xNodes) + "\t" + str(startingNode+1+xNodes) + "\t" + str(startingNode+1+xNodes*yNodes+xNodes) + "\t" + str(startingNode+xNodes*yNodes+xNodes)  + "\n")
+#FRONT
+for i in range(5):
+    o.write("9\t" + str(startingNode+i) + "\t" + str(startingNode+1+i) + "\t" + str(startingNode+1+xNodes*yNodes+i) + "\t" + str(startingNode+xNodes*yNodes+i)  + "\n")
+for i in range(5):
+    o.write("9\t" + str(startingNode+xNodes+i) + "\t" + str(startingNode+1+xNodes+i) + "\t" + str(startingNode+1+xNodes*yNodes+xNodes+i) + "\t" + str(startingNode+xNodes*yNodes+xNodes+i)  + "\n")
 o.close()

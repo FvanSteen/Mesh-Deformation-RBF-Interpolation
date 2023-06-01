@@ -5,9 +5,15 @@ import numpy as np
 from funs import getMeshQual, getPlotData
 from colMap import colMap
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from sys import exit
+
+
+plt.rcParams["font.family"] = "Arial"    
+plt.rcParams["font.size"] = 12
 
 def meshQualPlot2D(fileName, graphName, f, v, elemType):
     # importing the default matlab colormap from colMap.py
+    plt.rcParams["figure.figsize"] = [6.4*2, 2*4.8]
     cmapMatlab = colMap()
     
     meshQual = getMeshQual(fileName)
@@ -16,9 +22,9 @@ def meshQualPlot2D(fileName, graphName, f, v, elemType):
     tri_idx = np.where(elemType == 5)
     
     colors = cmapMatlab(plt.Normalize(0,1)(meshQual))
-    
-    pc_tri = matplotlib.collections.PolyCollection(v[f[tri_idx][:,0:3]],cmap=cmapMatlab, facecolors=colors, edgecolor="black",linewidth=0.1)
-    pc_quad = matplotlib.collections.PolyCollection(v[f[quad_idx][:,0:4]],cmap=cmapMatlab,  facecolors=colors, edgecolor="black",linewidth=0.1)
+
+    pc_tri = matplotlib.collections.PolyCollection(v[f[tri_idx][:,0:3]],cmap=cmapMatlab, facecolors=colors, edgecolor="black",linewidth=0.05)
+    pc_quad = matplotlib.collections.PolyCollection(v[f[quad_idx][:,0:4]],cmap=cmapMatlab,  facecolors=colors, edgecolor="black",linewidth=0.05)
 
     fig = plt.figure()              
     ax = fig.add_subplot(1,1,1)
@@ -30,11 +36,11 @@ def meshQualPlot2D(fileName, graphName, f, v, elemType):
     ax.autoscale()
     ax.set_aspect('equal')
     polys.set_clim(0,1)
-    plt.colorbar(polys, ax=ax)
+    plt.colorbar(polys, ax=ax, shrink = .8)
     
 
     ax.title.set_text(graphName)
-
+    plt.tight_layout()
     plt.show()
 
 #    x = np.argwhere(np.isnan(meshQual))
@@ -88,22 +94,44 @@ def meshQualPlot3D(fileName, graphName, cutAxis, cutPlaneLoc, f, v, elemType):
         cutLoc = cutLoc[angles.argsort()]
         
         v_cut[i,0:np.shape(cutLoc)[0],:] = cutLoc
-  
+        
     print(str(len(idxCutElems)) + "/" + str(len(idxCutElems)))
     
     colors = cmapMatlab(plt.Normalize(0,1)(meshQual_cut))
-   
+    
     fig = plt.figure()  
     pc = matplotlib.collections.PolyCollection(v_cut,cmap=cmapMatlab, facecolors=colors, edgecolor="black",linewidth=0.1)
     ax = fig.add_subplot(1,1,1)
-    
     polys = ax.add_collection(pc)
+    
+    v_cut2 = v_cut
+    v_cut2[:,:,0] = v_cut2[:,:,0]-0.174533
+    pc2 = matplotlib.collections.PolyCollection(v_cut2,cmap=cmapMatlab, facecolors=colors, edgecolor="black",linewidth=0.1)
+    polys = ax.add_collection(pc2)
+    
+    
+#    v_cut2[:,:,0] = v_cut2[:,:,0]-0.174533
+#    pc2 = matplotlib.collections.PolyCollection(v_cut2,cmap=cmapMatlab, facecolors=colors, edgecolor="black",linewidth=0.1)
+#    polys = ax.add_collection(pc2)
+#    
+#    v_cut2[:,:,0] = v_cut2[:,:,0]+3*0.174533
+#    pc2 = matplotlib.collections.PolyCollection(v_cut2,cmap=cmapMatlab, facecolors=colors, edgecolor="black",linewidth=0.1)
+#    polys = ax.add_collection(pc2)
+#    
+#    v_cut2[:,:,0] = v_cut2[:,:,0]+0.174533
+#    pc2 = matplotlib.collections.PolyCollection(v_cut2,cmap=cmapMatlab, facecolors=colors, edgecolor="black",linewidth=0.1)
+#    polys = ax.add_collection(pc2)
     
 #    pc.set_array(None)
     ax.autoscale()  
-    ax.set_aspect('equal')
+#    ax.set_aspect('equal')
+    plt.xlim([-0.25,-0.09])
+    plt.ylim([0,0.06])
     polys.set_clim(0,1)
-    plt.colorbar(polys, ax=ax)
+    plt.colorbar(polys, ax=ax,shrink=1)
+    plt.xlabel('$\\theta$')
+    plt.ylabel('z')
+    plt.tight_layout()
     plt.show()
 
     
@@ -114,7 +142,9 @@ def nanElems(fileName,v,f):
     idx_max = np.argwhere(meshQuality > 1)
     
     idx_min = np.argwhere(meshQuality < 0)
-    print(idx_max)
+    print("idxmax", idx_max)
+    print("idxmin", idx_min)
+    print("idxnan", idx)
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1, projection='3d')
     for i in range(len(idx)):

@@ -135,6 +135,14 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 				tolCrit = line.substr(first,last-first);
 				probParamsObject.tolCrit = stod(tolCrit);
 			}
+			else if(line.rfind("LVL_SIZE")==0){
+				findStringBounds(first,last,line);
+				probParamsObject.lvlSize =  stoi(line.substr(first,last-first));
+			}
+			else if(line.rfind("MULTI_CRIT")==0){
+				findStringBounds(first,last,line);
+				probParamsObject.mCrit =  line.substr(first,last-first);
+			}
 			else if(line.rfind("GENERATE_QUALITY")==0){
 				std::string param = "GENERATE_QUALITY";
 				getBool(param, probParamsObject.generateQuality, line);
@@ -144,7 +152,7 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 	}else{std::cout << "Unable to open the configuration file: " << ifName << std::endl;}
 
 	try{
-		if(probParamsObject.smode =="none" && (probParamsObject.pmode == "fixed" || probParamsObject.pmode =="moving")){
+		if(probParamsObject.smode =="none" && (probParamsObject.pmode =="moving")){
 			throw(probParamsObject.pmode);
 		}
 	}
@@ -177,7 +185,12 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 	}
 
 	if(probParamsObject.multiLvl){
-		probParamsObject.convHistFile = probParamsObject.mesh_ifName.substr(0,mesh_ifName.find(".")) + str1 + str2 + "_tol" + tolCrit + ".txt";
+		if(probParamsObject.mCrit == "tol"){
+			probParamsObject.convHistFile = probParamsObject.mesh_ifName.substr(0,mesh_ifName.find(".")) + str1 + str2 + "_tol_" + tolCrit + ".txt";
+		}else{
+			probParamsObject.convHistFile = probParamsObject.mesh_ifName.substr(0,mesh_ifName.find(".")) + str1 + str2 + "_size_" + std::to_string(probParamsObject.lvlSize) + ".txt";
+		}
+
 	}else{
 		probParamsObject.convHistFile = probParamsObject.mesh_ifName.substr(0,mesh_ifName.find(".")) + str1 + str2 + ".txt";
 	}

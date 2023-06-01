@@ -16,8 +16,9 @@ public:
 	Eigen::ArrayXXd coords, coords_polar_cylindrical;
 
 	Eigen::ArrayXXd* ptrCoords;
-	Eigen::ArrayXXd surfMidPnts, edgeMidPnts;
-
+	Eigen::ArrayXXd surfMidPnts, edgeMidPnts,edgeMidPnts_polar_cylindrical, surfMidPnts_polar_cylindrical;
+	Eigen::ArrayXXd* edgeMidPntPtr;
+	Eigen::ArrayXXd* surfMidPntPtr;
 	Eigen::ArrayXXd t_se, n1_se, n2_se, n_ss,t1_ss,t2_ss;
 
 
@@ -28,13 +29,13 @@ public:
 
 	Eigen::ArrayXi verticesNodes, periodicVerticesNodes;
 
-	Eigen::ArrayXi periodicEdgeNodes;
+	Eigen::ArrayXi periodicEdgeNodes, periodicSurfNodes;
 	Eigen::ArrayXXd periodicEdgeNormals;
 
 	Eigen::ArrayXi internalEdgeNodes;
 
 	Eigen::MatrixXd periodicVecs;
-	int N_pe;
+	int N_pe, N_ps;
 
 
 
@@ -77,7 +78,7 @@ public:
 
 	void getPeriodicParams(probParams& params);
 
-	void removeMutualNodes(Eigen::ArrayXi& array_in, int& size, Eigen::ArrayXi& to_remove_nodes);
+	void removeMutualNodes(Eigen::ArrayXi& array_in, int& size, Eigen::ArrayXi& to_remove_nodes, int end_idx);
 
 private:
 	Eigen::ArrayXXi edgeConnectivity, edgeConnectivityPeriodic, surfConnectivity, bdryNodesMat, extBdryEdgeSegments;

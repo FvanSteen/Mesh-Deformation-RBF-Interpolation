@@ -39,8 +39,9 @@ void greedy::getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl){
 	error.resize(d.rows(),(*mPtr).nDims);
 	errorAngle.resize(d.rows(), (*mPtr).nDims-1);
 
+
 	if((*p).ptype){
-		if(d.rows() == (*n.iPtr_reduced).size())
+		if( (*p).smode == "ps" &&  d.rows() == (*n.iPtr_reduced).size())
 			transform.disp_to_cart(d, *n.iPtr_reduced, (*n.iPtr_reduced).size(), *mPtr);
 		else
 			transform.disp_to_cart(d, *n.iPtr, n.N_i, *mPtr);
@@ -94,6 +95,10 @@ void greedy::getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl){
 			maxErrorNodes.resize(1);
 			maxErrorNodes << (*n.iPtr)(idxMax);
 		}
+
+		if( (*p).mCrit == "size" && n.N_c + maxErrorNodes.size() > (*p).lvlSize){
+			maxErrorNodes.conservativeResize(1);
+		}
 	}
 }
 
@@ -128,11 +133,7 @@ void greedy::getErrorSingleLvl(getNodeType& n, Eigen::ArrayXXd& d){
 	m_end = (*mPtr).N_m-n.N_m;
 	se_end = m_end + (*mPtr).N_se-n.N_se;
 
-
-
-
 	getErrorMovingNodes(n.iPtr,  d,  m_end);
-
 
 	//todo call class somewhere else
 	SPDS SPDSobj;
@@ -326,7 +327,7 @@ void greedy::setLevelParams(getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::
 	int cnt = 0;
 	int idx, dim;
 	for(int i = 0; i < N_c; i++){
-//		std::cout << i << '\t' << N_c << std::endl;
+
 		// check for each control if its already included
 		idx = std::distance(std::begin(ctrlNodesAll), std::find(std::begin(ctrlNodesAll), std::end(ctrlNodesAll), (*cPtr)(i)));
 		if(idx == ctrlNodesAll.size()){
@@ -437,6 +438,8 @@ void greedy::setInitMaxErrorNodes(){
 		maxErrorNodes.resize(1);
 		maxErrorNodes << (*mIdxPtr)(idxMax(0));
 	}
+
+
 
 
 }

@@ -73,6 +73,7 @@ void CoordTransform::disp_to_polar_cylindrical(Eigen::ArrayXXd& disp, Eigen::Arr
 	Eigen::ArrayXXd updatedPosition(size, m.nDims);
 	updatedPosition = m.coords(idx, Eigen::all) + disp;
 
+
 	Eigen::ArrayXXd updatedPositionPolarCylindrical(size, m.nDims);
 	cart_to_polar_cylindrical(updatedPosition, updatedPositionPolarCylindrical);
 

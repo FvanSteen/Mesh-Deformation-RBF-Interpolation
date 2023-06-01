@@ -4,6 +4,7 @@
 #include <chrono>
 #include <Eigen/Dense>
 #include "greedy.h"
+#include "WriteResults.h"
 
 
 //rbf_ps::rbf_ps(Mesh& meshObject, Eigen::VectorXd& dVec, Eigen::RowVectorXd& rotPnt, Eigen::VectorXd& rotVec, const int& steps, const std::string& smode, const bool& curved, const std::string& pDir)
@@ -21,11 +22,12 @@ rbf_ps::rbf_ps( struct probParams& probParamsObject, Mesh& meshObject, getNodeTy
 
 void rbf_ps::perform_rbf(getNodeType& n){
 	std::cout<< "Performing RBF PS without data reduction" << std::endl;
-
 	if(params.ptype){
 		transform.cart_to_polar_cylindrical(m.coords, m.coords_polar_cylindrical);
 	}
+
 	for(int i = 0; i < params.steps; i++){
+
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 
 		if(params.curved || i==0){
@@ -41,13 +43,6 @@ void rbf_ps::perform_rbf(getNodeType& n){
 		// find the finaldef of the edge nodes
 		pseudo_sliding_edge(PhiPtr, n);
 
-//		m.coords(*n.sePtr, Eigen::all) += proj_disp_edge;
-//		for(int dim = 0; dim <m.nDims; dim++){
-//			m.coords(*n.mPtr, dim) += defVec_m(Eigen::seqN(dim*n.N_m,n.N_m)).array();
-//		}
-//		m.writeMeshFile(params.mesh_ifName, params.mesh_ofName);
-//		std::exit(0);
-
 		// make a second deformation vector that also contains the displacement of the edges
 		if(m.nDims  == 3){
 
@@ -62,7 +57,9 @@ void rbf_ps::perform_rbf(getNodeType& n){
 		}
 
 		performRBF(PhiPtr->Phi_cc,PhiPtr->Phi_ic,defVec_all,n.cPtr,n.iPtr,n.N_c);
-
+		if(params.ptype){
+			transform.polar_cylindrical_to_cart(m.coords_polar_cylindrical,m.coords);
+		}
 	}
 
 	if(params.ptype){
@@ -72,7 +69,10 @@ void rbf_ps::perform_rbf(getNodeType& n){
 
 void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 	std::cout<< "Performing RBF PS with data reduction" << std::endl;
-
+	std::clock_t s = std::clock();
+	std::clock_t e;
+	WriteResults w;
+	w.createConvHistFile(params.convHistFile);
 
 	int iter, lvl;
 	bool iterating = true;
@@ -88,8 +88,9 @@ void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 
 		if(params.curved || i==0){
 			m.getMidPnts(params);
-//			m.getVecs(params);
+			m.getVecs(params);
 		}
+
 
 		while(iterating){
 			std::cout << "iter: " << iter << std::endl;
@@ -123,11 +124,14 @@ void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 
 				}
 			}
-
-
 			g.getError(n, d, lvl);
-			std::cout << "error: \t"<< g.maxError <<" at node: \t" << g.maxErrorNodes(0)<< std::endl;
+			e = std::clock();
+			long double time_elapsed_ms =  1000.0*(e-s) / CLOCKS_PER_SEC;
+			std::cout << "CPU time: " << time_elapsed_ms/1000 << " ms\n";
 
+
+			std::cout << "error: \t"<< g.maxError <<" at node: \t" << g.maxErrorNodes(0)<< std::endl;
+			w.setIntResults(i, lvl, g.maxError, time_elapsed_ms, params.convHistFile, n.N_c);
 //			for(auto x : *n.iPtr_reduced){
 //				std::cout << x << ", ";
 //			}
@@ -230,11 +234,11 @@ void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 
 			n.addControlNodes(g.maxErrorNodes, params.smode, m);
 //			std::cout << "\n added node types:\n" << n.addedNodes.type << "\n" << std::endl;
-			std::cout << "control nodes:\n";
-			for(auto x : *n.cPtr){
-				std::cout << x << ", ";
-			}
-			std::cout << std::endl;
+//			std::cout << "control nodes:\n";
+//			for(auto x : *n.cPtr){
+//				std::cout << x << ", ";
+//			}
+//			std::cout << std::endl;
 			getPhis(n, iter_surf);
 
 			if(lvl != 0){
@@ -391,25 +395,25 @@ void rbf_ps::perform_rbf(getNodeType& n, greedy& g){
 		}
 
 
-
+		g.correction(m,n, params.gamma, params.multiLvl);
 		updateNodes(n,defVec_all, g.d_step, g.alpha_step, g.ctrlPtr);
 //		std::string tempFile = "stator_per_ffd_mod_uncorrected.su2";
 //		m.writeMeshFile(params.mesh_ifName, tempFile);
-		g.correction(m,n, params.gamma, params.multiLvl);
-		std::cout << "sliding edge nodes\n";
-		for(auto x : *n.sePtr){
-			std::cout << x << ", ";
-		}
-		std::cout << std::endl;
-		std::cout << "moving nodes\n";
-		for(auto x : *n.mPtr){
-			std::cout << x << ", ";
-		}
-		std::cout << std::endl;
-		std::cout << "sliding surface nodes\n";
-		for(auto x : *n.ssPtr){
-			std::cout << x << ", ";
-		}
+
+//		std::cout << "sliding edge nodes\n";
+//		for(auto x : *n.sePtr){
+//			std::cout << x << ", ";
+//		}
+//		std::cout << std::endl;
+//		std::cout << "moving nodes\n";
+//		for(auto x : *n.mPtr){
+//			std::cout << x << ", ";
+//		}
+//		std::cout << std::endl;
+//		std::cout << "sliding surface nodes\n";
+//		for(auto x : *n.ssPtr){
+//			std::cout << x << ", ";
+//		}
 
 		iterating = true;
 
@@ -443,10 +447,12 @@ void rbf_ps::pseudo_sliding_surf(PhiStruct* PhiPtr, getNodeType& n){
 void rbf_ps::pseudo_sliding_edge(PhiStruct* PhiPtr, getNodeType& n){
 	free_disp_edge.resize(n.N_se, m.nDims);
 	proj_disp_edge.resize(n.N_se,m.nDims);
+
+
 	for(int dim = 0; dim < m.nDims; dim++){
 		free_disp_edge(Eigen::seqN(0,n.N_se),dim) = (PhiPtr->Phi_em*(PhiPtr->Phi_mm.fullPivLu().solve(defVec_m(Eigen::seqN(dim*n.N_m,n.N_m))))).array();
 	}
-
+//	std::cout << free_disp_edge.row(0) << std::endl;
 	if(params.ptype){
 		transform.disp_to_cart(free_disp_edge, *n.sePtr, n.N_se, m);
 	}
@@ -456,6 +462,9 @@ void rbf_ps::pseudo_sliding_edge(PhiStruct* PhiPtr, getNodeType& n){
 	if(params.ptype){
 		transform.disp_to_polar_cylindrical(proj_disp_edge, *n.sePtr, n.N_se, m);
 	}
+//	std::cout << "\n\n" << proj_disp_edge<< "\n\n" << std::endl;
+//	std::cout << proj_disp_edge.row(n.N_se-1) << std::endl;
+//	std::exit(0);
 }
 
 

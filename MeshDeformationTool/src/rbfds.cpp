@@ -2,7 +2,7 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <chrono>
-
+#include "WriteResults.h"
 
 rbf_ds::rbf_ds(struct probParams& probParamsObject, Mesh& meshObject, getNodeType& n)
 :rbfGenFunc(meshObject,probParamsObject)
@@ -26,8 +26,8 @@ void rbf_ds::perform_rbf(getNodeType& n){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 
 		if(params.curved || i==0){
-			m.getVecs(params);
 			m.getMidPnts(params);
+			m.getVecs(params);
 		}
 
 		if(i==0){
@@ -50,6 +50,11 @@ void rbf_ds::perform_rbf(getNodeType& n){
 void rbf_ds::perform_rbf(getNodeType& n, greedy& g){
 	std::cout << "Performing RBF DS " << std::endl;
 
+	std::clock_t s = std::clock();
+	std::clock_t e = std::clock();
+	WriteResults w;
+	w.createConvHistFile(params.convHistFile);
+
 	int iter, lvl;
 	bool iterating = true;
 
@@ -62,22 +67,26 @@ void rbf_ds::perform_rbf(getNodeType& n, greedy& g){
 		}
 		iter = 0;
 		lvl = 0;
-
+//		std::cout << "here\n";
 		if(params.curved || i==0){
-			m.getVecs(params);
 			m.getMidPnts(params);
+//			std::cout << "here\n";
+			m.getVecs(params);
 		}
+
 
 		while(iterating){
 
 			n.addControlNodes(g.maxErrorNodes, params.smode, m);
-			std::cout << "control nodes:\n";
-			for(auto x : *n.cPtr){
-				std::cout << x << ", ";
-			}
-			std::cout << std::endl;
+
+//			std::cout << "control nodes:\n";
+//			for(auto x : *n.cPtr){
+//				std::cout << x << ", ";
+//			}
+//			std::cout << std::endl;
 			// obtaining the interpolation matrices
 			getPhis(n, iter);
+
 
 			// obtaining the deformation vector
 			if(lvl!=0){
@@ -91,9 +100,13 @@ void rbf_ds::perform_rbf(getNodeType& n, greedy& g){
 
 
 
+			e = std::clock();
+			long double time_elapsed_ms =  1000.0*(e-s) / CLOCKS_PER_SEC;
+			std::cout << "CPU time: " << time_elapsed_ms/1000 << " ms\n";
 
 			g.getError(n, d, lvl);
 			std::cout << "error: \t"<< g.maxError <<" at node: \t" << g.maxErrorNodes(0)<< std::endl;
+			w.setIntResults(i, lvl, g.maxError, time_elapsed_ms, params.convHistFile, n.N_c);
 
 			if(g.maxError < params.tol){
 				iterating = false;
@@ -121,13 +134,6 @@ void rbf_ds::perform_rbf(getNodeType& n, greedy& g){
 					g.getAlphaVector();
 					g.setInitMaxErrorNodes();
 				}
-//				if(lvl == 3){
-//					g.getAlphaVector();
-//					updateNodes(n, defVec_all, g.d_step, g.alpha_step, g.ctrlPtr);
-//
-//					std::exit(0);
-//
-//				}
 
 			}
 
@@ -138,14 +144,18 @@ void rbf_ds::perform_rbf(getNodeType& n, greedy& g){
 		if(params.curved == false && params.multiLvl == false){
 			setDefVec_all(n, PhiPtr);
 		}
+		std::cout << "performing correction\n";
+		g.correction( m,n,params.gamma, params.multiLvl);
+
 		std::cout << "updating nodes\n";
 		updateNodes(n, defVec_all, g.d_step, g.alpha_step, g.ctrlPtr);
 //		transform.polar_cylindrical_to_cart(m.coords_polar_cylindrical, m.coords);
 //		m.writeMeshFile(params.mesh_ifName, params.mesh_ofName);
 //		std::exit(0);
-		std::cout << "performing correction\n";
-		g.correction( m,n,params.gamma, params.multiLvl);
+
+
 		iterating = true;
+
 	}
 }
 

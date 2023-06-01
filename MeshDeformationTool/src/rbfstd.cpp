@@ -27,9 +27,10 @@ void rbf_std::perform_rbf(getNodeType& n){
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 		getPhis(n, 0);
 		if(i == 0){
-			getDefVec(defVec, n.N_c, n.cPtr);
 
+			getDefVec(defVec, n.N_c, n.cPtr);
 		}
+
 		performRBF(Phis.Phi_cc, Phis.Phi_ic, defVec, n.cPtr, n.iPtr, n.N_m);
 	}
 
@@ -42,23 +43,20 @@ void rbf_std::perform_rbf(getNodeType& n){
 
 void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 	std::cout << "Performing standard rbf interpolation w/ greedy" << std::endl;
-
-
+	std::clock_t s = std::clock();
+	std::clock_t e;
 	WriteResults w;
 	w.createConvHistFile(params.convHistFile);
-
-
 
 
 	int iter, lvl;
 	bool iterating = true;
 
-	if(params.ptype){
-		transform.cart_to_polar_cylindrical(m.coords, m.coords_polar_cylindrical);
-	}
-
 
 	for(int i=0; i < params.steps; i++){
+		if(params.ptype){
+			transform.cart_to_polar_cylindrical(m.coords, m.coords_polar_cylindrical);
+		}
 		std::cout << "Deformation step: " << i+1 << " out of "<< params.steps << std::endl;
 
 		iter = 0;
@@ -78,6 +76,7 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 			}
 
 
+
 			performRBF(Phis.Phi_cc, Phis.Phi_ic, defVec, n.cPtr, n.iPtr, n.N_m);
 
 
@@ -85,9 +84,13 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 			std::cout << "error: \t"<< g.maxError <<" at node: \t" << g.maxErrorNodes(0)<< std::endl;
 
 
+
+			e = std::clock();
+			long double time_elapsed_ms =  1000.0*(e-s) / CLOCKS_PER_SEC;
+			std::cout << "CPU time: " << time_elapsed_ms/1000 << " ms\n";
 //				auto stop = std::chrono::high_resolution_clock::now();
 //				auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
-//				w.setIntResults(i, lvl, maxError, abs(go.error).mean(), duration.count()/1e6, params.convHistFile, n.N_c);
+			w.setIntResults(i, lvl, g.maxError, time_elapsed_ms, params.convHistFile, n.N_c);
 
 			if(g.maxError < params.tol){
 				iterating = false;
@@ -96,7 +99,7 @@ void rbf_std::perform_rbf(getNodeType& n, greedy& g){
 				}
 			}
 
-			if(params.multiLvl && (g.maxError/g.maxErrorPrevLvl < params.tolCrit || iterating == false)){
+			if(params.multiLvl && ( (params.mCrit == "size" && n.N_c == params.lvlSize) ||  (params.mCrit == "tol" &&  g.maxError/g.maxErrorPrevLvl < params.tolCrit) || iterating == false)){
 				std::cout << "multi lvl criterium reached\n";
 				g.setLevelParams( n, lvl, d, alpha, defVec, n.cPtr, n.N_c);
 

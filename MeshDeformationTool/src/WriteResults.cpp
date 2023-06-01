@@ -10,21 +10,19 @@ WriteResults::WriteResults() {
 void WriteResults::createConvHistFile(std::string& fName){
 	std::ofstream convHist;
 
-
 	convHist.open("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\convHist\\" + fName, std::ios::out);
-	convHist << "step\tlevel\tmax error\tmean error\ttime" << std::endl;
+	convHist << "step\tlevel\tmax error\ttime\tnr. of control nodes" << std::endl;
 	convHist.close();
 
 
 }
 
-void WriteResults::setIntResults(int step, int lvl, double maxErr, double meanErr, double time, std::string& fName, int N){
+void WriteResults::setIntResults(int step, int lvl, double& maxErr, long double& time, std::string& fName, int N){
 	std::ofstream convHist;
-
 
 	convHist.open("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\convHist\\" + fName, std::ios::app);
 	convHist.precision(6);
-	convHist << step << '\t' << lvl << '\t' << maxErr << '\t' << meanErr <<'\t' << time << '\t' << N << std::endl;
+	convHist << step << '\t' << lvl << '\t' << maxErr  <<'\t' << time << '\t' << N << std::endl;
 
 }
 
@@ -52,7 +50,7 @@ void WriteResults::finalResult(probParams& p, long double& time, Eigen::Array3d&
 	}
 
 
-	std::string fName = p.directory + "\\runHistory\\" + p.mesh_ifName.substr(0, p.mesh_ifName.length()-4) + ".txt";
+	std::string fName = p.directory + "\\runHistory\\" + p.mesh_ofName.substr(0, p.mesh_ofName.length()-4) + ".txt";
 	bool existing = existTest(fName);
 
 	std::ofstream f;

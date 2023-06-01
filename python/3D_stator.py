@@ -5,7 +5,7 @@ os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeforma
 
 
 
-fileNames = ["\\stator_per_ffd.su2"]
+fileNames = ["\\stator_per_ffd_elastic_deform.su2"]
 [f_init,v_init,elemType,bdryPnts_init, markerTags, nElemsMarks,FFD_pnts] = getPlotData(fileNames[0])
 #plotTag = ["BLADE","HUB","INFLOW","OUTFLOW","PER1","PER2","SHROUD"]
 #plotTag = ["HUB", "PER1","PER2"]
@@ -23,16 +23,18 @@ if(0):
     #%% getting the displacement of the blade
     import numpy as np
     import matplotlib.pyplot as plt
-    fileNames = ["\\stator_per_ffd.su2"]
+    fileNames = ["\\stator_per_ffd_mod.su2"]
     [f_init,v_init,elemType,bdryPnts_init, markerTags, nElemsMarks,FFD_pnts] = getPlotData(fileNames[0])
-    fileNames = ["\\stator_per_ffd_deform.su2"]
+    fileNames = ["\\stator_per_ffd_elastic_deform.su2"]
     [_,v,elemType,_, markerTags, nElemsMarks,FFD_pnts] = getPlotData(fileNames[0])
     
     blade_marker = "BLADE"
     
-    idx = markerTags.index(blade_marker)        
-                    
+    idx = markerTags.index(blade_marker)                        
     bdryPntsPlot =  np.unique(bdryPnts_init[sum(nElemsMarks[0:idx]):sum(nElemsMarks[0:idx+1]),:])
+#    bdryPntsPlot = np.unique(bdryPnts_init)
+    
+    
     delta = v[bdryPntsPlot] - v_init[bdryPntsPlot]
     #%%
     def getDefFile(defFileName, index, disp):
@@ -48,8 +50,8 @@ if(0):
     
     
     os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\defs')
-    defFileName = "\\stator_per_ffd_deformation.txt"
-    
+    defFileName = "\\stator_per_ffd_deformation_all.txt"
+#    
     getDefFile(defFileName, bdryPntsPlot, delta)
     
     #%%
@@ -60,9 +62,11 @@ if(0):
     ax.scatter(v[bdryPntsPlot][:,0],v[bdryPntsPlot][:,1],v[bdryPntsPlot][:,2],marker = "1")
     plt.show()
     
+#%%
     
-if(1):
-    fileName = "\\stator_per_ffd.su2"
+    
+if(0):
+    fileName = "\\stator_per_ffd_deformed.su2"
     fileObj = open('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes'+fileName, "r") 
     lines = fileObj.read().splitlines()
     fileObj.close()
@@ -88,14 +92,14 @@ if(1):
         for j in range(nElems[i]):
             nodes[j,i] = int(lines[markIdx[i]+3+j].strip().split()[1])
             
-    bdryPntsPlot = nodes[:,0]
-    bdryPntsPlot2 = nodes[int(nElems[1]/2):,1]    
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-    ax.scatter(v[bdryPntsPlot][:,0],v[bdryPntsPlot][:,1],v[bdryPntsPlot][:,2],marker = "1", alpha = .2)
-    ax.scatter(v[bdryPntsPlot2][:,0],v[bdryPntsPlot2][:,1],v[bdryPntsPlot2][:,2],marker = "1", alpha = .2)
+#    bdryPntsPlot = nodes[:,0]
+#    bdryPntsPlot2 = nodes[int(nElems[1]/2):,1]    
+#    fig = plt.figure()
+#    ax = fig.add_subplot(projection='3d')
+#    ax.scatter(v[bdryPntsPlot][:,0],v[bdryPntsPlot][:,1],v[bdryPntsPlot][:,2],marker = "1", alpha = .2)
+#    ax.scatter(v[bdryPntsPlot2][:,0],v[bdryPntsPlot2][:,1],v[bdryPntsPlot2][:,2],marker = "1", alpha = .2)
     
-    
+
 #%%
 #    to be removed indices:
     idx_gone = nodes[int(nElems[1]/2):,1]
@@ -122,7 +126,7 @@ if(1):
     
     
 #%%           
-    o = open('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes' + "\\stator_per_ffd_mod.su2", "w")
+    o = open('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes' + "\\stator_per_ffd_deform_mod.su2", "w")
     i = 0
     markerCnt = 0
     while(i < len(lines)):

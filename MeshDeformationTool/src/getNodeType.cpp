@@ -13,6 +13,7 @@ getNodeType::getNodeType(probParams& params, Mesh& m)
 	}else{
 		assignNodeTypes(m);
 	}
+
 }
 
 void getNodeType::assignNodeTypes(Mesh& m){

@@ -16,7 +16,7 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 	exactDisp.resize(m.N_nonzeroDisp,m.nDims);
 
 	readDisplacementFile();
-	exactDisp = exactDisp/params.steps; // deformation per step is more usefull then the total deformation.
+
 	exactDispPtr = &exactDisp;
 	dispIdx = &movingIndices;
 
@@ -24,13 +24,21 @@ rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
 		exactDisp_polar_cylindrical.resize(m.N_nonzeroDisp, m.nDims);
 		CoordTransform transform;
 		transform.vector_cart_to_polar_cylindrical(exactDisp, exactDisp_polar_cylindrical, movingIndices, m.coords);
+		exactDisp_polar_cylindrical = exactDisp_polar_cylindrical/params.steps;
 		disp = &exactDisp_polar_cylindrical;
+
+		exactDisp = exactDisp/params.steps;
+
 
 	}else{
 		disp = &exactDisp;
+
 	}
 
+	exactDisp = exactDisp/params.steps;
+
 	PhiPtr = &Phis;
+	std::cout << "initialised the rbfGenFunc class\n";
 }
 
 
@@ -233,11 +241,18 @@ double rbfGenFunc::getDistance(int node1, int node2){
 	double dist;
 	if(params.ptype){
 		if(m.nDims == 2){
-
-			dist = sqrt(pow(m.coords_polar_cylindrical(node1,0),2) + pow(m.coords_polar_cylindrical(node2,0),2) -2*m.coords_polar_cylindrical(node1,0)*m.coords_polar_cylindrical(node2,0)*cos(m.periodic_length/M_PI*sin( (m.coords_polar_cylindrical(node2,1)-m.coords_polar_cylindrical(node1,1))*M_PI/m.periodic_length) ));
+			if(params.pmode != "none"){
+				dist = sqrt(pow(m.coords_polar_cylindrical(node1,0),2) + pow(m.coords_polar_cylindrical(node2,0),2) -2*m.coords_polar_cylindrical(node1,0)*m.coords_polar_cylindrical(node2,0)*cos(m.periodic_length/M_PI*sin( (m.coords_polar_cylindrical(node2,1)-m.coords_polar_cylindrical(node1,1))*M_PI/m.periodic_length) ));
+			}else{
+				dist = sqrt(pow(m.coords_polar_cylindrical(node1,0),2) + pow(m.coords_polar_cylindrical(node2,0),2) -2*m.coords_polar_cylindrical(node1,0)*m.coords_polar_cylindrical(node2,0)*cos( (m.coords_polar_cylindrical(node2,1)-m.coords_polar_cylindrical(node1,1))));
+			}
 
 		}else if(m.nDims == 3){
-			dist = sqrt(pow(m.coords_polar_cylindrical(node1,0),2) + pow(m.coords_polar_cylindrical(node2,0),2) -2*m.coords_polar_cylindrical(node1,0)*m.coords_polar_cylindrical(node2,0)*cos(m.periodic_length/M_PI*sin( (m.coords_polar_cylindrical(node2,1)-m.coords_polar_cylindrical(node1,1))*M_PI/m.periodic_length)) + pow(m.coords_polar_cylindrical(node2,2) - m.coords_polar_cylindrical(node1,2),2) );
+			if(params.pmode != "none"){
+				dist = sqrt(pow(m.coords_polar_cylindrical(node1,0),2) + pow(m.coords_polar_cylindrical(node2,0),2) -2*m.coords_polar_cylindrical(node1,0)*m.coords_polar_cylindrical(node2,0)*cos(m.periodic_length/M_PI*sin( (m.coords_polar_cylindrical(node2,1)-m.coords_polar_cylindrical(node1,1))*M_PI/m.periodic_length)) + pow(m.coords_polar_cylindrical(node2,2) - m.coords_polar_cylindrical(node1,2),2) );
+			}else{
+				dist = sqrt(pow(m.coords_polar_cylindrical(node1,0),2) + pow(m.coords_polar_cylindrical(node2,0),2) -2*m.coords_polar_cylindrical(node1,0)*m.coords_polar_cylindrical(node2,0)*cos((m.coords_polar_cylindrical(node2,1)-m.coords_polar_cylindrical(node1,1))) + pow(m.coords_polar_cylindrical(node2,2) - m.coords_polar_cylindrical(node1,2),2) );
+			}
 		}
 	}else{
 		if(m.nDims == 2){
@@ -386,11 +401,13 @@ void rbfGenFunc::performRBF(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ic, Ei
 	}
 	for(int dim = 0; dim < m.nDims; dim++){
 
-		alpha(Eigen::seqN(dim*N,N)) = Phi_cc.householderQr().solve(defVec(Eigen::seqN(dim*N,N))); //fullPivHouseholderQr()
+		alpha(Eigen::seqN(dim*N,N)) = Phi_cc.colPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))); //fullPivHouseholderQr()
+//		alpha(Eigen::seqN(dim*N,N)) = Phi_cc.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N)));
 
 		if(params.dataRed){
 			d.col(dim) = Phi_ic*alpha(Eigen::seqN(dim*N,N));
 		}else{
+
 			(*m.ptrCoords)(*iNodes,dim) += (Phi_ic*alpha(Eigen::seqN(dim*N,N))).array();
 			(*m.ptrCoords)(*cNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
 		}

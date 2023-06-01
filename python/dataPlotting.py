@@ -52,6 +52,8 @@ for i in fname:
 plt.savefig(figPath + "CPU.png", dpi=800,bbox_inches='tight')
 
 
+
+
 #labels = ["std", "ps","ds"]
 #plt.figure()
 #for i in fname:

@@ -5,7 +5,7 @@ from funs import getMeshQualParams,getPlotData, getMeshQualParams3D, getMeshQual
 import matplotlib.pyplot as plt
 import numpy as np
 from coordTransform import coordTransform
-
+from ThesisDataPlots import stepPlots, defPlots, qualDistribution
 
 import matplotlib.collections
 #plt.close('all')
@@ -14,26 +14,140 @@ figPath = os.path.dirname(os.path.abspath(__file__)) + "/figs/"
 os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes')
 
 #%%
-#fileName = '/stator_per_ffd_mod_test_def.su2'
-fileName = '/25x25_def.su2'
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+fileName = '/stator_per_ffd_mod_def_ds.su2'
+#fileName = '/stator_per_ffd_deform_mod.su2'
+#fileName = '/25x25x25_per_def.su2'
 [f,v,elemType,bdryPnts,markerTags, nElemsMarks, FFD_pnts] = getPlotData(fileName)  
 
-#v = coordTransform.toCylindrical(v)
+
+
+plt.rcParams["font.family"] = "Arial"    
+plt.rcParams["font.size"] = 12
+
+
+#fig = plt.figure()
+#ax = fig.add_subplot(1,1,1, projection='3d')
+#
+#elem = v[f][116049]
+#elem2 = elem
+#print(elem)
+#verts = [np.array([elem[0],elem[1],elem[5],elem[4]]),
+#      np.array([elem[3],elem[2],elem[6],elem[7]]),
+#      np.array([elem[3],elem[0],elem[4],elem[7]]),
+#      np.array([elem[2],elem[1],elem[5],elem[6]]),
+#      np.array([elem[0],elem[1],elem[2],elem[3]]),
+#      np.array([elem[4],elem[5],elem[6],elem[7]])]
+#pc = Poly3DCollection(verts, facecolors='red', edgecolor="black",linewidth=0.5)
+#    
+#ax.add_collection(pc)
+#
+#ub = np.max(elem,axis=0)
+#lb = np.min(elem,axis=0)
+#ax.set_xlim(lb[0], ub[0])
+#ax.set_ylim(lb[1], ub[1])
+#ax.set_zlim(lb[2], ub[2])
+#
+#fileName = '/stator_per_ffd_mod_def.su2'
+##fileName = '/25x25_per_def.su2'
+#[f,v,elemType,bdryPnts,markerTags, nElemsMarks, FFD_pnts] = getPlotData(fileName)  
+#elem = v[f][116049]
+#elem1 = elem
+#print(elem)
+#verts = [np.array([elem[0],elem[1],elem[5],elem[4]]),
+#      np.array([elem[3],elem[2],elem[6],elem[7]]),
+#      np.array([elem[3],elem[0],elem[4],elem[7]]),
+#      np.array([elem[2],elem[1],elem[5],elem[6]]),
+#      np.array([elem[0],elem[1],elem[2],elem[3]]),
+#      np.array([elem[4],elem[5],elem[6],elem[7]])]
+#pc = Poly3DCollection(verts, facecolors='none', edgecolor="black",linewidth=0.5)
+#    
+#ax.add_collection(pc)
+#
+#ub = np.max(elem,axis=0)
+#lb = np.min(elem,axis=0)
+#ax.set_xlim(lb[0], ub[0])
+#ax.set_ylim(lb[1], ub[1])
+#ax.set_zlim(lb[2], ub[2])
+
+#
+#plt.close('all')
+#idx = [322,327,353,348,322]
+#l = np.arange(0,26,1)
+#ll = np.arange(25,676,26)
+#u = np.arange(650,676,1)
+#r = np.arange(0,651,26)
+#plt.figure()
+##plt.plot([0,1,1,0,0],[0,0,1,1,0],linewidth = 1.0,color = 'black', linestyle = '-',label='_nolegend_')
+##plt.plot([0.4,0.6,0.6,0.4,0.4],[0.48,0.48,0.52,0.52,0.48],linewidth = 1.5, linestyle = '-', color = 'black')
+#plt.plot(v[l][:,0],v[l][:,1],linewidth = 1.0,color = 'black', linestyle = '-',label='_nolegend_')
+#plt.plot(v[ll][:,0],v[ll][:,1],linewidth = 1.0,color = 'black', linestyle = '-',label='_nolegend_')
+#plt.plot(v[u][:,0],v[u][:,1],linewidth = 1.0,color = 'black', linestyle = '-',label='_nolegend_')
+#plt.plot(v[r][:,0],v[r][:,1],linewidth = 1.0,color = 'black', linestyle = '-',label='_nolegend_')
+#plt.plot(v[idx][:,0],v[idx][:,1],linewidth = 1.5, linestyle = '-', color = 'black')
+#fileName = '/25x25_per_def.su2'
+#[f,v,elemType,bdryPnts,markerTags, nElemsMarks, FFD_pnts] = getPlotData(fileName) 
+#plt.plot(v[idx][:,0],v[idx][:,1],linewidth = 1.5, linestyle = '--', color = 'black')
+#plt.legend(['Initial\nposition','Deformed\nposition'], bbox_to_anchor=(1.04,1), loc='upper left')
+#plt.tight_layout()
+#plt.axis('equal')
+#
+#plt.show()
+
+
+#plt.close('all')
+#
+#init_x = np.array([0.4,0.6,0.6,0.4,0.4])
+#init_y = np.array([0.48,0.48,0.52,0.52,0.48])
+#
+#dx = -0.35/5
+#dy = -0.43/5
+#
+#plt.figure()
+#plt.plot([0,1,1,0,0],[0,0,1,1,0],linewidth = 1.0,color = 'black', linestyle = '-',label='_nolegend_')
+#plt.plot(init_x,init_y,linewidth = 1.5, linestyle = '-', color = 'black')
+#plt.plot(init_x+dx,init_y+dy,linewidth = 1.5, linestyle = '--', color = 'black')
+#plt.text(init_x[1]+dx+0.025,init_y[1]+1*dy+0.005, "Loc 1")
+#plt.plot(init_x+2*dx,init_y+2*dy,linewidth = 1.5, linestyle = '--', color = 'black')
+#plt.text(init_x[1]+2*dx+0.025,init_y[1]+2*dy+0.005, "Loc 2")
+#plt.plot(init_x+3*dx,init_y+3*dy,linewidth = 1.5, linestyle = '--', color = 'black')
+#plt.text(init_x[1]+3*dx+0.025,init_y[1]+3*dy+0.005, "Loc 3")
+#plt.plot(init_x+4*dx,init_y+4*dy,linewidth = 1.5, linestyle = '--', color = 'black')
+#plt.text(init_x[1]+4*dx+0.025,init_y[1]+4*dy+0.005, "Loc 4")
+#plt.plot(init_x+5*dx,init_y+5*dy,linewidth = 1.5, linestyle = '--', color = 'black')
+#plt.text(init_x[1]+5*dx+0.025,init_y[1]+5*dy+0.005, "Loc 5")
+#plt.legend(['Initial\nposition','Deformed\nposition'], bbox_to_anchor=(1.04,1), loc='upper left')
+#plt.tight_layout()
+#plt.axis('equal')
+#
+#plt.show()
+#
+#plt.savefig(figPath + "25x25_rotational_deformation.png", dpi=400)
+v = coordTransform.toCylindrical(v)
 #v = coordTransform.toPolar(v)
 #%% 2D PLOTS
 
 # Mesh quality
-if(1):    
-    graphName = ''    
+if(0):    
+    graphName = ''   
+    
     meshQualPlot2D(fileName, graphName, f, v, elemType)
-#    plt.savefig(figPath + "25x25_init.png", dpi=800,bbox_inches='tight')
+#    plt.savefig(figPath + "turbine_row_ds_moving.png", dpi=150,bbox_inches='tight')
 # Boundary scatter plots
 if(0):
     # Without initial boundary
-    init = 0
+    init = 1
+#    plt.rcParams["figure.figsize"] = [6.4*1.5, 4.8]
     bdryScatterFuns.bdryScatter(fileName, v, bdryPnts, init)
+    
+#    plt.legend(['Initial\n position', 'Deformed\nposition', 'Enlarging\nreference'], bbox_to_anchor = [1,0.57], loc = 'lower left')
+#    plt.savefig(figPath + "25x25_node_division2.png", dpi=200,bbox_inches='tight')
 #    plt.savefig(figPath + "pseudo2.png", dpi=800,bbox_inches='tight')
+    
+            
+    
 
+        
 #%%
 
 #ax.legend(labels, bbox_to_anchor=(1.04,1), loc='upper left')
@@ -43,22 +157,33 @@ if(0):
 
 #%% 3D PLOTS
     
+if(0):
+    cutAxis = 0
+#    cutPlaneLoc = 0.2
+    
+    fileNames = ['/stator_per_ffd_mod.su2','/stator_per_ffd_elastic_deform.su2', '/stator_per_ffd_mod_def_ps.su2','/stator_per_ffd_mod_def_ds.su2']
+    labels = ['Initial','Elastic eqs.','RBF-PS','RBF-DS']
+    qType = "min"
+    qualDistribution(fileNames, cutAxis,labels, qType)
+#    plt.savefig(figPath + "aachen_radial_mean_comp.png", dpi=150,bbox_inches='tight')
+    
     
 # Mesh quality
-if(0):
+if(1):
+#    plt.rcParams["figure.figsize"] = [6.4, 4.8]
     graphName = ''
     cutAxis = 0
-    cutPlaneLoc = 0.2995
+    cutPlaneLoc = 0.2515
+#    plt.rcParams["figure.figsize"] = [6.4, 4.8]
     meshQualPlot3D(fileName, graphName, cutAxis, cutPlaneLoc, f, v, elemType)
-#    plt.savefig(figPath + "stator_def2_0.1perc.png", dpi=800,bbox_inches='tight')
-    
+    plt.savefig(figPath + "stator_r=0.2512_ds_double.png", dpi=200,bbox_inches='tight')
     
 # Boundary scatter
 if(0):
 
-#    plotTag = ["BLADE","HUB","INFLOW","OUTFLOW","SHROUD"]
-#    plotTag = ["HUB"]
-    plotTag = []
+#    plotTag = ["BLADE","HUB", "SHROUD","INFLOW","OUTFLOW", "PER1","PER2"]
+#    plotTag = ["BLADE"]
+    plotTag = ["BLOCK","LEFT","RIGHT","UPPER","LOWER","FRONT","BACK"]
 #    plotTag = ["LEFT", "RIGHT", "UPPER","LOWER","FRONT","BACK","BLOCK"]
     bdryScatterFuns.bdryScatter3D(v, bdryPnts, markerTags, nElemsMarks, plotTag, FFD_pnts)
 #    plt.savefig(figPath + "f1.png", dpi=800,bbox_inches='tight')
@@ -68,38 +193,73 @@ if(0):
 #    largerOneElems(fileName,v,f)
     
 #%%
-fName = "25x25"
-data = np.genfromtxt('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\runHistory\\'+fName+ ".txt", skip_header=1, dtype=None, encoding='utf-8')
-
-smode = 'none'
-pmode = 'none'
-greedy = 0
-doubleEdge = 0
-
-rows = ((data['f0']==smode) & (data['f1'] == pmode) & (data['f2'] == greedy) & (data['f3'] == doubleEdge)).nonzero()[0]
-
-steps = np.unique(data['f6'][rows])
-cpu_time = np.empty(np.size(steps),dtype = float)
-q_min = np.empty(np.size(steps),dtype = float)
-q_mean = np.empty(np.size(steps),dtype = float)
-q_max = np.empty(np.size(steps),dtype = float)
-
-for i in range(len(steps)):
-    idx = (data['f6'] == steps[i]).nonzero()[0]
-    cpu_time[i] = np.mean(data['f7'][idx])/1000
-    q_min[i] = data['f8'][idx[0]]
-    q_mean[i] = data['f9'][idx[0]]
-    q_max[i]= data['f10'][idx[0]]
+if(0):
+    plt.close('all')
+    fName = ["25x25_moderate_def"]
+    s = ['none','ps','ds']
+    p = ['none']
+    g = [0]
+    de = [0]
     
+    save_fig= True
+    stepPlots(fName,s,p,g,de, save_fig)
     
-plt.figure()
-plt.plot(steps,cpu_time)
-plt.xlabel('Number of steps [-]')
-plt.ylabel('CPU time [s]')
-plt.xticks(range(0,np.max(steps)))
-
-
-#%%
+if (0):
+    fName = ["25x25_y0_def", "25x25_y1_def","25x25_y2_def","25x25_y3_def","25x25_y4_def","25x25_y5_def"]
+    s = ['none','ps','ds']
+    p = ['none']
+    g = [0]
+    de = [0]
+    steps = 20
+    save_fig= True
+    defPlots(fName,s,p,g,de, save_fig, steps)
+    
+if(0):
+    #fNames = [ "200x200.su2_ML_DE_size_128","200x200.su2_ML_DE_size_64","200x200.su2_ML_DE_size_32","200x200.su2_ML_DE_tol_0.1","200x200.su2_ML_DE_tol_0.2" ]#,"200x200.su2_SL_DE"]
+    #fNames = ["200x200.su2_ML_DE_size_64", "200x200.su2_ML_DE_size_128","200x200.su2_ML_DE_size_256","200x200.su2_ML_DE_size_512","200x200.su2_SL_DE",]#, "200x200.su2_ML_DE_tol_0.1", "200x200.su2_ML_DE_tol_0.05" ]
+    #fNames = ["200x200.su2_SL_SE","200x200.su2_SL_DE", "200x200.su2_ML_DE_tol_0.5", "200x200.su2_ML_DE_tol_0.2", "200x200.su2_ML_DE_tol_0.1", "200x200.su2_ML_DE_tol_0.05"]
+    #fNames = ["200x200.su2_ML_DE_size_512","200x200.su2_ML_SE_size_512","200x200.su2_ML_DE_size_256","200x200.su2_ML_SE_size_256","200x200.su2_ML_DE_size_128","200x200.su2_ML_SE_size_128"]
+    plt.rcParams["figure.figsize"] = [6.4, 4.8]
+    plt.rcParams["axes.labelsize"] = 14
+    plt.rcParams["font.size"] = 12
+    plt.rcParams["legend.fontsize"] = 12
+    fNames = ["200x200.su2_ML_DE_size_8","200x200.su2_ML_DE_size_16","200x200.su2_ML_DE_size_32","200x200.su2_ML_DE_size_64", "200x200.su2_SL_de"]#,"200x200.su2_ML_DE_size_64","200x200.su2_ML_DE_size_128","200x200.su2_ML_DE_size_256", "200x200.su2_SL_DE"]#,"200x200.su2_ML_SE_size_128","200x200.su2_ML_DE_size_128", "200x200.su2_ML_SE_size_256","200x200.su2_ML_DE_size_256"]
+    fNames = ["stator_per_ffd_mod.su2_SL_DE_ps","stator_per_ffd_mod.su2_SL_DE_ds"]
+    #fNames = ["200x200.su2_ML_DE_tol_0.75","200x200.su2_ML_DE_tol_0.5","200x200.su2_ML_DE_tol_0.2","200x200.su2_ML_DE_tol_0.1","200x200.su2_ML_DE_tol_0.05","200x200.su2_SL_de"]#,"200x200.su2_ML_DE_tol_0.1", "200x200.su2_ML_DE_tol_0.05", "200x200.su2_SL_DE"]
+    #fNames = ["200x200.su2_SL_DE"]
+    plt.close('all')
+    for fName in fNames:
+        data =  np.genfromtxt('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\convHist\\'+fName+ ".txt", skip_header=1, dtype=None, encoding='utf-8')
+        t = data['f3']
+        err = data['f2']
+        N = data['f4']
+        chord = 0.062128
+        plt.figure(1)
+        plt.plot(t/1000,err/chord, linewidth = 1.5)
+    #    plt.figure(2)
+    #    plt.plot(t/1000, N, linewidth = 1.5)
+    plt.figure(1)
+    plt.yscale('log')
+    plt.xlabel('CPU time [s]')
+    plt.xlim([0,4000])
+    plt.ylabel(r'$\frac{\epsilon_{max}}{c}$ [-]')
+    plt.legend(["S=8","S=16","S=32","S=64","SL-DE"])
+    plt.legend(["RBF-PS","RBF-DS"])
+    #plt.legend([r"$a_\epsilon$ = 0.75", r"$a_\epsilon$ = 0.5",r"$a_\epsilon$ = 0.2",r"$a_\epsilon$ = 0.1",r"$a_\epsilon$ = 0.05","SL-DE"])
+    plt.savefig(figPath + "Multi_size_compare_ps.png", dpi=400)
+    plt.tight_layout()
+    
+    #plt.figure(2)
+    ##plt.yscale('log')
+    #plt.xlabel('CPU time [s]')
+    #plt.xlim([0,20])
+    #plt.ylabel('Number of control nodes')
+    ##plt.legend(["128","256","512","SL-DE"])
+    #plt.legend(["SE","DE"])
+    #plt.tight_layout()
+    
+    plt.show()
+ #%%
 #from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 #fileName = '/stator_per_ffd_mod.su2'
 ##fileName = '/5x5x5_per_def.su2'

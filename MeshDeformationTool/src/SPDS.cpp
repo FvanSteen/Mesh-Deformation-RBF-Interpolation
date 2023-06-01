@@ -38,6 +38,7 @@ void SPDS::kdt_NNSearch(Eigen::ArrayXi& bdryIndex, Eigen::ArrayXi& intIndex, Eig
 	    dist = sqrt(distSqrd[0]);
 
 	    coords.row(intIndex[i]) -= (*ePtr).row(idx[0])*rbfEval(dist,gamma*maxError);
+//	    std::cout << intIndex(i) << '\t' << (*ePtr).row(idx[0])*rbfEval(dist,gamma*maxError) << std::endl;
 	}
 }
 
@@ -127,7 +128,7 @@ void SPDS::projectSurf(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 
 			mat_index2.index_->findNeighbors(resultSet, &query(0));
 
-			getDistNearestNeighbour(m.surfMidPnts, distNN, idx, query, ptype);
+			getDistNearestNeighbour(m.surfMidPntPtr, distNN, idx, query, ptype);
 
 			projectionMagnitude(0) =  distNN.dot( m.surfMidPntNormals.row(idx[0]).matrix());
 
@@ -144,7 +145,7 @@ void SPDS::projectSurf(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 
 				mat_index2.index_->findNeighbors(resultSet, &query(0));
 
-				getDistNearestNeighbour(m.surfMidPnts, distNN, idx, query, ptype);
+				getDistNearestNeighbour(m.surfMidPntPtr, distNN, idx, query, ptype);
 
 
 				projectionMagnitude(0) =  distNN.dot(m.surfMidPntNormals.row(idx[0]).matrix());
@@ -189,24 +190,33 @@ void SPDS::projectEdge(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 	ptr[1] = &m.edgeMidPntNormals2;
 
 	for(size_t i = startIdx; i < endIdx; i++){
-
+//		std::cout << i << '\t' << endIdx << std::endl;
 		if(std::find(std::begin(m.periodicVerticesNodes),std::end(m.periodicVerticesNodes),(*nodesPtr)(i)) != std::end(m.periodicVerticesNodes)){
-//			std::cout << "SLINDING A PERIODIC VERTEX\n";
+
 			projectSlidingVertex(m, array_out, array_in, (*nodesPtr)(i), i, project, ptype);
 
 		}
 		else{
 			projection = Eigen::RowVectorXd::Zero(m.nDims);
 //			std::cout << "node: " << (*nodesPtr)(i) << std::endl;
+			// still good
 			query = m.coords.row((*nodesPtr)(i)) + array_in.row(i);
+
 //			std::cout << query << std::endl;
 			resultSet.init(&idx[0], &distSqrd[0]);
 
 			mat_index.index_->findNeighbors(resultSet, &query(0));
 
-			getDistNearestNeighbour(m.edgeMidPnts, distNN, idx, query, ptype);
+			getDistNearestNeighbour(m.edgeMidPntPtr, distNN, idx, query, ptype);
 //			std::cout << distNN << std::endl;
+
+//			distNN = m.edgeMidPnts_polar_cylindrical.row(idx[0]);
+//			distNN(0) -= sqrt(pow(query(0),2) + pow(query(1),2));
+//			distNN(1) -= atan2(query(1),query(0));
+//			std::cout << distNN << std::endl;
+
 //			std::cout << "nearest midpoint: \n" << m.edgeMidPnts.row(idx[0]) << std::endl;
+
 
 			for(size_t j = 0; j < size_t(m.nDims-1); j++){
 				projectionMagnitude(j) =  distNN.dot((*ptr[j]).row(idx[0]).matrix());
@@ -217,6 +227,7 @@ void SPDS::projectEdge(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 
 				for(size_t j = 0; j < size_t(m.nDims-1); j++){
 					project_i =  projectionMagnitude(j) *(*ptr[j]).row(idx[0]);
+//					std::cout <<"\n" <<  project_i << std::endl;
 					if(ptype){
 						transformProjection(project_i, query);
 					}
@@ -224,13 +235,15 @@ void SPDS::projectEdge(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 					projection += project_i;
 					query += project_i.array();
 //					std::cout << "\nquery:\n" << query << std::endl;
+//					std::cout << sqrt(query(0)*query(0) +query(1)*query(1)) << std::endl;
 				}
-
 
 				mat_index.index_->findNeighbors(resultSet, &query(0));
 
-				getDistNearestNeighbour(m.edgeMidPnts, distNN, idx, query, ptype);
-
+				getDistNearestNeighbour(m.edgeMidPntPtr, distNN, idx, query, ptype);
+//				distNN = m.edgeMidPnts_polar_cylindrical.row(idx[0]);
+//				distNN(0) -= sqrt(pow(query(0),2) + pow(query(1),2));
+//				distNN(1) -= atan2(query(1),query(0));
 				for(size_t j = 0; j < size_t(m.nDims-1); j++){
 					projectionMagnitude(j) =  distNN.dot((*ptr[j]).row(idx[0]).matrix());
 				}
@@ -240,7 +253,11 @@ void SPDS::projectEdge(Mesh& m, Eigen::ArrayXi* nodesPtr, Eigen::ArrayXXd& array
 			else
 				array_out.row(i) = -projection;
 		}
+//		std::cout << array_in.row(i) << std::endl;
 //		std::cout << i << '\t' << array_out.row(i) << std::endl;
+//		std::cout << array_out.row(i) << std::endl;
+
+
 	}
 }
 
@@ -284,10 +301,14 @@ void SPDS::projectSlidingEdge(Mesh& m, Eigen::ArrayXXd& array_out,Eigen::ArrayXX
 //	std::cout << "\n corresponding node: " << m.periodicEdgeNodes(idxPerEdge) << std::endl;
 //	std::cout << "oldposition:\n" << m.coords_polar_cylindrical.row(node)<< std::endl;
 //	std::cout << "newposition:\n" << m.coords_polar_cylindrical.row(node) + delta.array().transpose() - projection.transpose() << std::endl;
-	array_out(idx,0) = (m.coords_polar_cylindrical(node,0) + projection(0))*cos(m.coords_polar_cylindrical(node,1) + projection(1)) - m.coords_polar_cylindrical(node,0)*cos(m.coords_polar_cylindrical(node,1));
-	array_out(idx,1) = (m.coords_polar_cylindrical(node,0) + projection(0))*sin(m.coords_polar_cylindrical(node,1) + projection(1)) - m.coords_polar_cylindrical(node,0)*sin(m.coords_polar_cylindrical(node,1));
-	if(m.nDims == 3)
-		array_out(idx,2) = projection(2);
+	if(ptype){
+		array_out(idx,0) = (m.coords_polar_cylindrical(node,0) + projection(0))*cos(m.coords_polar_cylindrical(node,1) + projection(1)) - m.coords_polar_cylindrical(node,0)*cos(m.coords_polar_cylindrical(node,1));
+		array_out(idx,1) = (m.coords_polar_cylindrical(node,0) + projection(0))*sin(m.coords_polar_cylindrical(node,1) + projection(1)) - m.coords_polar_cylindrical(node,0)*sin(m.coords_polar_cylindrical(node,1));
+		if(m.nDims == 3)
+			array_out(idx,2) = projection(2);
+	}else{
+		array_out.row(idx) = projection;
+	}
 
 //	std::cout << "array out:\n" << array_out.row(idx) << std::endl;
 
@@ -300,7 +321,7 @@ void SPDS::projectSlidingEdge(Mesh& m, Eigen::ArrayXXd& array_out,Eigen::ArrayXX
 
 void SPDS::projectSlidingVertex(Mesh& m, Eigen::ArrayXXd& array_out,Eigen::ArrayXXd& array_in, int node, int idx, int project, int ptype){
 	Eigen::ArrayXd delta(m.nDims);
-
+//	std::cout << "node: " << node << std::endl;
 	if(ptype){
 		double dr  = sqrt( pow(m.coords(node,0)+array_in(idx,0),2) + pow(m.coords(node,1)+array_in(idx,1),2)) - sqrt( pow(m.coords(node,0),2) + pow(m.coords(node,1),2));
 		double dtheta = atan2(m.coords(node,1)+array_in(idx,1),m.coords(node,0)+array_in(idx,0)) - atan2(m.coords(node,1),m.coords(node,0));
@@ -318,13 +339,17 @@ void SPDS::projectSlidingVertex(Mesh& m, Eigen::ArrayXXd& array_out,Eigen::Array
 		projection = delta*m.periodicVecs.col(0).array();
 	else
 		projection = delta - delta*m.periodicVecs.col(0).array();
-
-
-
-	array_out(idx,0) = (m.coords_polar_cylindrical(node,0) + projection(0))*cos(m.coords_polar_cylindrical(node,1) + projection(1)) - m.coords_polar_cylindrical(node,0)*cos(m.coords_polar_cylindrical(node,1));
-	array_out(idx,1) = (m.coords_polar_cylindrical(node,0) + projection(0))*sin(m.coords_polar_cylindrical(node,1) + projection(1)) - m.coords_polar_cylindrical(node,0)*sin(m.coords_polar_cylindrical(node,1));
-	if(m.nDims == 3)
-		array_out(idx,2) = projection(2);
+//	std::cout << delta << std::endl;
+//	std::cout << projection << std::endl;
+	if(ptype){
+		array_out(idx,0) = (m.coords_polar_cylindrical(node,0) + projection(0))*cos(m.coords_polar_cylindrical(node,1) + projection(1)) - m.coords_polar_cylindrical(node,0)*cos(m.coords_polar_cylindrical(node,1));
+		array_out(idx,1) = (m.coords_polar_cylindrical(node,0) + projection(0))*sin(m.coords_polar_cylindrical(node,1) + projection(1)) - m.coords_polar_cylindrical(node,0)*sin(m.coords_polar_cylindrical(node,1));
+		if(m.nDims == 3)
+			array_out(idx,2) = projection(2);
+	}else{
+		array_out.row(idx) = projection;
+	}
+//	std::cout << array_out.row(idx) << std::endl;
 }
 
 void SPDS::transformProjection(Eigen::RowVectorXd& project_i, Eigen::ArrayXd& query){
@@ -343,21 +368,29 @@ void SPDS::transformProjection(Eigen::RowVectorXd& project_i, Eigen::ArrayXd& qu
 
 }
 
-void SPDS::getDistNearestNeighbour(Eigen::ArrayXXd& midPnts,  Eigen::VectorXd& d, std::vector<size_t> idx, Eigen::ArrayXd& query, int ptype){
+void SPDS::getDistNearestNeighbour(Eigen::ArrayXXd* midPnts,  Eigen::VectorXd& d, std::vector<size_t> idx, Eigen::ArrayXd& query, int ptype){
 	//todo input argument should be the midpoints either edge or surf
 	// todo m can be removed and replaced by query.size()
 	if(ptype){
-		double dr = sqrt(pow(midPnts(idx[0],0),2) + pow(midPnts(idx[0],1),2)) - sqrt(pow(query(0),2) + pow(query(1),2));
-		double dtheta = atan2(midPnts(idx[0],1), midPnts(idx[0],0)) - atan2(query(1), query(0));
+//		double dr = sqrt(pow((*midPnts)(idx[0],0),2) + pow((*midPnts)(idx[0],1),2)) - sqrt(pow(query(0),2) + pow(query(1),2));
+//		double dtheta = atan2((*midPnts)(idx[0],1), (*midPnts)(idx[0],0)) - atan2(query(1), query(0));
+//
+//		if(query.size() == 3){
+//			double dz = (*midPnts)(idx[0],2) - query(2);
+//			d << dr, dtheta, dz;
+//		}else{
+//			d << dr, dtheta;
+//		}
 
+		d = (*midPnts).row(idx[0]);
+		d(0) -= sqrt(pow(query(0),2) + pow(query(1),2));
+		d(1) -= atan2(query(1),query(0));
 		if(query.size() == 3){
-			double dz = midPnts(idx[0],2) - query(2);
-			d << dr, dtheta, dz;
-		}else{
-			d << dr, dtheta;
+			d(2) -= query(2);
 		}
 
 	}else{
-		d = midPnts.row(idx[0]) - query.transpose();
+		d = (*midPnts).row(idx[0]) - query.transpose();
 	}
+
 }

@@ -23,7 +23,7 @@ struct probParams{
 	double rFac;
 	bool doubleEdge;
 	double tolCrit;
-
+	std::string mCrit;
 	std::string directory;
 	bool generateQuality;
 };
