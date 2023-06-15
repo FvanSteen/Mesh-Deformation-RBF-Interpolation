@@ -22,7 +22,9 @@ private:
 	std::string fName;
 
 	bool setQuadDir = false;
-	bool quadClockWise;
+	bool setTriDir = false;
+	bool quadClockWise, triClockWise;
+
 	void getInitialMeshQualParams(probParams& p, Eigen::ArrayXXd& coords);
 
 	void getMeshQual();
@@ -32,7 +34,7 @@ private:
 	bool existTest(std::string& fName);
 	int setElemTypeParams(int type);
 	double get_f_skew(int type, int i);
-	void getQuadRotation(int i, Eigen::ArrayXXd& coords);
+	void getRotation(int i, Eigen::ArrayXXd& coords, int type);
 };
 
 #endif /* MESHQUALITY_H_ */

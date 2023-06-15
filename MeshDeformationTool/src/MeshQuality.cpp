@@ -57,7 +57,13 @@ void MeshQuality::getMeshQual(){
 
 	for(int i = 0; i < nElem; i++){
 		f_size(i) = std::min(tau[i], 1/tau[i]);
+
 		f_skew(i) = get_f_skew(elemType[i], i);
+//		if(elemType[i] == 9){
+//			std::cout << f_size(i) << std::endl;
+//			std::cout << f_skew(i) << std::endl;
+//			std::exit(0);
+//		}
 	}
 
 	qual = sqrt(f_size)*f_skew;
@@ -72,7 +78,11 @@ double MeshQuality::get_f_skew(int type, int i){
 	switch(type){
 
 		case 5:
-			f_skew = sqrt(3)*(*alpha_ptr)(i,0)/(lambda_11(i,0) + lambda_22(i,0) - lambda_12(i,0));
+			if(triClockWise){
+				f_skew = -sqrt(3)*(*alpha_ptr)(i,0)/(lambda_11(i,0) + lambda_22(i,0) - lambda_12(i,0));
+			}else{
+				f_skew = sqrt(3)*(*alpha_ptr)(i,0)/(lambda_11(i,0) + lambda_22(i,0) - lambda_12(i,0));
+			}
 			break;
 
 		case 9: {
@@ -82,6 +92,7 @@ double MeshQuality::get_f_skew(int type, int i){
 			alpha = (*alpha_ptr)(i,Eigen::seqN(0,4));
 
 			if(quadClockWise){
+//				std::cout << ll_1 << '\t'<< ll_2 << '\t' << alpha << std::endl;
 				f_skew = -4/(sqrt(ll_1*ll_2)/alpha).sum();
 			}else{
 				f_skew = 4/(sqrt(ll_1*ll_2)/alpha).sum();
@@ -119,10 +130,13 @@ void MeshQuality::getQualParams(Eigen::ArrayXXd& coords){
 
 			cols  = setElemTypeParams(elemType[i]);
 			if(elemType[i] == 9 && !setQuadDir){
-				getQuadRotation(i, coords);
+				getRotation(i, coords, 9);
+			}else if(elemType[i] == 5 && !setTriDir){
+				getRotation(i, coords, 5);
 			}
 		}
 		for(int ii = 0; ii < cols; ii++){
+
 			A = coords(elems(i,k.col(ii)), Eigen::all);
 
 			A = A.array().rowwise() -  coords(elems(i,ii), Eigen::all);
@@ -130,8 +144,14 @@ void MeshQuality::getQualParams(Eigen::ArrayXXd& coords){
 			(*alpha_ptr)(i,ii) = A.determinant();
 
 			tensor = A*A.transpose();
-
-
+//			if(elemType[i] == 9){
+//				std::cout << "\n\n" << ii << std::endl;
+//				std::cout << A << std::endl;
+//				std::cout << tensor << std::endl;
+//				std::cout << A.determinant() << std::endl;
+//
+//
+//			}
 
 			lambda_11(i,ii) = tensor(0,0);
 			lambda_22(i,ii) = tensor(1,1);
@@ -151,6 +171,9 @@ void MeshQuality::getQualParams(Eigen::ArrayXXd& coords){
 			}
 
 		}
+//		if(elemType[i] == 9){
+//			std::exit(0);
+//		}
 	}
 
 }
@@ -292,29 +315,49 @@ void MeshQuality::getElemConnectivity(probParams& p){
 }
 
 
-void MeshQuality::getQuadRotation(int i, Eigen::ArrayXXd& coords){
+void MeshQuality::getRotation(int i, Eigen::ArrayXXd& coords, int type){
 
 	// the coordinates of the nodes of a single quadriliteral element
 	Eigen::ArrayXXd elemCoords;
-	elemCoords = coords(elems.row(i), Eigen::all);
+	if(type == 5)
+		elemCoords = coords(elems(i,Eigen::seqN(0,3)), Eigen::all);
+	else
+		elemCoords = coords(elems.row(i), Eigen::all);
 
-	// defining the center of the element
-	Eigen::ArrayXd midpnt;
-	midpnt = elemCoords.colwise().sum()/elemCoords.rows();
-
-	// angle of the first defined node w.r.t. the middle of the element
-	double angle_0 = atan2(elemCoords(0,1)-midpnt(1), elemCoords(0,0)-midpnt(0));
-
-	// angle of the second defined node w.r.t. the middle of the element
-	double angle_1 = atan2(elemCoords(1,1)-midpnt(1), elemCoords(1,0)-midpnt(0));
+	double sum = 0.0;
+	double sum2 = 0.0;
+	for(int i = 0; i < elemCoords.rows()-1; i++){
+		sum += (elemCoords(i+1,0)-elemCoords(i,0))*(elemCoords(i+1,1)-elemCoords(i,1));
+		sum2 += elemCoords(i,0)*elemCoords(i+1,1) - elemCoords(i,1)*elemCoords(i+1,0);
+//		std::cout << "sum2\t" << sum2 << std::endl;
+	}
+	sum += (elemCoords(0,0)-elemCoords(elemCoords.rows()-1,0))*(elemCoords(0,1)-elemCoords(elemCoords.rows()-1,1));
+	sum2 += elemCoords(elemCoords.rows()-1,0)*elemCoords(0,1) - elemCoords(elemCoords.rows()-1,1)*elemCoords(0,0);
+	std::cout << "sum2 " << sum2 << std::endl;
+//	std::cout << elemCoords << std::endl;
+//	std::cout << "\n\n";
 
 	// setting the rotation in which the nodes are defined
-	if(angle_1 > angle_0){
-		quadClockWise = false;
-	}else{
-		quadClockWise = true;
-	}
+	if(type == 5){
+		if(sum2 > 0)
+			triClockWise = false;
+		else
+			triClockWise = true;
+		std::cout << "triClockWise " << triClockWise << std::endl;
+		// setting bool to prevent recalling of this function
+		setTriDir = true;
+	}else if(type == 9){
+//		std::cout << sum << std::endl;
+		if(sum2 > 0 )
+			quadClockWise = false;
+		else
+			quadClockWise = true;
 
-	// setting bool to prevent recalling of this function
-	setQuadDir = true;
+		std::cout << "quadClockWise " << quadClockWise << std::endl;
+//		std::cout << quadClockWise << std::endl;
+//		std::exit(0);
+		// setting bool to prevent recalling of this function
+		setQuadDir = true;
+
+	}
 }
