@@ -1,5 +1,6 @@
-"MeshDeformationTool/.settings/"
-"python/*"
+python/
+
+
 # Prerequisites
 *.d
 
