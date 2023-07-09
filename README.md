@@ -11,12 +11,12 @@ Additionally, the source and makefile are in the repository to be able to build 
 The example configuration file named configFile.cfg shows the various possible inputs for the RBF-SliDe tool and a simple 25x25 square mesh is provided as an example test case.
 
 # Developers
-This tool was developed as part of an MSc. thesis project by:
+This tool was developed as part of an MSc. thesis project by:  
 ***Floyd van Steen*** MSc. Student, TU Delft.
 
 # Acknowledgements
-**Matteo Pini**  Assistant Prof., Power and Propulsion, TU Delft.
-**Alexander van Zuijlen** Assistant Prof., Aerodynamics, TU Delft.
+**Matteo Pini**  Assistant Prof., Power and Propulsion, TU Delft.  
+**Alexander van Zuijlen** Assistant Prof., Aerodynamics, TU Delft.  
 
 # Citation
 More details regarding the tool can be found in the following document:
