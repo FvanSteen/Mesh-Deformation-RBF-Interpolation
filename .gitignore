@@ -29,6 +29,5 @@ python/
 *.lib
 
 # Executables
-*.exe
 *.out
 *.app
