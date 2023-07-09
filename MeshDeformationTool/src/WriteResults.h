@@ -2,12 +2,13 @@
 #ifndef WRITERESULTS_H_
 #define WRITERESULTS_H_
 #include <string>
-#include "probParams.h"
+
+#include "ProbParams.h"
 class WriteResults {
 public:
 	WriteResults();
-	void setIntResults(int step, int lvl, double& maxErr, long double& time, std::string& fName, int N);
-	void createConvHistFile(std::string& fName);
+	void setIntResults(std::string& dir, int step, int lvl, double& maxErr, long double& time, int N);
+	void createConvHistFile(std::string& dir);
 	void finalResult(probParams& p, long double& time, Eigen::Array3d& quals);
 	bool existTest(std::string& fName);
 };

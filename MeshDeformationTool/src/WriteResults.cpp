@@ -7,24 +7,41 @@ WriteResults::WriteResults() {
 
 }
 
-void WriteResults::createConvHistFile(std::string& fName){
+/* createConvHistFile
+ *
+ * In case of data reduction methods a convergence history file is created
+ *
+ */
+
+void WriteResults::createConvHistFile(std::string& dir){
 	std::ofstream convHist;
 
-	convHist.open("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\convHist\\" + fName, std::ios::out);
+	convHist.open(dir + "\\convergenceHistory.txt", std::ios::out);
 	convHist << "step\tlevel\tmax error\ttime\tnr. of control nodes" << std::endl;
 	convHist.close();
 
 
 }
 
-void WriteResults::setIntResults(int step, int lvl, double& maxErr, long double& time, std::string& fName, int N){
+
+/* setIntResults
+ *
+ * writing data to the convergence history file
+ */
+
+void WriteResults::setIntResults(std::string& dir, int step, int lvl, double& maxErr, long double& time, int N){
 	std::ofstream convHist;
 
-	convHist.open("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\convHist\\" + fName, std::ios::app);
+	convHist.open(dir + "\\convergenceHistory.txt", std::ios::app);
 	convHist.precision(6);
 	convHist << step << '\t' << lvl << '\t' << maxErr  <<'\t' << time << '\t' << N << std::endl;
 
 }
+
+/* finalResult
+ *
+ * 	Writing information on the finalised RBF interpolation to a data file
+ */
 
 void WriteResults::finalResult(probParams& p, long double& time, Eigen::Array3d& quals){
 
@@ -50,7 +67,7 @@ void WriteResults::finalResult(probParams& p, long double& time, Eigen::Array3d&
 	}
 
 
-	std::string fName = p.directory + "\\runHistory\\" + p.mesh_ofName.substr(0, p.mesh_ofName.length()-4) + ".txt";
+	std::string fName = p.directory + "\\" + p.mesh_ofName.substr(0, p.mesh_ofName.length()-4) + "_data" + ".txt";
 	bool existing = existTest(fName);
 
 	std::ofstream f;
@@ -65,6 +82,12 @@ void WriteResults::finalResult(probParams& p, long double& time, Eigen::Array3d&
 	f << p.smode << '\t' << p.pmode << '\t' << greedy << '\t'<< doubleEdged << '\t'<< tol<< '\t'<< tolCrit << '\t'<< p.steps << '\t' << time << '\t' << quals[0] << '\t' << quals[1] << '\t' << quals[2] <<  std::endl;
 	f.close();
 }
+
+/* existTest
+ *
+ * Function that checks if a file exists
+ *
+ */
 
 bool WriteResults::existTest(std::string& fName){
 	std::ifstream file(fName);

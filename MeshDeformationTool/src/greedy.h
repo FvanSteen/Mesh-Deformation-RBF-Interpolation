@@ -3,8 +3,10 @@
 #include "getNodeType.h"
 #include "Mesh.h"
 #include "CoordTransform.h"
+#include "SPDS.h"
 class greedy {
 public:
+
 
 	double maxError;
 	Eigen::ArrayXi maxErrorNodes;
@@ -32,8 +34,8 @@ public:
 	probParams* p;
 
 	Mesh* mPtr;
-	getNodeType* nPtr; // todo add this?
 	CoordTransform transform;
+	SPDS SPDSobj;
 
 	greedy(Mesh& m, probParams& params, Eigen::ArrayXXd* disp, Eigen::ArrayXi& movingIndices,  Eigen::VectorXd& alpha, Eigen::ArrayXXd& d);
 
@@ -50,7 +52,6 @@ public:
 	void setLevelParams(getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::VectorXd& alpha, Eigen::VectorXd& defVec, Eigen::ArrayXi* cPtr, int N_c);
 	void setInitMaxErrorNodes();
 
-	void getAlphaIdx(Eigen::ArrayXi& mNodes, Eigen::ArrayXi* mNodesGrdy, int N, Eigen::ArrayXi& idxAlpha);
 	void getAlphaVector();
 
 

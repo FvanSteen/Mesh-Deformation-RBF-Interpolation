@@ -9,10 +9,12 @@ def stepPlots(f, s,p,g,de, save):
     figPath = os.path.dirname(os.path.abspath(__file__)) + "/figs/"
     max_steps = 0
     size_factor = 1.25
+    size_factor = 1
     plt.rcParams["font.family"] = "Arial"    
-    plt.rcParams["font.size"] = 20
-    plt.rcParams["axes.labelsize"] = 20
+    plt.rcParams["font.size"] = 16
+    plt.rcParams["axes.labelsize"] = 16
     plt.rcParams["figure.figsize"] = [6.4, 4.8*size_factor]
+#    plt.rcParams["figure.figsize"] = [6.4*1.5, 4.8*size_factor]
     plt.rcParams["legend.fontsize"] = 16
     
     start_fig = plt.gcf().number
@@ -44,6 +46,7 @@ def stepPlots(f, s,p,g,de, save):
                             q_min[i] = selected_data['f8'][idx[0]]
                             q_mean[i] = selected_data['f9'][idx[0]]
                             q_max[i]= selected_data['f10'][idx[0]]
+                            
                             if q_min[i] < 0:
                                 q_min[i] = np.nan
                                 q_mean[i] = np.nan
@@ -58,8 +61,8 @@ def stepPlots(f, s,p,g,de, save):
                         plt.figure(start_fig+1)
                         plt.plot(steps,q_min,'-x',linestyle = linestyle[cnt], marker = markerstyle[cnt],markersize = ms, markerfacecolor = 'none', linewidth = lw, color = c[cnt])
                         
-                        plt.figure(start_fig+2)
-                        plt.plot(steps,q_mean,'-x', linestyle = linestyle[cnt], marker = markerstyle[cnt],markersize = ms, markerfacecolor = 'none', linewidth = lw,color = c[cnt])
+#                        plt.figure(start_fig+2)
+#                        plt.plot(steps,q_mean,'-x', linestyle = linestyle[cnt], marker = markerstyle[cnt],markersize = ms, markerfacecolor = 'none', linewidth = lw,color = c[cnt])
                     
 #                        plt.figure(start_fig+3)
 #                        plt.plot(cpu_time,q_min,'-x', linestyle = linestyle[cnt], marker = markerstyle[cnt],markersize = ms, markerfacecolor = 'none', linewidth = lw,color = c[cnt])
@@ -69,46 +72,52 @@ def stepPlots(f, s,p,g,de, save):
     plt.xlabel('Number of steps [-]')
     plt.ylabel('CPU time [s]')
     plt.xticks(range(0,max_steps+1,2))
-#    plt.legend(["Non-Per.","Per.","Per. Disp. (fixed)", "Per. Disp. (non-fixed)"],loc = 'upper left')
+    plt.legend(["Non-Per.","Per.","Per. Disp. (fixed)", "Per. Disp. (moving)"],loc = 'upper left')
 #    plt.legend(["Non-Per.","Per.","Per. Disp. (fixed)"],loc = 'upper left')
-    plt.legend(["RBF", "RBF-PS","RBF-DS"],loc = 'lower right')
+#    plt.legend(["RBF", "RBF-PS","RBF-DS"],loc = 'upper left')
 #    plt.legend(["RBF (fixed)","RBF-PS (fixed)","RBF-PS (non-fixed)","RBF-DS (fixed)","RBF-DS (non-fixed)"],bbox_to_anchor = [1,1],loc='upper left')
-#    plt.legend(["RBF","RBF Per. Disp. (fixed)","RBF-PS","RBF-PS Per. Disp. (fixed)","RBF-DS","RBF-DS Per. Disp.  (fixed)"],bbox_to_anchor = [1,1],loc='upper left')
+#    plt.legend(["RBF Per. Disp. (fixed)","RBF-PS Per. Disp. (fixed)","RBF-PS Per. Disp. (non-fixed)","RBF-DS Per. Disp. (fixed)","RBF-DS Per. Disp.  (non-fixed)"],bbox_to_anchor = [1,1],loc='upper left')
+#    plt.ylim([0,4])
     plt.tight_layout()
+    
     if save:
-        plt.savefig(figPath + "25x25_moderate_def_cpu.png", dpi=100)
+        plt.savefig(figPath + "25x25_pres_per_cpu.png", dpi=400)
+        
     
     plt.figure(start_fig+1)
     plt.xlabel('Number of steps [-]')
     plt.ylabel('Minimum qualitiy [-]')
     plt.xticks(range(0,max_steps+1,2))
-#    plt.legend(["Non-Per.","Per.","Per. Disp. (fixed)", "Per. Disp. (non-fixed)"],loc='lower left')#,bbox_to_anchor=[0.35,.28])
+    plt.ylim([-0.05,0.41])
+    plt.legend(["Non-Per.","Per.","Per. Disp. (fixed)", "Per. Disp. (moving)"],loc='lower right')#,bbox_to_anchor=[0.35,.28])
 #    plt.legend(["Non-Per.","Per.","Per. Disp. (fixed)"],loc = 'lower left')
-    plt.legend(["RBF","RBF-PS","RBF-DS"],loc = 'lower right')#, bbox_to_anchor = [0.6,0.4])
+#    plt.legend(["RBF","RBF-PS","RBF-DS"],loc = 'lower right')#, bbox_to_anchor = [0.6,0.4])
 #    plt.legend(["RBF (fixed)","RBF-PS (fixed)","RBF-PS (non-fixed)","RBF-DS (fixed)","RBF-DS (non-fixed)"],bbox_to_anchor = [1,1],loc='upper left')
 #    plt.legend(["RBF","RBF Per. Disp. (fixed)","RBF-PS","RBF-PS Per. Disp. (fixed)","RBF-DS","RBF-DS Per. Disp.  (fixed)"],bbox_to_anchor = [1,1],loc='upper left')
+#    plt.legend(["RBF Per. Disp. (fixed)","RBF-PS Per. Disp. (fixed)","RBF-PS Per. Disp. (non-fixed)","RBF-DS Per. Disp. (fixed)","RBF-DS Per. Disp.  (non-fixed)"],bbox_to_anchor = [1,1],loc='upper left')
 #    plt.gca().set_ylim(bottom=0.2)
     plt.tight_layout()
     
     
     if save:
-        plt.savefig(figPath + "25x25_moderate_def_qmin.png", dpi=100)
+        plt.savefig(figPath + "25x25_pres_per_qmin.png", dpi=400)
+ #%%       
+#    plt.figure(start_fig+2)
+#    plt.xlabel('Number of steps [-]')
+#    plt.ylabel('Mean qualitiy [-]')
+#    plt.xticks(range(0,max_steps+1,2))
+##    plt.legend(["Non-Per.","Per.","Per. Disp. (fixed)", "Per. Disp. (non-fixed)"],loc='lower left', bbox_to_anchor = [0.35,0.55])
+##    plt.legend(["Non-Per.","Per.","Per. Disp. (fixed)"],loc = 'center right')
+##    plt.legend(["RBF (fixed)","RBF-PS (fixed)","RBF-PS (non-fixed)","RBF-DS (fixed)","RBF-DS (non-fixed)"],bbox_to_anchor = [1,1],loc='upper left')
+##    plt.legend(["RBF","RBF Per. Disp. (fixed)","RBF-PS","RBF-PS Per. Disp. (fixed)","RBF-DS","RBF-DS Per. Disp.  (fixed)"],bbox_to_anchor = [1,1],loc='upper left')
+#    plt.legend(["RBF","RBF-PS","RBF-DS"],loc = 'center right')
+#    
+#    plt.tight_layout()
+    #%%
+    
+#    if save:
+#        plt.savefig(figPath + "25x25_moderate_def_qmean.png", dpi=100)
         
-    plt.figure(start_fig+2)
-    plt.xlabel('Number of steps [-]')
-    plt.ylabel('Mean qualitiy [-]')
-    plt.xticks(range(0,max_steps+1,2))
-#    plt.legend(["Non-Per.","Per.","Per. Disp. (fixed)", "Per. Disp. (non-fixed)"],loc='lower left', bbox_to_anchor = [0.35,0.55])
-#    plt.legend(["Non-Per.","Per.","Per. Disp. (fixed)"],loc = 'center right')
-#    plt.legend(["RBF (fixed)","RBF-PS (fixed)","RBF-PS (non-fixed)","RBF-DS (fixed)","RBF-DS (non-fixed)"],bbox_to_anchor = [1,1],loc='upper left')
-#    plt.legend(["RBF","RBF Per. Disp. (fixed)","RBF-PS","RBF-PS Per. Disp. (fixed)","RBF-DS","RBF-DS Per. Disp.  (fixed)"],bbox_to_anchor = [1,1],loc='upper left')
-    plt.legend(["RBF","RBF-PS","RBF-DS"],loc = 'center right')
-    
-    plt.tight_layout()
-    
-    if save:
-        plt.savefig(figPath + "25x25_moderate_def_qmean.png", dpi=100)
-#        
 #    plt.figure(start_fig+3)
 #    plt.xlabel('CPU time [s]')
 #    plt.ylabel('Minimum quality [-]')
@@ -170,7 +179,7 @@ def defPlots(f, s,p,g,de, save, steps):
     
     plt.figure()
     for i in range(len(s)):
-        plt.plot([0.0,0.2,0.4,0.6,0.8,1.0],cpu_time[i,:],linestyle = linestyle[i],marker = markerstyle[0], markerfacecolor = "none", linewidth = 1.5)
+        plt.plot([0.0,0.2,0.4,0.6,0.8,1.0],cpu_time[i,:],linestyle = linestyle[i],marker = markerstyle[0], markerfacecolor = "none", linewidth = 2.5)
 
     plt.xlabel('Fraction of total deformation [-]')
     plt.ylabel('CPU time [s]')
@@ -183,7 +192,7 @@ def defPlots(f, s,p,g,de, save, steps):
         
     plt.figure()
     for i in range(len(s)):
-        plt.plot([0.0,0.2,0.4,0.6,0.8,1.0],q_min[i,:],linestyle = linestyle[i],marker = markerstyle[0], markerfacecolor = "none", linewidth = 1.5)
+        plt.plot([0.0,0.2,0.4,0.6,0.8,1.0],q_min[i,:],linestyle = linestyle[i],marker = markerstyle[0], markerfacecolor = "none", linewidth = 2.5)
 
     plt.xlabel('Fraction of total deformation [-]')
     plt.ylabel('Minimum quality [-]')
@@ -196,7 +205,7 @@ def defPlots(f, s,p,g,de, save, steps):
     
     plt.figure()
     for i in range(len(s)):
-        plt.plot([0.0,0.2,0.4,0.6,0.8,1.0],q_mean[i,:],linestyle = linestyle[i],marker = markerstyle[0], markerfacecolor = "none", linewidth = 1.5)
+        plt.plot([0.0,0.2,0.4,0.6,0.8,1.0],q_mean[i,:],linestyle = linestyle[i],marker = markerstyle[0], markerfacecolor = "none", linewidth = 2.5)
 
     plt.xlabel('Fraction of total deformation [-]')
     plt.ylabel('Mean quality [-]')

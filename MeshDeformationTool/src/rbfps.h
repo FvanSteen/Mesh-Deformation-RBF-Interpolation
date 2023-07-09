@@ -10,15 +10,16 @@
 #include <Eigen/Dense>
 #include "SPDS.h"
 #include "CoordTransform.h"
+#include "WriteResults.h"
 
 
-//class rbf_ps : public rbf_std, public projection
 class rbf_ps : public rbfGenFunc
 {
 public:
-	// spatial partial data structere class
+
 	SPDS p;
 	CoordTransform transform;
+	WriteResults w;
 	rbf_ps(struct probParams& probParamsObject, Mesh& meshObject, getNodeType& n);
 	void perform_rbf(getNodeType& n);
 	void perform_rbf(getNodeType& n, greedy& g);

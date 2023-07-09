@@ -2,14 +2,16 @@
 #ifndef RBFGENFUNC_H_
 #define RBFGENFUNC_H_
 #include "Mesh.h"
-#include "probParams.h"
 #include "getNodeType.h"
 #include <Eigen/Dense>
+#include "ProbParams.h"
+#include "CoordTransform.h"
 
 class rbfGenFunc {
 public:
 	Mesh& m;
 	probParams& params;
+	CoordTransform transform;
 
 
 	Eigen::ArrayXi movingIndices;
@@ -30,29 +32,23 @@ public:
 
 	void getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::ArrayXi* idxSet2);
 
-//	void getDefVec(Eigen::VectorXd& defVec, getNodeType& n, int lvl, Eigen::ArrayXXd& errorPrevLvl);
+
 	void getDefVec(Eigen::VectorXd& defVec, int N_m, Eigen::ArrayXi* mPtr);
 	void getDefVec(Eigen::VectorXd& defVec_b, Eigen::VectorXd& defVec, getNodeType& n,Eigen::ArrayXXd& finalDef, int N, int N_init);
-
-	// for the multi levels
 	void getDefVec(Eigen::VectorXd& defVec, getNodeType& n, Eigen::ArrayXXd& errors, int N_m);
+
 	void readDisplacementFile();
 
-
+	double getDistance(int node1, int node2);
 	double rbfEval(double distance);
-	void getDefVecMultiGreedy(Eigen::VectorXd& defVec, getNodeType& n, Eigen::ArrayXXd& errors, int N, Eigen::ArrayXi* mPtr);
+
 	void performRBF(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ic, Eigen::VectorXd& defVec, Eigen::ArrayXi* cNodes, Eigen::ArrayXi* iNodes, int N);
 	void updateNodes(getNodeType& n, Eigen::VectorXd& defVec, Eigen::ArrayXXd* d_step, Eigen::VectorXd* alpha_step, Eigen::ArrayXi* ctrlPtr);
 
 
-
-
 	void getPhisReduced(getNodeType& n);
 	void getPhisFull(getNodeType& n);
-	double getDistance(int node1, int node2);
-
 	void getReducedPhi(Eigen::MatrixXd& Phi, getNodeType& n);
-
 	void adjustPhi(Eigen::MatrixXd& Phi, getNodeType& n, int type);
 	void getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::ArrayXi* idxSet2, int idx, int type);
 private:

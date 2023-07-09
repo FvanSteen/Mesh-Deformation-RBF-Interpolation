@@ -1,1 +1,0 @@
-step	level	max error	mean error	time

@@ -1,4 +1,3 @@
-
 #include "rbfGenFunc.h"
 #include <iostream>
 #include <Eigen/Dense>
@@ -6,52 +5,70 @@
 #include <fstream>
 #include <sstream>
 #include "CoordTransform.h"
+
 rbfGenFunc::rbfGenFunc(Mesh& meshObject, struct probParams& probParamsObject)
-//rbfGenFunc::rbfGenFunc(Mesh* meshPtr, Eigen::VectorXd& dVec, Eigen::RowVectorXd& rotPnt, Eigen::VectorXd& rotVec, const int& steps, const std::string& smode, const bool& curved, const std::string& pDir)
 :m(meshObject), params(probParamsObject)
 {
 
-	std::cout << "Initialised the rbfGenFunc class" << std::endl;
+	// resizing the arrays containing the moving node indices and their displacement
 	movingIndices.resize(m.N_nonzeroDisp);
 	exactDisp.resize(m.N_nonzeroDisp,m.nDims);
 
+	// reading the file containing the prescribed displacement of the moving nodes
 	readDisplacementFile();
 
+
+	// setting pointers to the displacement in Cartesian coordinates and indices
 	exactDispPtr = &exactDisp;
 	dispIdx = &movingIndices;
 
+	// in case of a rotational periodic domain the prescribed deformation is transformed into polar/cylindrical coordinates
 	if(params.ptype){
+		// resize
 		exactDisp_polar_cylindrical.resize(m.N_nonzeroDisp, m.nDims);
-		CoordTransform transform;
+
+		// transformation
 		transform.vector_cart_to_polar_cylindrical(exactDisp, exactDisp_polar_cylindrical, movingIndices, m.coords);
+
+		// divide by number of deformation steps
 		exactDisp_polar_cylindrical = exactDisp_polar_cylindrical/params.steps;
+
+		// also a pointer for the displacement in polar/cylindrical coordinates
 		disp = &exactDisp_polar_cylindrical;
-
-		exactDisp = exactDisp/params.steps;
-
 
 	}else{
 		disp = &exactDisp;
-
 	}
 
+	// divide by number of deformation steps
 	exactDisp = exactDisp/params.steps;
 
+	// Pointer to a structure containing the interpolation matrices
 	PhiPtr = &Phis;
-	std::cout << "initialised the rbfGenFunc class\n";
 }
+
+
+/* getPhis
+ *
+ * Obtains all the interpolation matrices the different submatrices like Phi_mm are part of the matrix Phi_cc.
+ * Only Phi_cc and Phi_ic have to be determined and the other relevant matrices can be found as blocks in those matrices.
+ */
 
 
 void rbfGenFunc::getPhis(getNodeType& n, int iter){
 
+	// in case of data reduction and the iteration is not equal to zero
 	if(params.dataRed && iter != 0){
+		// add rows and columns to the relevant matrices based on the added control nodes
 		getPhisReduced(n);
 	}else{
+		// Calculate the entire interpolation matrix
 		getPhisFull(n);
 	}
 
+	// Finding the interpolation matrices for the pseudo and direct sliding methods.
+	// these matrices are part of the Phi_cc or Phi_ic matrices.
 	if(params.smode == "ps"){
-
 		Phis.Phi_mm.resize(n.N_m, n.N_m);
 		Phis.Phi_mm = Phis.Phi_cc.block(0,0,n.N_m, n.N_m);
 
@@ -81,13 +98,26 @@ void rbfGenFunc::getPhis(getNodeType& n, int iter){
 	}
 }
 
+
+/*
+ * getPhisFull
+ *
+ * Determines the entire interpolation matrices
+ */
+
 void rbfGenFunc::getPhisFull(getNodeType& n){
 
+	// interpolation matrix of the control nodes w.r.t. the control nodes
 	getPhi(Phis.Phi_cc, n.cPtr, n.cPtr);
+	// interpolation matrix of the internal nodes w.r.t. the control nodes
 	getPhi(Phis.Phi_ic, n.iPtr, n.cPtr);
 
 }
 
+/* getPhisReduced
+ *
+ * Only add rows and columns based on the added control nodes
+ */
 
 void rbfGenFunc::getPhisReduced(getNodeType& n){
 	// 0 adds row, 1 adds column, 2 adds both
@@ -95,7 +125,7 @@ void rbfGenFunc::getPhisReduced(getNodeType& n){
 	// removing rows from the Phi_ic matrix
 	getReducedPhi(Phis.Phi_ic, n);
 
-	// adjsuting sizes of the interpolation matrices
+	// adjusting sizes of the interpolation matrices
 	adjustPhi(Phis.Phi_cc, n, 2);
 	adjustPhi(Phis.Phi_ic, n, 1);
 
@@ -125,6 +155,12 @@ void rbfGenFunc::getPhisReduced(getNodeType& n){
 	}
 }
 
+/* getReducedPhi
+ *
+ * removing the rows of the added control nodes from the Phi_ic matrix
+ *
+ */
+
 void rbfGenFunc::getReducedPhi(Eigen::MatrixXd& Phi, getNodeType& n){
 	for(int i = 0; i < n.addedNodes.idx_i.size(); i++){
 		Phi.middleRows(n.addedNodes.idx_i[i],Phi.rows()-n.addedNodes.idx_i[i]-1) = Phi.bottomRows(Phi.rows()-n.addedNodes.idx_i[i]-1);
@@ -132,9 +168,16 @@ void rbfGenFunc::getReducedPhi(Eigen::MatrixXd& Phi, getNodeType& n){
 	Phi.conservativeResize(n.N_i,Phi.cols());
 }
 
+
+/* adjustPhi
+ *
+ * Adjusting the size of the relevant interpolation matrices based on the added control nodes
+ * and shifting the rows/ columns accordingly
+ */
+
 void rbfGenFunc::adjustPhi(Eigen::MatrixXd& Phi, getNodeType& n,  int type){
 
-	int idx;
+	int idx = -1;
 	switch(type){
 		case 0:
 			Phi.conservativeResize(Phi.rows()+n.addedNodes.idx.size(), Phi.cols());
@@ -189,6 +232,12 @@ void rbfGenFunc::adjustPhi(Eigen::MatrixXd& Phi, getNodeType& n,  int type){
 }
 
 
+/* getPhi
+ *
+ * Adding rows or columns to the interpolation matrices based on the added control nodes
+ *
+ */
+
 void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::ArrayXi* idxSet2, int idx, int type){
 
 	double distance;
@@ -224,21 +273,42 @@ void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::Ar
 	}
 }
 
+/* getPhi
+ *
+ * Determining all the elements of the interpolation matrix
+ *
+ */
+
+
 void rbfGenFunc::getPhi(Eigen::MatrixXd& Phi, Eigen::ArrayXi* idxSet1, Eigen::ArrayXi* idxSet2){
 	Phi.resize((*idxSet1).size(), (*idxSet2).size());
 
 	double distance;
 	for(int i=0; i<(*idxSet1).size();i++){
 		for(int j=0; j<(*idxSet2).size();j++){
+
+			// determine distance between nodes
 			distance = getDistance((*idxSet1)[i],(*idxSet2)[j]);
+
+			// set element to RBF evaluation value
 			Phi(i,j) = rbfEval(distance);
 		}
 	}
 }
 
+/* getDistance
+ *
+ * Function for calculating the distance. Either Euclidean or for a periodic RBF
+ * (Some duplicate code that could be improved)
+ */
+
+
 
 double rbfGenFunc::getDistance(int node1, int node2){
-	double dist;
+	double dist = 0.0;
+
+	// in case of a rotationally periodic domain obtain the distance in polar/cylindrical coordinates
+	// In polar/ cylindrical coordinates only periodicity in the theta direction is supported
 	if(params.ptype){
 		if(m.nDims == 2){
 			if(params.pmode != "none"){
@@ -254,62 +324,65 @@ double rbfGenFunc::getDistance(int node1, int node2){
 				dist = sqrt(pow(m.coords_polar_cylindrical(node1,0),2) + pow(m.coords_polar_cylindrical(node2,0),2) -2*m.coords_polar_cylindrical(node1,0)*m.coords_polar_cylindrical(node2,0)*cos((m.coords_polar_cylindrical(node2,1)-m.coords_polar_cylindrical(node1,1))) + pow(m.coords_polar_cylindrical(node2,2) - m.coords_polar_cylindrical(node1,2),2) );
 			}
 		}
-	}else{
+	}
+
+	// Translational periodic domains:
+	else{
+		// if 2D
 		if(m.nDims == 2){
-			// Euclidian distance
 
-	//				dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet22(j),0),2) + pow(m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1),2));
-
-
-			//todo following if statement is introduced to improve efficiency, check if anything else can be done
+			// if periodic
 			if(params.pmode != "none"){
-				dist = 0;
+				dist = 0.0;
+
+				// loopingthrough the dimensions to check if coordinate is periodic, if so then add the distance with the sine function.
+				// otherwise use Euclidean distance
 				for(int dim = 0; dim < m.nDims; dim++){
 					if(dim == params.pDir){
-						dist += pow(m.periodic_length/M_PI*sin( (m.coords(node1,dim)-m.coords(node2,dim))*M_PI/m.periodic_length),2);
+						// sine function
+						dist += pow(m.periodic_length/M_PI*sin( (m.coords(node1,dim)-m.coords(node2,dim))*M_PI/m.periodic_length),2); // Eq. 2.11 from the manuscript
 					}
 					else{
+						// Euclidean distance
 						dist += pow(m.coords(node1,dim)-m.coords(node2,dim),2);
 					}
 				}
+
+				// take the square root
 				dist = sqrt(dist);
 			}
+			// determine the distance for all coordinates at once
 			else{
-				//todo can the difference in coordinates by calculated for the whole row. then take the power of 2, sum and take square root??
 				dist = sqrt(pow(m.coords(node1,0)-m.coords(node2,0),2) + pow(m.coords(node1,1)-m.coords(node2,1),2) );
 			}
-	//				dist = sqrt(pow(m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0),2) + pow(1/M_PI*sin( (m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1))*M_PI/1),2));
-	//				std::cout << dist << std::endl;
-	//				std::cout << 'x' << '\t' << m.coords(idxSet1(i),0)-m.coords(idxSet2(j),0) << std::endl;
-	//				std::cout << 'y' << '\t' << m.coords(idxSet1(i),1)-m.coords(idxSet2(j),1) << std::endl;
-
 		}
-		//todo if statements can probably by removed if the calc is done with the previous for loop.
+
+		// if 3D
 		else if(m.nDims == 3){
+
+
+			// in case of periodicity
 			if(params.pmode != "none"){
 				dist = 0;
-	//					std::cout << m.coords.row((*idxSet1)(i)) << std::endl;
-	//					std::cout << m.coords.row((*idxSet2)(j)) << std::endl;
+
+				// looping through dimension to check for periodic coordinate
 				for(int dim = 0; dim < m.nDims; dim++){
 
 					if(dim == params.pDir){
+						// add contribution of the sine function
 						dist += pow(m.periodic_length/M_PI*sin( (m.coords(node1,dim)-m.coords(node2,dim))*M_PI/m.periodic_length),2);
-	//							std::cout << "here: " << pow(m.lambda/M_PI*sin( (m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim))*M_PI/m.lambda),2) << std::endl;
 					}else{
+						// Euclidean distance contribution
 						dist += pow(m.coords(node1,dim)-m.coords(node2,dim),2);
-	//							std::cout << "local dist: " << pow(m.coords((*idxSet1)(i),dim)-m.coords((*idxSet2)(j),dim),2) << std::endl;
 					}
-	//						std::cout << " squared distance: "<< dist << std::endl;
-
-
 				}
+
+				// take square root
 				dist = sqrt(dist);
-	//					std::cout << "actual dist: " << dist << std::endl;
-	//					if(j>0){
-	//						std::exit(0);
-	//					}
-			}else{
-	//					std::cout << "check" << std::endl;
+			}
+
+			// determine the distance for all coordinates at once
+			else{
 				dist = sqrt(pow(m.coords(node1,0)-m.coords(node2,0),2) + pow(m.coords(node1,1)-m.coords(node2,1),2) + pow(m.coords(node1,2)-m.coords(node2,2),2));
 			}
 		}
@@ -318,22 +391,38 @@ double rbfGenFunc::getDistance(int node1, int node2){
 }
 
 
+/* getDefVec
+ *
+ * Determining the deformation vector by looping through the control nodes and if they are among the indices in the deformation file
+ * then their displacement is included in the vector
+ */
+
+
 void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, int N_m, Eigen::ArrayXi* mPtr){
 
 	defVec = Eigen::VectorXd::Zero(N_m*m.nDims);
 	int idx;
 	int size = (*mPtr).size();
+
 	//loop through the control nodes
 	for(int i = 0; i < size; i++){
+
+		// Checking whether they are among the moving nodes
 		idx = std::distance(std::begin(*dispIdx), std::find(std::begin(*dispIdx), std::end(*dispIdx),(*mPtr)(i)));
 		if(idx!= (*dispIdx).size()){
 
+			// setting displacements in the deformation vector
 			for(int dim = 0; dim < m.nDims; dim++){
 				defVec(dim*size+i) = (*disp)(idx,dim);
 			}
 		}
 	}
 }
+
+/* getDefVec
+ *
+ * Merging the deformation vectors of the moving nodes defVec with the found projected displacment in finalDef, this results in defVec_b
+ */
 
 void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec_b, Eigen::VectorXd& defVec, getNodeType& n,Eigen::ArrayXXd& finalDef, int N, int N_init){
 	defVec_b = Eigen::VectorXd::Zero(N*m.nDims);
@@ -344,12 +433,18 @@ void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec_b, Eigen::VectorXd& defVec, g
 	}
 }
 
+
+/* readDisplacementFile
+ *
+ * Function that reads the displacement file and save the prescribed deformation and its indices
+ *
+ */
+
 void rbfGenFunc::readDisplacementFile(){
 	std::cout << "Reading the displacement file :" << params.dispFile << std::endl;
-	std::string line;							// string containing line obtained by getline() function
-	// todo find file path automatically
-	std::ifstream file("C:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\defs\\" + params.dispFile);
 
+	std::string line;
+	std::ifstream file(params.directory + "\\" + params.dispFile);
 
 	int lineNo = 0;
 	if(file.is_open()){
@@ -362,16 +457,18 @@ void rbfGenFunc::readDisplacementFile(){
 			}
 			lineNo++;
 		}
-	}else std::cout << "Unable to open the displacement file" << std::endl;
-
-	//todo do the division by the number of steps here
-//	std::cout << displacement << std::endl;
-//	std::cout << mIndex << std::endl;
+	}else{ std::cout << "Unable to open the displacement file" << std::endl;
+		std::exit(0);
+	}
 }
 
 
 
-
+/* rbfEval
+ *
+ * Evaluates the radial basis function
+ *
+ */
 
 
 double rbfGenFunc::rbfEval(double distance){
@@ -384,6 +481,13 @@ double rbfGenFunc::rbfEval(double distance){
 }
 
 
+/*getDefVec
+ *
+ * Establishes the deformation vector in case of the multi-level greedy algorithm from the second level onwards
+ * The deformation is equal to the errors of the previous level
+ *
+ */
+
 void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, getNodeType& n, Eigen::ArrayXXd& errors, int N_m){
 
 	defVec.resize(m.nDims*N_m);
@@ -392,27 +496,46 @@ void rbfGenFunc::getDefVec(Eigen::VectorXd& defVec, getNodeType& n, Eigen::Array
 	}
 }
 
+/* performRBF
+ *
+ * function that performs the RBF interpolation. It solves for the interpolation coefficients and find the displacement of the internal nodes
+ *
+ * in case of data reduction the displacement is determined. Otherwise, the displacement is directly applied
+ * Here the colPivHouseholderQr() method of the Eigen library is used for solving the interpolation system
+ * Other methods are available. See https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html for more details
+ *
+ */
+
 void rbfGenFunc::performRBF(Eigen::MatrixXd& Phi_cc, Eigen::MatrixXd& Phi_ic, Eigen::VectorXd& defVec, Eigen::ArrayXi* cNodes, Eigen::ArrayXi* iNodes, int N){
 
+	// resizing of the interpolation coefficients array
 	alpha.resize(N*m.nDims);
 
+	// resizing of the displacement array
 	if(params.dataRed){
 		d.resize((*iNodes).size(),m.nDims);
 	}
+
+	// solving for alpha
 	for(int dim = 0; dim < m.nDims; dim++){
 
-		alpha(Eigen::seqN(dim*N,N)) = Phi_cc.colPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N))); //fullPivHouseholderQr()
-//		alpha(Eigen::seqN(dim*N,N)) = Phi_cc.fullPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N)));
+		alpha(Eigen::seqN(dim*N,N)) = Phi_cc.colPivHouseholderQr().solve(defVec(Eigen::seqN(dim*N,N)));
 
+		// find resulting displacement or apply displacement directly to the coordinates
 		if(params.dataRed){
 			d.col(dim) = Phi_ic*alpha(Eigen::seqN(dim*N,N));
 		}else{
-
 			(*m.ptrCoords)(*iNodes,dim) += (Phi_ic*alpha(Eigen::seqN(dim*N,N))).array();
 			(*m.ptrCoords)(*cNodes,dim) += defVec(Eigen::seqN(dim*N,N)).array();
 		}
 	}
 }
+
+/* updateNodes
+ *
+ * Updating the nodes once the greedy algorithm has reached the desired tolerance
+ *
+ */
 
 void rbfGenFunc::updateNodes(getNodeType& n, Eigen::VectorXd& defVec, Eigen::ArrayXXd* d_step, Eigen::VectorXd* alpha_step, Eigen::ArrayXi* ctrlPtr){
 	Eigen::MatrixXd Phi_icGrdy;
@@ -434,21 +557,25 @@ void rbfGenFunc::updateNodes(getNodeType& n, Eigen::VectorXd& defVec, Eigen::Arr
 		}
 	}
 
+	// determine interpolation matric of the actual internal nodes w.r.t. the selected control nodes
 
 	getPhi(Phi_icGrdy,n.iPtrGrdy,ptr);
 	for(int dim = 0; dim < m.nDims; dim++){
 
+		// apply deformation of the control nodes
 		if(params.multiLvl == false){
 			(*m.ptrCoords)(*ptr,dim) += (defVec(Eigen::seqN(dim*N_m,N_m))).array();
 		}
+
+		// apply deformation of the internal nodes
 		(*m.ptrCoords)(*n.iPtrGrdy,dim) +=  (Phi_icGrdy*(*alpha_step)(Eigen::seqN(dim*N_m,N_m))).array();
 	}
 
-	// todo call class more elegantly
+	// if rotational periodic transform back to cartesian coordinates
 	if(params.ptype){
-		CoordTransform transform;
 		transform.polar_cylindrical_to_cart(m.coords_polar_cylindrical, m.coords);
 	}
 
+	// apply the deformation of the unselected boundary nodes
 	m.coords(*n.iPtr, Eigen::all) += *d_step;
 }

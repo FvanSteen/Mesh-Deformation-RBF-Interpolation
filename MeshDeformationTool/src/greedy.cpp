@@ -7,18 +7,19 @@
 #include "SPDS.h"
 #include "nanoflann.hpp"
 
-//todo remove this entry probably
-#include "CoordTransform.h"
 
 greedy::greedy(Mesh& m, probParams& params, Eigen::ArrayXXd* disp, Eigen::ArrayXi& movingIndices, Eigen::VectorXd& alpha, Eigen::ArrayXXd& d)
 {
 
+	// setting pointers
 
-	mPtr = &m;
-	exctDispPtr = disp;
-	mIdxPtr = &movingIndices;
+	mPtr = &m;						// to the mesh class
+	exctDispPtr = disp;				// to the displacement
+	mIdxPtr = &movingIndices;		// to the moving indices
+	p = &params;					// to the problem parameters
 
-	p = &params;
+
+	// set pointers to the interpolation coefficients, displacement and control nodes for the multi level greedy algorithm
 	if((*p).multiLvl){
 		alpha_step = &alphaGrdy;
 		d_step = &delta;
@@ -28,18 +29,25 @@ greedy::greedy(Mesh& m, probParams& params, Eigen::ArrayXXd* disp, Eigen::ArrayX
 		d_step = &d;
 	}
 
-
+	// Setting the initial control nodes based on the max displacement and a double edged selection
 	setInitMaxErrorNodes();
-	std::cout << "initial selected Nodes:\n" << maxErrorNodes << std::endl;
 }
 
 
+/* getError
+ *
+ * This function calculates the error at the boundary nodes
+ * The error calculation is done in Cartesian coordinates since the projection algorithm relies on finding the nearest midpoint
+ * in terms of the Euclidean distance
+ */
+
 void greedy::getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl){
 
+	// resizing of the error and error angle arrays
 	error.resize(d.rows(),(*mPtr).nDims);
 	errorAngle.resize(d.rows(), (*mPtr).nDims-1);
 
-
+	// if the domain is rotationally periodic then the displacement is transformed to Cartesian coordinates
 	if((*p).ptype){
 		if( (*p).smode == "ps" &&  d.rows() == (*n.iPtr_reduced).size())
 			transform.disp_to_cart(d, *n.iPtr_reduced, (*n.iPtr_reduced).size(), *mPtr);
@@ -48,27 +56,25 @@ void greedy::getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl){
 	}
 
 
+	// obtaining error based on whether a single or multi-level greedy algorithm is used
 	if((*p).multiLvl && lvl>0){
 		getErrorMultiLvl(n,d);
 	}else{
 		getErrorSingleLvl(n,d);
 	}
 
-//	if((*p).ptype){
-//		if((*p).multiLvl){
-//			errorPolarCylindrical = error;
-//		}
-//		transform.error_to_cart(error, mPtr, n);
-//	}
 
 
-
-//	 find index of largest error
+    // if all boundary nodes are selected as control nodes then the array with displacements has size zero and no maxErrorNodes can be selected
 	if(d.rows() == 0){
 		maxError = 0;
 		maxErrorNodes.resize(1);
 		maxErrorNodes << -1;
-	}else{
+	}
+	// Finding node with the maximum error magnitude and second node is found with the double edged selection if required
+	else{
+
+		// Select node with max error magnitude
 		int idxMax;
 		Eigen::ArrayXd errorSquaredNorm;
 		errorSquaredNorm = error.rowwise().squaredNorm();
@@ -77,45 +83,69 @@ void greedy::getError(getNodeType& n, Eigen::ArrayXXd& d, int lvl){
 		// and the maximum error magnitude
 		maxError = error.row(idxMax).matrix().norm();
 
-
+		// double edged selection
 		if((*p).doubleEdge){
-			// todo remove second argument
+
+			// establish error angles
 			getErrorAngle();
 
+			// find node with largest error with an angle of 90 deg or more w.r.t. the max error node
 			int idxMaxAngle = getDoubleEdgeError(idxMax, n.N_i, error);
 
+			// if no node is found with the double edged selection then only the max error node is selected
 			if(idxMaxAngle == -1){
 				maxErrorNodes.resize(1);
 				maxErrorNodes << (*n.iPtr)(idxMax);
-			}else{
+			}
+			// else both nodes are included
+			else{
 				maxErrorNodes.resize(2);
 				maxErrorNodes << (*n.iPtr)(idxMax), (*n.iPtr)(idxMaxAngle);
 			}
-		}else{
+		}
+		// no double edged selection
+		else{
 			maxErrorNodes.resize(1);
 			maxErrorNodes << (*n.iPtr)(idxMax);
 		}
 
+		// If the addition of 2 control nodes will mean that the levelsize exceeds the set level size then only a single node will be included
 		if( (*p).mCrit == "size" && n.N_c + maxErrorNodes.size() > (*p).lvlSize){
 			maxErrorNodes.conservativeResize(1);
 		}
 	}
 }
 
+/* getErrorMovingNodes
+ *
+ * Finds the error of the moving nodes by considering the difference between the found displacement and the prescribed displacement
+ *
+ */
+
+
 void greedy::getErrorMovingNodes(Eigen::ArrayXi* nodes, Eigen::ArrayXXd& d, size_t N){
 	int idx_m;
 
 	for(size_t i = 0; i < N; i++){
 		idx_m = std::distance(std::begin(*mIdxPtr), std::find(std::begin(*mIdxPtr),std::end(*mIdxPtr),(*nodes)(i)));
+
+		// if among the nodes with nonzero displacement
 		if(idx_m !=  (*mIdxPtr).size()){
 			error.row(i) = d.row(i) - (*exctDispPtr).row(idx_m);
-		}else{
+		}
+		// else the node is fixed and has a zero prescribed displacement
+		else{
 			error.row(i) = d.row(i);
 		}
 	}
 }
 
 
+/* getErrorAngle
+ *
+ * Function for finding the angle of the error. In case of 2D a single angle is determined and for 3D, 2 angles are found
+ *
+ */
 
 
 void greedy::getErrorAngle(){
@@ -126,23 +156,31 @@ void greedy::getErrorAngle(){
 		}
 	}
 }
+
+/* getErrorSingleLvl
+ *
+ * Function for finding the error in case of the single level greedy algorithm
+ *
+ */
+
 void greedy::getErrorSingleLvl(getNodeType& n, Eigen::ArrayXXd& d){
 
-
+	// ending index of the different node types
 	size_t m_end, se_end, ss_end;
 	m_end = (*mPtr).N_m-n.N_m;
 	se_end = m_end + (*mPtr).N_se-n.N_se;
 
+	// get the error of the moving nodes
 	getErrorMovingNodes(n.iPtr,  d,  m_end);
 
-	//todo call class somewhere else
-	SPDS SPDSobj;
+
+	// get error of the sliding edge nodes
 	if(m_end != size_t(d.rows())){
 		SPDSobj.projectEdge(*mPtr, n.iPtr, d, error, m_end, se_end, 0, (*p).ptype);
 	}
 
+	// get the error of the sliding surface nodes
 	if(se_end != size_t(d.rows())){
-
 		ss_end = se_end + (*mPtr).N_ss-n.N_ss;
 		SPDSobj.projectSurf(*mPtr, n.iPtr, d, error, se_end, ss_end, 0, (*p).ptype);
 	}
@@ -150,10 +188,24 @@ void greedy::getErrorSingleLvl(getNodeType& n, Eigen::ArrayXXd& d){
 
 }
 
+/* getErrorMultiLvl
+ *
+ * Find the error in case of the multi-level greedy algorithm
+ * The error is the difference between the found displacement and the error of the previous level,
+ * which is the deformation applied to the current level
+ */
+
 void greedy::getErrorMultiLvl(getNodeType& n, Eigen::ArrayXXd& d){
 	error = d + errorPrevLvl(n.iNodesIdx, Eigen::all);
 }
 
+
+
+/* getDoubleEdgeError
+ *
+ * determining the second selected control node with a double edged control node selection routine
+ *
+ */
 int greedy::getDoubleEdgeError(int idxMax, int N_i, Eigen::ArrayXXd& error){
 
 
@@ -179,6 +231,8 @@ int greedy::getDoubleEdgeError(int idxMax, int N_i, Eigen::ArrayXXd& error){
 	// for each boundary node
 	for(int i=0; i<error.rows(); i++){
 		// if the relative angle is between 90 and 270 degrees the squared norm is included in the array and its index is saved.
+
+		// 2D just a single angle is considered
 		if (errorAngle.cols() == 1){
 			if(abs(errorAngle(i,0)) >= refAngle && abs(errorAngle(i,0)) <= refAngle2){
 				largeAngleError(cnt) = error.row(i).matrix().squaredNorm();
@@ -186,6 +240,8 @@ int greedy::getDoubleEdgeError(int idxMax, int N_i, Eigen::ArrayXXd& error){
 				cnt++;
 			}
 		}
+
+		// For 3D the two angles need to be considered in order to have
 		else{
 			if(abs(errorAngle(i,0)) >= refAngle && abs(errorAngle(i,0)) <= refAngle2 && abs(errorAngle(i,1)) >= refAngle && abs(errorAngle(i,1)) <= refAngle2){
 				largeAngleError(cnt) = error.row(i).matrix().squaredNorm();
@@ -193,10 +249,9 @@ int greedy::getDoubleEdgeError(int idxMax, int N_i, Eigen::ArrayXXd& error){
 				cnt++;
 			}
 		}
-//		std::cout << i << "\t" << errorAngle.row(i) << '\t' << error.row(i) << std::endl;
 	}
 
-
+	// if in 3D no nodes are found then only the first angle is considered
 	if (cnt == 0 && errorAngle.cols() == 2){
 		for(int i=0; i<error.rows(); i++){
 			if(abs(errorAngle(i,0)) >= refAngle && abs(errorAngle(i,0)) <= refAngle2){
@@ -206,37 +261,6 @@ int greedy::getDoubleEdgeError(int idxMax, int N_i, Eigen::ArrayXXd& error){
 			}
 		}
 	}
-
-
-//	 in case there is no error with a relative angle larger than 90 deg.
-//	if(cnt == 0){
-//		refAngle -= M_PI/4;
-//		refAngle2 += M_PI/4;
-//		for(int i=0; i<N_i; i++){
-//			// if the relative angle is between 90 and 270 degrees the squared norm is included in the array and its index is saved.
-//			if (errorAngle.cols() == 1){
-//				if(abs(errorAngle(i,0)) >= refAngle && abs(errorAngle(i,0)) <= refAngle2){
-//					largeAngleError(cnt) = error.row(i).matrix().squaredNorm();
-//					largeAngleIdx(cnt) = i;
-//					cnt++;
-//				}
-//			}else{
-//				if(abs(errorAngle(i,0)) >= refAngle && abs(errorAngle(i,0)) <= refAngle2 && abs(errorAngle(i,1)) >= refAngle && abs(errorAngle(i,1)) <= refAngle2){
-//					largeAngleError(cnt) = error.row(i).matrix().squaredNorm();
-//					largeAngleIdx(cnt) = i;
-//					cnt++;
-//				}
-//			}
-//
-//	//		std::cout << i << "\t" << errorAngle.row(i) << '\t' << error.row(i) << std::endl;
-//		}
-//
-//	}
-
-
-//	std::cout << "here" << std::endl;
-//	std::cout << largeAngleError(Eigen::seqN(0,cnt)) << std::endl;
-//	std::cout << largeAngleIdx(Eigen::seqN(0,cnt)) << std::endl;
 
 	int idxMaxLargeAngle;
 
@@ -249,28 +273,28 @@ int greedy::getDoubleEdgeError(int idxMax, int N_i, Eigen::ArrayXXd& error){
 
 		// setting the integer equal to the corresponding index of all boundary nodes considered
 		idxMaxLargeAngle = largeAngleIdx(idxMaxLargeAngle);
-	}else{
+	}
+	// if no node is found then set index to -1
+	else{
 		std::cout << "no error found with a large angle" << std::endl;
 		idxMaxLargeAngle = -1;
 	}
-
-//	some if statement to ensure that the same node cannot be added as doubleEdged error node
 
 	return idxMaxLargeAngle;
 
 
 }
 
-//void greedy::updateNodes(getNodeType& n, Eigen::VectorXd& defVec){
-//	setNewPosition(n, defVec);
-//}
-//
-//void greedy::setNewPosition(getNodeType& n, Eigen::VectorXd& defVec){
-//
-//}
+
+/* correction
+ * Applies the error as deformation to the boundary to ensure that all boundary points have zero error
+ *
+ */
 
 void greedy::correction(Mesh& m, getNodeType& n, double& gamma, bool& multiLvl){
 
+
+	// get correct error pointer for single/multi level greedy
 	Eigen::ArrayXXd* errorPtr;
 	if(multiLvl){
 		errorPtr = &errorPrevLvl;
@@ -278,23 +302,21 @@ void greedy::correction(Mesh& m, getNodeType& n, double& gamma, bool& multiLvl){
 		errorPtr = &error;
 	}
 
-
-
+	// if there is a nonzero error array
 	if((*errorPtr).rows() != 0){
+
 		// integer for storing the index where the error is largest
 		int idxMax;
 		// finding the node with the maximum error
-		//todo adjust for multi level
 		Eigen::ArrayXd errorSquaredNorm;
-		errorSquaredNorm = error.rowwise().squaredNorm();
+		errorSquaredNorm = (*errorPtr).rowwise().squaredNorm();
 		errorSquaredNorm.maxCoeff(&idxMax);
 
 		// returning the largest error
 		double maxError = error.row(idxMax).matrix().norm();
-		std::cout << "MAX ERROR: " << maxError << std::endl;
-		//todo should this be norm or just the max coefficient in the array
-		SPDS SPDS_obj;
-		SPDS_obj.kdt_NNSearch(*n.iPtr, *n.iPtrGrdy,  m.coords, m.nDims, gamma, maxError, errorPtr);
+
+		// applying the correction using a nearest neighbour search for all internal nodes
+		SPDSobj.kdt_NNSearch(*n.iPtr, *n.iPtrGrdy,  m.coords, m.nDims, gamma, maxError, errorPtr);
 	}
 
 	m.coords(*n.iPtr , Eigen::all) -= *errorPtr;
@@ -302,7 +324,12 @@ void greedy::correction(Mesh& m, getNodeType& n, double& gamma, bool& multiLvl){
 }
 
 
-
+/* setLevelParams
+ *
+ * After satisfying the level criterium the level parameters are saved with this function
+ * All used control nodes are stored along with the interpolation coefficients and displacement of the level
+ * This information is later used in the update of the node coordinates
+ */
 
 
 void greedy::setLevelParams(getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::VectorXd& alpha,Eigen::VectorXd& defVec, Eigen::ArrayXi* cPtr, int N_c){
@@ -312,11 +339,9 @@ void greedy::setLevelParams(getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::
 
 	// initializing variables that keep track of the control node information
 	if(lvl == 0){
-//		deltaInternal = Eigen::ArrayXXd::Zero(m.N_i, m.nDims);
 		delta = Eigen::ArrayXXd::Zero((*mPtr).N_m+(*mPtr).N_se+(*mPtr).N_ss, (*mPtr).nDims);
 		alphaTotal.resize(0,0);
 		ctrlNodesAll.resize(0);
-//		alphaSum = Eigen::VectorXd::Zero(m.nDims*n.N_i);
 	}
 
 	// array with the new control nodes and interpolation coefficients
@@ -331,7 +356,7 @@ void greedy::setLevelParams(getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::
 		// check for each control if its already included
 		idx = std::distance(std::begin(ctrlNodesAll), std::find(std::begin(ctrlNodesAll), std::end(ctrlNodesAll), (*cPtr)(i)));
 		if(idx == ctrlNodesAll.size()){
-//			std::cout << i << '\t' << (*n.mPtr)(i) << std::endl;
+
 			// if not included then add to newControlNodes list
 			newCtrlNodes(cnt) = i;
 
@@ -340,6 +365,7 @@ void greedy::setLevelParams(getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::
 				newAlpha(cnt, dim) = alpha(dim*N_c+i);
 			}
 			cnt++;
+
 		// if its already included then add to accumulative sum
 		}else{
 			for(dim = 0; dim < (*mPtr).nDims; dim++){
@@ -363,8 +389,8 @@ void greedy::setLevelParams(getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::
 	for(int dim = 0; dim < (*mPtr).nDims; dim++ ){
 		delta(n.cNodesIdx,dim) += (defVec(Eigen::seqN(dim*N_c, N_c))).array();
 	}
-
-	// set error of the prev lvl equal to current error
+	std::cout << "Done\n";
+	// set error of the prev lvl equal to current error for the next level
 	errorPrevLvl = Eigen::ArrayXXd::Zero((*mPtr).N_m+(*mPtr).N_se+(*mPtr).N_ss, (*mPtr).nDims);
 	if((*p).ptype){
 		errorPrevLvl(n.iNodesIdx,Eigen::all) = errorPolarCylindrical;
@@ -373,6 +399,12 @@ void greedy::setLevelParams(getNodeType& n, int lvl, Eigen::ArrayXXd& d, Eigen::
 	}
 
 }
+
+/* getAlphaVector
+ *
+ * sets up an array containing the interpolation coefficients of the selected control nodes of all levels of the multi-level algorithm
+ * Is used in the update of the coordinates
+ */
 
 void greedy::getAlphaVector(){
 
@@ -389,30 +421,35 @@ void greedy::getAlphaVector(){
 
 }
 
-void greedy::getAlphaIdx(Eigen::ArrayXi& mNodes, Eigen::ArrayXi* mNodesGrdy, int N, Eigen::ArrayXi& idxAlpha){
-	int idx;
-	idxAlpha.resize(N);
 
-	for(int i = 0; i < N; i++){
-		idx = std::distance(std::begin(mNodes), std::find(std::begin(mNodes), std::end(mNodes),(*mNodesGrdy)(i)));
-		idxAlpha(i) = idx;
-	}
-}
 
+/* setInitMaxErrorNodes
+ *
+ * Find the first control node based on the maximum prescribed deformation. A second one is found using the double edged selection
+ *
+ */
 
 void greedy::setInitMaxErrorNodes(){
 
 	Eigen::Array2i idxMax;
 	Eigen::ArrayXd exctDispSquaredNorm;
+
+	// Finding node with the maximum displacement
 	exctDispSquaredNorm =(*exctDispPtr).rowwise().squaredNorm();
 	exctDispSquaredNorm.maxCoeff(&idxMax(0));
 
-	std::cout << "max deformation: " << (*exctDispPtr).row(idxMax(0)).matrix().norm() << std::endl;
+	// for the multi level greedy the max error of the previous level is set, either based on max displacement or previous level error
 	maxErrorPrevLvl = (*exctDispPtr).row(idxMax(0)).matrix().norm();
 
+
+	// finding the second node using the double edged selection
 	if((*p).doubleEdge){
+
 		int N = (*mIdxPtr).size();
+
+		// finding the error angles of the considered nodes
 		errorAngle.resize(N, (*mPtr).nDims -1);
+
 		for(int i = 0; i<N; i++){
 			errorAngle(i,0) = atan2((*exctDispPtr)(i,1), (*exctDispPtr)(i,0));
 			if((*mPtr).nDims ==3){
@@ -420,10 +457,11 @@ void greedy::setInitMaxErrorNodes(){
 			}
 		}
 
-
-
+		// determining the node with the max error and an error angle difference larger than 90 deg w.r.t. the first error node
 		idxMax(1) = getDoubleEdgeError(idxMax(0), N, (*exctDispPtr));
 
+
+		// if no node is found with the double edged selection, the node farthest away from the first node is selected as second node
 		if (idxMax(1) == -1){
 			Eigen::ArrayXXd movingCoords;
 			movingCoords = (*mPtr).coords((*mIdxPtr),Eigen::all);
@@ -434,7 +472,9 @@ void greedy::setInitMaxErrorNodes(){
 		}
 		maxErrorNodes.resize(2);
 		maxErrorNodes << (*mIdxPtr)(idxMax);
-	}else{
+	}
+	// if not using double edged selection than only the node with the max error magnitude is selected
+	else{
 		maxErrorNodes.resize(1);
 		maxErrorNodes << (*mIdxPtr)(idxMax(0));
 	}

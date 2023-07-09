@@ -1,76 +1,60 @@
-#include "probParams.h"
 #include "ReadConfigFile.h"
 #include "rbfstd.h"
 #include "rbfps.h"
 #include "rbfds.h"
 #include <iostream>
-#include <fstream>
-#include <Eigen/Dense>
-#include <vector>
-
-#include "SPDS.h"
-#include "nanoflann.hpp"
-#include <cstdlib>
 #include <ctime>
-#include <iostream>
-#include "CoordTransform.h"
 #include "MeshQuality.h"
+#include "ProbParams.h"
 #include "WriteResults.h"
 
-int main()
-{
-	Eigen::ArrayXi steps(7);
-	steps << 1,2,3,4,6,8,10;
-//	Eigen::ArrayXi steps(2);
-//	steps << 5,20;
-//	for(int j = 0; j < steps.size(); j++){
-//		for(int i = 0; i < 1; i++){
-			// config file containing all information required to perform the mesh deformation
-			std::string configFile = "config_file.txt";
+int main(int argc, char* argv[]){
 
-			// initliasing the structure in which the problem parameters are saved
-			struct probParams probParams;
+	// configuration file is given as the second command line variable, after the program name
+	std::string cfgFile = argv[1];
 
-			// calling class to read the configuration file
-			// Variables required to read the mesh file are public variables and later on inherited by the Mesh class
-			// Variables required for performing the interpolation are saved in the probParams structure and passed on in the main rbf class.
-			ReadConfigFile config(configFile,probParams);
-//			probParams.steps = steps(j);
+	// initliasing the structure in which the problem parameters are saved
+	struct probParams probParams;
 
-			// lvl indicating the amount of debug messages
-			int debugLvl = 3;
-			// initialising class object m, reads mesh input file in constructor.
-			Mesh meshOb(probParams, debugLvl);
+	// Class required for reading the specified configuration and saving the required problem parameters in the probParams structure
+	ReadConfigFile config(cfgFile,probParams);
 
-			MeshQuality Qual(probParams, meshOb.coords);
+	// Mesh class for reading the input mesh file and establishing mesh related information
+	Mesh meshOb(probParams);
 
-			getNodeType n(probParams, meshOb);
+	// Class for calculating mesh quality parameters, initialised here for information on the undeformed mesh
+	MeshQuality Qual(probParams, meshOb.coords);
 
-			std::clock_t s = std::clock();
+	// Class used for setting the node types and adding control nodes for the data reduction methods
+	getNodeType n(probParams, meshOb);
 
-			if(probParams.smode == "none"){
-				rbf_std rbf(probParams, meshOb, n);
-			}else if(probParams.smode == "ps"){
-				rbf_ps rbf(probParams, meshOb, n);
-			}else{
-				rbf_ds rbf(probParams, meshOb, n);
-			}
+	// starting clock to determine CPU time of the mesh deformation routine
+	std::clock_t start = std::clock();
+
+	// Performing the regular, pseudo sliding or direct sliding RBF interpolation
+	if(probParams.smode == "none"){
+		rbf_std rbf(probParams, meshOb, n);
+	}else if(probParams.smode == "ps"){
+		rbf_ps rbf(probParams, meshOb, n);
+	}else{
+		rbf_ds rbf(probParams, meshOb, n);
+	}
+
+	// stopping clock after mesh deformation routine
+	std::clock_t end = std::clock();
+	long double time_elapsed_ms =  1.0*(end-start) / CLOCKS_PER_SEC;
+	std::cout << "CPU time: " << time_elapsed_ms << " seconds" << std::endl;
 
 
-			std::clock_t e = std::clock();
-			long double time_elapsed_ms =  1000.0*(e-s) / CLOCKS_PER_SEC;
-			std::cout << "CPU time: " << time_elapsed_ms/1000 << " ms\n";
+	// generating mesh output file
+	meshOb.writeMeshFile(probParams.directory, probParams.mesh_ifName, probParams.mesh_ofName);
 
-			meshOb.writeMeshFile(probParams.mesh_ifName, probParams.mesh_ofName);
-
-			if(probParams.generateQuality){
-				Qual.getDeformedMeshQual(meshOb.coords);
-			}
-
-//			WriteResults w;
-//			w.finalResult(probParams, time_elapsed_ms, Qual.defQuals);
-//		}
-//	}
-
+	// Generate mesh quality of the deformed mesh if required
+	if(probParams.generateQuality){
+		Qual.getDeformedMeshQual(meshOb.coords, -1);
+		std::cout << "\nMesh qualities of the deformed mesh:\nMaximum quality:\t"  << Qual.defQuals[2] << std::endl;
+		std::cout << "Mean quality:\t\t" << Qual.defQuals[1] << std::endl;
+		std::cout << "Minimum quality:\t" << Qual.defQuals[0] << "\n" << std::endl;
+	}
 
 }

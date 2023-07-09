@@ -5,15 +5,15 @@ os.chdir('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeforma
 
 
 
-fileNames = ["\\stator_per_ffd_elastic_deform.su2"]
+fileNames = ["\\stator_per_ffd.su2"]
 [f_init,v_init,elemType,bdryPnts_init, markerTags, nElemsMarks,FFD_pnts] = getPlotData(fileNames[0])
 #plotTag = ["BLADE","HUB","INFLOW","OUTFLOW","PER1","PER2","SHROUD"]
 #plotTag = ["HUB", "PER1","PER2"]
 #bdryScatterFuns.bdryScatter3D(v_init, bdryPnts_init, markerTags, nElemsMarks, plotTag, FFD_pnts)
 
-if(0):
+if(0): 
 #%%
-    
+
     fileNames = ["\\stator_per_ffd_deform.su2"]
     [f_init,v_init,elemType,bdryPnts_init, markerTags, nElemsMarks,FFD_pnts] = getPlotData(fileNames[0])
     plotTag = ["BLADE","HUB","INFLOW","OUTFLOW","PER1","PER2","SHROUD"]
@@ -66,7 +66,7 @@ if(0):
     
     
 if(0):
-    fileName = "\\stator_per_ffd_deformed.su2"
+    fileName = "\\stator_per_ffd.su2"
     fileObj = open('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes'+fileName, "r") 
     lines = fileObj.read().splitlines()
     fileObj.close()
@@ -120,13 +120,14 @@ if(0):
         for elem in range(nElemsMarks[marker]):            
             if np.any(np.isin(idx_gone,bdryPnts_init[start_idx+elem])):
                 cnt += 1
+        print(cnt)
         markerL.append(nElemsMarks[marker]-cnt)
     
     print(markerL)
     
     
 #%%           
-    o = open('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes' + "\\stator_per_ffd_deform_mod.su2", "w")
+    o = open('c:\\Users\\floyd\\git\\Mesh-Deformation-RBF-Interpolation\\MeshDeformationTool\\Meshes' + "\\stator_per_ffd_test.su2", "w")
     i = 0
     markerCnt = 0
     while(i < len(lines)):
@@ -141,10 +142,10 @@ if(0):
         elif lines[i].strip().startswith('NPOIN='):
             o.write('NPOIN= ' + str(len(v_init)-len(idx_gone)) + "\n")
             point_start_idx = i+1
-            for ii in range(len(v)):
+            for ii in range(len(v_init)):
                 if np.isin(ii, idx_gone) == False:
                     o.write(lines[ii + point_start_idx] + "\n")
-            i += len(v)
+            i += len(v_init)+1
             
         elif lines[i].strip().startswith('NMARK='): 
             o.write('NMARK= 7\n')
@@ -153,9 +154,17 @@ if(0):
             o.write('MARKER_ELEMS= ' + str(markerL[markerCnt]) + "\n")
             bdry_start_idx = int(np.sum(nElemsMarks[:marker]))
             start_idx = i+1
+            tel = 0
+            print(nElemsMarks[markerCnt])
             for ii in range(nElemsMarks[markerCnt]):
-                if np.all(np.isin(idx_gone,bdryPnts_init[bdry_start_idx+ii]) == False):
+                if np.all(np.isin(bdryPnts_init[bdry_start_idx+ii],idx_gone) == False):
                     o.write(lines[start_idx + ii] + "\n")
+                else: 
+                    tel += 1
+                    print(bdryPnts_init[bdry_start_idx+ii])
+            print("COUNT: ",tel)
+#            if markerCnt == 3:
+#                fdsafd
             i+=nElemsMarks[markerCnt]+1
             markerCnt += 1
             
@@ -172,3 +181,10 @@ if(0):
     
 
         
+#            [f_init,v_init,elemType,bdryPnts_init,markerTags, nElemsMarks, FFD_pnts] = getPlotData('/stator_per_ffd_base.su2')
+#        [f,v,elemType,bdryPnts,markerTags, nElemsMarks, FFD_pnts] = getPlotData('/stator_per_ffd_elastic_deform.su2')
+#        blade_marker = "BLADE"
+#        idx = markerTags.index(blade_marker)                        
+#        bdryPntsPlot =  np.unique(bdryPnts_init[sum(nElemsMarks[0:idx]):sum(nElemsMarks[0:idx+1]),:])
+#        ax.scatter(v_init[bdryPntsPlot][:,0],v_init[bdryPntsPlot][:,1],v_init[bdryPntsPlot][:,2], marker = "1", alpha = .4)
+#        ax.scatter(v[bdryPntsPlot][:,0],v[bdryPntsPlot][:,1],v[bdryPntsPlot][:,2], marker = "1", alpha = .4)

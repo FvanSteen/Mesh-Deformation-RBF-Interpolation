@@ -1,8 +1,8 @@
 #ifndef GETNODETYPE_H_
 #define GETNODETYPE_H_
 #include "Mesh.h"
-#include "probParams.h"
 #include <Eigen/Dense>
+#include "ProbParams.h"
 
 class getNodeType {
 public:
@@ -20,7 +20,7 @@ public:
 
 
 	int N_i,N_se,N_iGrdy, N_ss;
-//	int N_c, N_b;
+
 	int N_m, N_c;
 
 	struct addedNodesData{
@@ -29,7 +29,6 @@ public:
 	addedNodesData addedNodes;
 	getNodeType(probParams& params, Mesh& m);
 	void assignNodeTypes(Mesh& m);
-
 	void addControlNodes(Eigen::ArrayXi& nodes, std::string& smode, Mesh& m);
 	void addControlNode(int node, std::string& smode, Mesh& m, int i);
 

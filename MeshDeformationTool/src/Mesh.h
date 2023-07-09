@@ -1,63 +1,66 @@
 #ifndef MESH_H_
 #define MESH_H_
-//#include "ReadConfigFile.h"
+
 #include <string>
 #include <Eigen/Dense>
 #include <vector>
-#include "probParams.h"
+
+#include "ProbParams.h"
 class Mesh
 {
 public:
-//	Mesh(const std::string& inputFileName,const std::string& outputFileName, const std::vector<std::string>& Tags,const double& rFac,const int& debugLvl, const std::string& slidingMode, const std::string& periodicMode,const std::vector<std::string>& movingTags, const std::vector<std::string>& periodicTags);
-	Mesh(probParams& params, const int& debugLvl);
+	Mesh(probParams& params);
 
 	int nNodes, nDims;
 
 	Eigen::ArrayXXd coords, coords_polar_cylindrical;
+	Eigen::ArrayXXd surfMidPnts, edgeMidPnts,edgeMidPnts_polar_cylindrical, surfMidPnts_polar_cylindrical;
 
 	Eigen::ArrayXXd* ptrCoords;
-	Eigen::ArrayXXd surfMidPnts, edgeMidPnts,edgeMidPnts_polar_cylindrical, surfMidPnts_polar_cylindrical;
 	Eigen::ArrayXXd* edgeMidPntPtr;
 	Eigen::ArrayXXd* surfMidPntPtr;
+
 	Eigen::ArrayXXd t_se, n1_se, n2_se, n_ss,t1_ss,t2_ss;
+	Eigen::ArrayXXd surfMidPntNormals, edgeMidPntNormals1,edgeMidPntNormals2, periodicEdgeNormals;
 
-
-	Eigen::ArrayXXd surfMidPntNormals, edgeMidPntNormals1,edgeMidPntNormals2;
-	Eigen::ArrayXi mNodes,seNodes,iNodes, ssNodes;
-
-	Eigen::ArrayXi intCorNodes;
-
-	Eigen::ArrayXi verticesNodes, periodicVerticesNodes;
-
-	Eigen::ArrayXi periodicEdgeNodes, periodicSurfNodes;
-	Eigen::ArrayXXd periodicEdgeNormals;
-
-	Eigen::ArrayXi internalEdgeNodes;
+	Eigen::ArrayXi mNodes,seNodes,iNodes, ssNodes, verticesNodes, periodicVerticesNodes, periodicEdgeNodes,internalEdgeNodes;
 
 	Eigen::MatrixXd periodicVecs;
-	int N_pe, N_ps;
+
+
+	double r,periodic_length;
+	int N_i, N_nonzeroDisp, N_se, N_ss, N_m, N_periodic_vertices, N_pe;
+
+	void getVecs(probParams& params);
+	void getMidPnts(probParams& params);
+
+	void writeMeshFile(std::string& directory, std::string& ifName, std::string& ofName);
+
+
+private:
 
 
 
-	double r,periodic_length; // support radius
-	int N_i, N_nonzeroDisp, N_se, N_ss, N_m, N_periodic_vertices;
-
-
-
-
-
-
+	Eigen::ArrayXXi edgeConnectivity, edgeConnectivityPeriodic, surfConnectivity, bdryNodesMat, extBdryEdgeSegments;
+	Eigen::ArrayXi nrElemsBdry;
+	std::vector<std::string> srtdTags;
 
 	void readMeshFile(probParams& params);
 
-	void getNodeTypes(probParams& params, int nMarker);
+	void getNodeTypes(probParams& params);
 	void getIntNodes();
 	void removeDuplicates(Eigen::ArrayXi& arr);
 
 	void getEdgeConnectivity(std::string& pmode, Eigen::ArrayXXi& edgeConnectivity,Eigen::ArrayXi& seNodes, int size);
 	void getSurfConnectivity();
+	void findStringBounds(int& first, int& last, std::string& line);
 
-	void getVecs(probParams& params);
+	void getPeriodicVector(probParams& params);
+
+	void removeMutualNodes(Eigen::ArrayXi& array_in, int& size, Eigen::ArrayXi& to_remove_nodes, int end_idx);
+	void getCharPerLength(probParams& params);
+	double getCharDomLength();
+
 	void getPerpVecs(Eigen::ArrayXXd& vecs, Eigen::ArrayXXd& p1, Eigen::ArrayXXd& p2);
 	void getEdgeTan(Eigen::ArrayXXd& t,Eigen::ArrayXXi& edgeConnectivity, Eigen::ArrayXi& seNodes);
 	void getSurfNormal();
@@ -65,26 +68,7 @@ public:
 
 
 	void getExtBdryEdgeSegments();
-	void getMidPnts(probParams& params);
 
-	void getIntCorNodes(double& gamma, double& tol);
-
-
-	void getCharPerLength(probParams& params);
-	double getCharDomLength();
-
-	void writeMeshFile(std::string& ifName, std::string& ofName);
-	void findStringBounds(int& first, int& last, std::string& line);
-
-	void getPeriodicParams(probParams& params);
-
-	void removeMutualNodes(Eigen::ArrayXi& array_in, int& size, Eigen::ArrayXi& to_remove_nodes, int end_idx);
-
-private:
-	Eigen::ArrayXXi edgeConnectivity, edgeConnectivityPeriodic, surfConnectivity, bdryNodesMat, extBdryEdgeSegments;
-	Eigen::ArrayXi nrElemsBdry;
-	std::vector<std::string> srtdTags;
-	int lvl;
 };
 
 #endif /* MESH_H_ */

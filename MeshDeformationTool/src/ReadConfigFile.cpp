@@ -13,18 +13,22 @@
 #include <string>
 #include <vector>
 #include <sstream>
-ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject) {
-	std::cout << "Reading the configuration file" << std::endl;
 
+// Function for reading the configuration file
+ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject) {
+
+	// obtaining the directory where the executable is stored
 	getDirectory(probParamsObject.directory);
 
-	// todo remove whitespace before and after input variable
-	std::string line;							// string containing line obtained by getline() function
-	std::ifstream file(probParamsObject.directory + "\\ConfigFiles\\" + ifName);
+	// string variable for each line of the configuration file
+	std::string line;
+	// Configuration filename
+	std::ifstream file(probParamsObject.directory + "\\" + ifName);
 
+	// variables for finding first and last index of input variables
 	int first, last;
-	std::string tolCrit;
 
+	// Reading the lines of the configuration file and assigning variables accordingly
 	// Check if file is opened
 	if (file.is_open()){
 		//Obtain line
@@ -54,7 +58,6 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 				findStringBounds(first,last,line);
 				probParamsObject.dispFile =  line.substr(first,last-first);
 			}
-
 			else if(line.rfind("SLIDING_MODE")==0){
 				findStringBounds(first,last,line);
 				probParamsObject.smode =  line.substr(first,last-first);
@@ -62,13 +65,11 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 			else if(line.rfind("PERIODIC_MODE")==0){
 				findStringBounds(first,last,line);
 				probParamsObject.pmode =  line.substr(first,last-first);
-
 			}
 			else if(line.rfind("PERIODIC_TYPE") == 0){
 				findStringBounds(first,last,line);
 				probParamsObject.ptype = stoi(line.substr(first,last-first));
 			}
-
 			else if(line.rfind("PERIODIC_DIRECTION")==0){
 				findStringBounds(first,last,line);
 
@@ -102,7 +103,6 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 				getBool(param, probParamsObject.curved, line);
 			}
 
-
 			else if(line.rfind("DATA_REDUCTION")==0){
 				std::string param = "DATA_REDUCTION";
 				getBool(param, probParamsObject.dataRed, line);
@@ -111,7 +111,6 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 			else if(line.rfind("DATA_RED_TOLERANCE")==0){
 				findStringBounds(first,last,line);
 				probParamsObject.tol =  stod(line.substr(first,last-first));
-//				probParamsObject.tol = tol;
 			}
 			else if(line.rfind("INFLUENCE_FACTOR")==0){
 				findStringBounds(first,last,line);
@@ -120,7 +119,6 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 			else if(line.rfind("GAMMA")==0){
 				findStringBounds(first,last,line);
 				probParamsObject.gamma =  stod(line.substr(first,last-first));
-//				probParamsObject.gamma = gamma;
 			}
 			else if(line.rfind("MULTILEVEL")==0){
 				std::string param = "MULTILEVEL";
@@ -132,8 +130,7 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 			}
 			else if(line.rfind("LVL_TOL_CRIT")==0){
 				findStringBounds(first,last,line);
-				tolCrit = line.substr(first,last-first);
-				probParamsObject.tolCrit = stod(tolCrit);
+				probParamsObject.tolCrit = stod(line.substr(first,last-first));
 			}
 			else if(line.rfind("LVL_SIZE")==0){
 				findStringBounds(first,last,line);
@@ -149,8 +146,11 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 			}
 		}
 		file.close();
-	}else{std::cout << "Unable to open the configuration file: " << ifName << std::endl;}
+	}else{std::cout << "Unable to open the configuration file: " << ifName << std::endl;
+		std::exit(0);}
 
+	// the periodic displacement with moving vertices requires a sliding method to be used.
+	// check is performed whether that is the case
 	try{
 		if(probParamsObject.smode =="none" && (probParamsObject.pmode =="moving")){
 			throw(probParamsObject.pmode);
@@ -161,6 +161,7 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 		std::exit(0);
 	}
 
+	// if multi level greedy is used then dataRed must be set to YES also
 	try{
 		if(probParamsObject.dataRed == false && probParamsObject.multiLvl == true){
 			throw(probParamsObject.multiLvl);
@@ -171,32 +172,11 @@ ReadConfigFile::ReadConfigFile(std::string& ifName, probParams& probParamsObject
 		probParamsObject.multiLvl = false;
 	}
 
-	std::string str1,str2;
-	if(probParamsObject.multiLvl){
-		str1 = "_ML";
-	}else{
-		str1 = "_SL";
-	}
-
-	if(probParamsObject.doubleEdge){
-		str2 = "_DE";
-	}else{
-		str2 = "_SE";
-	}
-
-	if(probParamsObject.multiLvl){
-		if(probParamsObject.mCrit == "tol"){
-			probParamsObject.convHistFile = probParamsObject.mesh_ifName.substr(0,mesh_ifName.find(".")) + str1 + str2 + "_tol_" + tolCrit + ".txt";
-		}else{
-			probParamsObject.convHistFile = probParamsObject.mesh_ifName.substr(0,mesh_ifName.find(".")) + str1 + str2 + "_size_" + std::to_string(probParamsObject.lvlSize) + ".txt";
-		}
-
-	}else{
-		probParamsObject.convHistFile = probParamsObject.mesh_ifName.substr(0,mesh_ifName.find(".")) + str1 + str2 + ".txt";
-	}
-	std::cout << "Done reading the configuration file" << std::endl;
+	std::cout << "Configuration file was read succesfully\n" << std::endl;
 }
 
+
+// function for removing whitespace of strings
 void ReadConfigFile::findStringBounds(int& first, int& last, std::string& line){
 	first = line.find("=")+1;
 	last = line.size()-1;
@@ -205,7 +185,7 @@ void ReadConfigFile::findStringBounds(int& first, int& last, std::string& line){
 		first++;
 	}
 
-	while(line[last-1] == ' '){
+	while(line[last] == ' '){
 		last = last -1;
 	}
 	last++;
@@ -215,6 +195,7 @@ void ReadConfigFile::findStringBounds(int& first, int& last, std::string& line){
 	}
 }
 
+// function for reading the provided tags in the configuration file
 void ReadConfigFile::getTags(std::string& line, std::vector<std::string>& tagVec){
 	int first = line.find('(')+1;
 	int last = line.find(')');
@@ -236,6 +217,7 @@ void ReadConfigFile::getTags(std::string& line, std::vector<std::string>& tagVec
 	}
 }
 
+// function for setting the bools according to the input in the configuration file
 void ReadConfigFile::getBool(std::string& param, bool& boolean, std::string& line){
 	int first, last;
 	findStringBounds(first,last, line);
@@ -256,6 +238,7 @@ void ReadConfigFile::getBool(std::string& param, bool& boolean, std::string& lin
 	}
 }
 
+// function for obtaining the directory where the executable or source code is located
 void ReadConfigFile::getDirectory(std::string& dir){
 	char fname_buff[FILENAME_MAX];
 	get_cwd(fname_buff, FILENAME_MAX );

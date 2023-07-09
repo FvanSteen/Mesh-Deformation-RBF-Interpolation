@@ -1,14 +1,15 @@
 
 #ifndef MESHQUALITY_H_
 #define MESHQUALITY_H_
-#include "probParams.h"
 #include "Mesh.h"
+#include "ProbParams.h"
 
 class MeshQuality {
 public:
 	MeshQuality(probParams& p, Eigen::ArrayXXd& coords);
-	void getDeformedMeshQual(Eigen::ArrayXXd& coords);
+	void getDeformedMeshQual(Eigen::ArrayXXd& coords, int i);
 	Eigen::Array3d defQuals;
+
 private:
 	Eigen::ArrayXXd* alpha_ptr;
 	Eigen::ArrayXXd alpha_init, alpha;
@@ -26,11 +27,11 @@ private:
 	bool quadClockWise, triClockWise;
 
 	void getInitialMeshQualParams(probParams& p, Eigen::ArrayXXd& coords);
-
+	void writeQualFile();
 	void getMeshQual();
 	void getElemConnectivity(probParams& p);
 	void getQualParams(Eigen::ArrayXXd& coords);
-	void writeQualFile();
+
 	bool existTest(std::string& fName);
 	int setElemTypeParams(int type);
 	double get_f_skew(int type, int i);

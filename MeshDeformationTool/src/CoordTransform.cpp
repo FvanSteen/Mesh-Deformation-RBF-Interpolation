@@ -4,6 +4,12 @@ CoordTransform::CoordTransform()
 {}
 
 
+/* cart_to_polar_cylindrical
+ *
+ * transforms coordinates from cartesian to polar/ cylindrical
+ *
+ */
+
 void CoordTransform::cart_to_polar_cylindrical(Eigen::ArrayXXd& in, Eigen::ArrayXXd& out){
 
 	out.col(0) = in.leftCols(2).rowwise().norm();
@@ -16,6 +22,12 @@ void CoordTransform::cart_to_polar_cylindrical(Eigen::ArrayXXd& in, Eigen::Array
 
 }
 
+/* polar_cylindrical_to_cart
+ *
+ * Transforms coordinates from polar/ cylindrical to Cartesian coordinates
+ *
+ */
+
 void CoordTransform::polar_cylindrical_to_cart(Eigen::ArrayXXd& in, Eigen::ArrayXXd& out){
 
 	out.col(0) = in.col(0)*cos(in.col(1));
@@ -24,8 +36,14 @@ void CoordTransform::polar_cylindrical_to_cart(Eigen::ArrayXXd& in, Eigen::Array
 		out.col(2) = in.col(2);
 	}
 
-//	std::cout << m.coords << std::endl;
+
 }
+
+
+/* vector_cart_to_polar_cylindrical
+ *
+ * Transforma vector in Cartesian coordinates to polar/cylindrical coordinates
+ */
 
 void CoordTransform::vector_cart_to_polar_cylindrical(Eigen::ArrayXXd& in, Eigen::ArrayXXd& out, Eigen::ArrayXi& idx, Eigen::ArrayXXd& coords){
 
@@ -47,6 +65,12 @@ void CoordTransform::vector_cart_to_polar_cylindrical(Eigen::ArrayXXd& in, Eigen
 
 }
 
+/* error_to_cart
+ *
+ * Transforms error from polar/cylindrical to Cartesian coordinates
+ *
+ */
+
 void CoordTransform::error_to_cart(Eigen::ArrayXXd& error, Mesh* m, getNodeType& n){
 	Eigen::ArrayXXd updatedPosition(error.rows(), error.cols());
 	updatedPosition = (*m).coords_polar_cylindrical((*n.iPtr)(Eigen::seqN(0,error.rows())), Eigen::all) + error;
@@ -58,6 +82,12 @@ void CoordTransform::error_to_cart(Eigen::ArrayXXd& error, Mesh* m, getNodeType&
 
 }
 
+/* disp_to_cart
+ *
+ * Transforms displacement from polar/cylindrical to Cartesian coordinates
+ *
+ */
+
 void CoordTransform::disp_to_cart(Eigen::ArrayXXd& disp, Eigen::ArrayXi& idx, int size, Mesh& m){
 	Eigen::ArrayXXd updatedPosition(size, m.nDims);
 	updatedPosition = m.coords_polar_cylindrical(idx, Eigen::all) + disp;
@@ -68,6 +98,12 @@ void CoordTransform::disp_to_cart(Eigen::ArrayXXd& disp, Eigen::ArrayXi& idx, in
 	disp = updatedPositionCartesian - m.coords(idx, Eigen::all);
 
 }
+
+/* disp_to_polar_cylindrical
+ *
+ * Transforms displacement from Cartesian to polar/cylindrical coordinates
+ *
+ */
 
 void CoordTransform::disp_to_polar_cylindrical(Eigen::ArrayXXd& disp, Eigen::ArrayXi& idx, int size, Mesh& m){
 	Eigen::ArrayXXd updatedPosition(size, m.nDims);
