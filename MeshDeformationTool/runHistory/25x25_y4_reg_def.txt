@@ -1,0 +1,2 @@
+sliding type	periodicity type	greedy	doubled edge	tol	tolCrit	steps	cpu time [ms]	Qmin	Qmean	Qmax
+none	none	0	0	0	0	20	3590	0.0361776643986763	0.547324214275771	0.995617218315637
