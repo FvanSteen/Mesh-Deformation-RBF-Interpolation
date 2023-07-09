@@ -15,8 +15,8 @@ This tool was developed as part of an MSc. thesis project by:
 ***Floyd van Steen*** MSc. Student, TU Delft.
 
 # Acknowledgements
-**Matteo Pini**  Assistant Prof., Power and Propulsion, TU Delft.	
-**Alexander van Zuijlen** Assistant Proj., Aerodynamics, TU Delft.
+**Matteo Pini**  Assistant Prof., Power and Propulsion, TU Delft.
+**Alexander van Zuijlen** Assistant Prof., Aerodynamics, TU Delft.
 
 # Citation
 More details regarding the tool can be found in the following document:
